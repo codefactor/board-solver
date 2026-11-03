@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+out/
+tests/_artifacts/
+*.egg-info/
+
+# Generated document-writer output (lives adjacent to each project).
+specs/projects/*/plan/
+specs/projects/*/archive/
+
+# Archive directories anywhere (keep history out of git for now).
+archive/
+**/archive/

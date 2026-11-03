@@ -1,0 +1,198 @@
+# yaml-language-server: $schema=../../../schema.json
+name: Plaid v1
+description: Two end-grain plaid cutting boards built from cherry, walnut, and brown maple.
+finishedThickness: [1, 4]
+sliceDepth: [1, 8]
+
+sliceGrid:
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: H-L
+    - sliceId: H-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: H-L
+    - sliceId: H-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: H-L
+    - sliceId: H-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: H-L
+    - sliceId: H-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: M-L
+    - sliceId: M-R
+      flip: H
+  - - sliceId: S-L
+    - sliceId: S-R
+      flip: H
+
+
+components:
+  - id: C1
+    species: Cherry
+    width: [1, 8]
+    thickness: [0, 12]
+  - id: C2
+    species: Cherry
+    width: [0, 12]
+    thickness: [0, 12]
+  - id: M1
+    species: Brown Maple
+    width: [1, 8]
+    thickness: [0, 12]
+  - id: Me
+    species: Brown Maple
+    width: [0, 12]
+    thickness: [0, 12]
+  - id: Md
+    species: Brown Maple
+    width: [0, 4]
+    thickness: [0, 12]
+  - id: W1
+    species: Walnut
+    width: [3, 0]
+    thickness: [0, 12]
+  - id: W2
+    species: Walnut
+    width: [0, 12]
+    thickness: [0, 12]
+
+panels:
+  - id: S
+    thickness: [0, 12]
+    profiles:
+      - id: L
+        slices: 20
+      - id: R
+        slices: 20
+    components:
+      - type: Me
+      - type: C2
+      - type: M1
+      - type: C2
+      - type: Md
+      - type: C2
+      - type: M1
+      - type: C2
+      - type: Md
+        maxProfile: 1
+  - id: M
+    thickness: [0, 12]
+    profiles:
+      - id: L
+        slices: 20
+      - id: R
+        slices: 20
+    components:
+      - type: Me
+      - type: W2
+      - type: C1
+      - type: W2
+      - type: Md
+      - type: W2
+      - type: C1
+      - type: W2
+      - type: Md
+        maxProfile: 1
+  - id: H
+    thickness: [0, 13]
+    sliceStrips:
+      count: 2
+      width: [0, 4]
+    profiles:
+      - id: L
+        slices: 8
+      - id: R
+        slices: 8
+    components:
+      - type: Me
+      - type: W1
+      - type: Md
+      - type: W1
+      - type: Md
+        maxProfile: 1
+
+boards:
+ - id: BC1
+   species: Cherry
+   length: [48, 2]
+   width: [7, 4]
+   thickness: [0, 13]
+ - id: BC2
+   species: Cherry
+   length: [48, 1]
+   width: [6, 15]
+   thickness: [0, 13]
+ - id: BW1
+   species: Walnut
+   length: [54, 5]
+   width: [6, 4]
+   thickness: [0, 13]
+ - id: BW2
+   species: Walnut
+   length: [54, 5]
+   width: [6, 1]
+   thickness: [0, 13]
+ - id: BM1
+   species: Brown Maple
+   length: [98, 1]
+   width: [8, 7]
+   thickness: [0, 13]
+ # Untouched spare maple board (kept in inventory, not consumed by the cut list).
+ - id: BM2
+   species: Brown Maple
+   length: [47, 15]
+   width: [8, 4]
+   thickness: [0, 13]

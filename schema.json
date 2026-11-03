@@ -1,0 +1,388 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "oneOf": [
+        {"$ref": "#/definitions/project"},
+        {"$ref": "#/definitions/tool-limits-doc"},
+        {"$ref": "#/definitions/cut-spec"}
+    ],
+    "definitions": {
+        "project": {
+            "type": "object",
+            "description": "A given project with a fixed amount of purchased materials in hand and its pattern defined by components and panels.",
+            "required": ["name", "components", "panels", "boards"],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Short name of this project."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Longer human description of what this project builds."
+                },
+                "finishedThickness": {
+                    "description": "Final thickness of the finished board after flattening.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "sliceDepth": {
+                    "description": "How thick each slice is cut from a panel (the crosscut pitch along the panel's length). This dimension becomes the finished board's thickness before flattening, so it must be at least finishedThickness plus the flattening allowance. A panel's length is derived as the total number of slices times (sliceDepth + miter kerf), plus any snipe allowance.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "sliceGrid": {
+                    "type": "array",
+                    "description": "Reconstructs one finished board's face from the slices produced by the panels. A 2D grid laid out from the top-left corner: an array of rows (top to bottom), each row an array of slice placements (left to right).",
+                    "items": {
+                        "type": "array",
+                        "items": { "$ref": "#/definitions/slice-grid-item" }
+                    }
+                },
+                "batch": {
+                    "type": "integer",
+                    "description": "How many finished pieces this project produces."
+                },
+                "components": {
+                    "type": "array",
+                    "description": "The stripe vocabulary: every unique component this project's panels are built from.",
+                    "items": { "$ref": "#/definitions/component" }
+                },
+                "panels": {
+                    "type": "array",
+                    "description": "The glue-up panels, each an ordered list of components cut to length.",
+                    "items": { "$ref": "#/definitions/panel" }
+                },
+                "boards": {
+                    "type": "array",
+                    "description": "The actual inventory boards in hand for this project.",
+                    "items": { "$ref": "#/definitions/board" }
+                }
+            }
+        },
+        "component": {
+            "type": "object",
+            "description": "A single stripe type used in the panels, at its final dimensions.",
+            "required": ["id", "species", "width", "thickness"],
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "$ref": "#/definitions/id",
+                    "description": "Unique identifier for this component, referenced by panel entries."
+                },
+                "species": { "$ref": "#/definitions/species" },
+                "width": {
+                    "description": "Final stripe width.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "thickness": {
+                    "description": "Final stripe thickness.",
+                    "$ref": "#/definitions/measurement"
+                }
+            }
+        },
+        "panel": {
+            "type": "object",
+            "description": "A glue-up panel: an ordered sequence of components, sliced crosswise into end-grain slices. A panel either yields a single set of slices (slices) or several profile regions (profiles) where trailing components drop out.",
+            "required": ["id", "components"],
+            "additionalProperties": false,
+            "oneOf": [
+                { "required": ["slices"] },
+                { "required": ["profiles"] }
+            ],
+            "properties": {
+                "id": {
+                    "$ref": "#/definitions/id",
+                    "description": "Unique identifier for this panel. A slice is addressed as {panel-id} for a single-profile panel, or {panel-id}-{profile-id} when the panel has profiles."
+                },
+                "thickness": {
+                    "description": "The thickness this panel is planed to before slicing. Each slice stands at this height. If sliceStrips is present, each slice is then ripped into equal strips whose width becomes the installed row height instead.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "sliceStrips": {
+                    "type": "object",
+                    "description": "Optional. If present, every slice cut from this panel (across all profiles) is ripped into equal strips, and the panel's entire output is these strips. The rip runs along the slice's length (the direction the stripes run), dividing the slice's height (the panel thickness) into equal strips stacked height-wise. Each strip's final width becomes its installed row height in the finished board face.",
+                    "required": ["count", "width"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "count": {
+                            "type": "integer",
+                            "description": "How many equal strips each slice is ripped into. count x width plus kerfs equals the panel thickness.",
+                            "minimum": 2
+                        },
+                        "width": {
+                            "description": "Final width of each ripped strip (its installed row height in the finished board face).",
+                            "$ref": "#/definitions/measurement"
+                        }
+                    }
+                },
+                "slices": {
+                    "type": "integer",
+                    "description": "Number of slices for a single-profile panel. Mutually exclusive with profiles.",
+                    "minimum": 1
+                },
+                "profiles": {
+                    "type": "array",
+                    "description": "Ordered profile regions, from the one containing the most components to the fewest. Every component is present in the first profile (components are aligned on one squared edge); trailing components drop out in later profiles. Mutually exclusive with slices.",
+                    "minItems": 2,
+                    "items": { "$ref": "#/definitions/profile" }
+                },
+                "components": {
+                    "type": "array",
+                    "description": "The components glued side by side to form the panel, in order from the squared edge.",
+                    "minItems": 1,
+                    "items": { "$ref": "#/definitions/panel-component" }
+                }
+            }
+        },
+        "slice-grid-item": {
+            "type": "object",
+            "description": "One slice placed in the finished-board grid.",
+            "required": ["sliceId"],
+            "additionalProperties": false,
+            "properties": {
+                "sliceId": {
+                    "$ref": "#/definitions/id-reference",
+                    "description": "Which slice goes here: the panel id for a single-profile panel, or panel-id-profile-id (e.g. S-L, H-R) for a panel with profiles. When the referenced panel has sliceStrips, the placed slice is one of those equal ripped strips (they are interchangeable, so no further addressing is needed)."
+                },
+                "flip": {
+                    "type": "string",
+                    "description": "Orientation mutation applied to the slice relative to its preferred orientation. Only a horizontal flip (H) affects the drawing with the current specs (it reverses the component sequence for the mirrored half). Omitted means no flip. Vertical/both flips may be re-added if panel edge angles are introduced.",
+                    "enum": ["H"]
+                }
+            }
+        },
+        "profile": {
+            "type": "object",
+            "description": "One profile region of a panel: a run of slices sharing the same component makeup.",
+            "required": ["id", "slices"],
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "$ref": "#/definitions/id",
+                    "description": "Identifier for this profile, used to address its slices as {panel-id}-{profile-id}."
+                },
+                "slices": {
+                    "type": "integer",
+                    "description": "Number of slices produced from this profile region.",
+                    "minimum": 1
+                }
+            }
+        },
+        "panel-component": {
+            "type": "object",
+            "description": "One component placed in a panel.",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "$ref": "#/definitions/id",
+                    "description": "Id of the component (from the project's components list) used at this position."
+                },
+                "maxProfile": {
+                    "type": "integer",
+                    "description": "How many leading profiles this component appears in (counting from the first). Omitted means it appears in all profiles. Used only on panels that declare profiles.",
+                    "minimum": 1
+                }
+            }
+        },
+        "cut-spec": {
+            "type": "object",
+            "description": "Solver output: a minimal, non-redundant specification of how to cut each board. Anything derivable from the project, tool-limits, and pattern is intentionally omitted.",
+            "required": ["boards"],
+            "additionalProperties": false,
+            "properties": {
+                "boards": {
+                    "type": "array",
+                    "description": "Every board that is produced and used. Each board has exactly one origin: ripped from a project board (source), the width-remainder of another cut-spec board (sourceRemainder), or a bought board (buySpecies).",
+                    "items": { "$ref": "#/definitions/board-cut-spec" }
+                }
+            }
+        },
+        "board-cut-spec": {
+            "type": "object",
+            "description": "One physical board in the cutting plan. Its id is generated from its origin (e.g. BM1-A for the first board cut from source BM1, or GH-C for a bought Cherry board). A board whose length equals its source length is the whole source board; a shorter length means it was crosscut off the source, reducing that source's remaining length by this length plus one kerf. Boards sharing a source are consumed in order.",
+            "required": ["id", "length", "strips"],
+            "additionalProperties": false,
+            "oneOf": [
+                { "required": ["source"] },
+                { "required": ["sourceRemainder"] },
+                { "required": ["buySpecies"] }
+            ],
+            "properties": {
+                "id": {
+                    "$ref": "#/definitions/id-reference",
+                    "description": "Generated id for this board. Sourced boards use the source id plus a sequential letter suffix (BM1-A, BM1-B). Bought boards use GH- plus the species initial (GH-C)."
+                },
+                "source": {
+                    "$ref": "#/definitions/id-reference",
+                    "description": "Id of the project.yaml inventory board this board is ripped or crosscut from. Mutually exclusive with sourceRemainder and buySpecies."
+                },
+                "sourceRemainder": {
+                    "$ref": "#/definitions/id-reference",
+                    "description": "Id of another cut-spec board whose leftover width-slab (the material left after that board's rips and its mandatory unfinished edge) this board consumes. Mutually exclusive with source and buySpecies."
+                },
+                "buySpecies": {
+                    "description": "Species of a board that must be bought because it is not drawn from inventory (a ghost board). Mutually exclusive with source and sourceRemainder.",
+                    "$ref": "#/definitions/species"
+                },
+                "length": {
+                    "description": "Length of this board. Equal to the source length means the whole board; less means it was crosscut off the source.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "strips": {
+                    "type": "array",
+                    "description": "Rips taken off this board across its width, in order. A board always has at least one strip because every board has one unfinished edge that must be cut.",
+                    "minItems": 1,
+                    "items": { "$ref": "#/definitions/strip" }
+                }
+            }
+        },
+        "strip": {
+            "type": "object",
+            "description": "A single rip off a board: a strip of the given width, optionally crosscut into smaller pieces.",
+            "required": ["width"],
+            "additionalProperties": false,
+            "properties": {
+                "width": {
+                    "description": "The ripped width of this strip.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "cuts": {
+                    "type": "array",
+                    "description": "Crosscuts dividing this strip into smaller pieces, in order along its length. Omitted or empty means the whole strip is used as a single piece. When present, there is one entry per component produced from the strip.",
+                    "items": { "$ref": "#/definitions/measurement" }
+                },
+                "offcutComponent": {
+                    "type": "boolean",
+                    "description": "If true, the leftover piece after the listed cuts (or the whole strip, when cuts is empty) is itself a component rather than waste."
+                }
+            }
+        },
+        "tool-limits-doc": {
+            "type": "object",
+            "description": "Top-level document describing the static limits of the available toolset.",
+            "required": ["limits"],
+            "additionalProperties": false,
+            "properties": {
+                "limits": { "$ref": "#/definitions/tool-limits" }
+            }
+        },
+        "tool-limits": {
+            "type": "object",
+            "description": "Statically-known limits of the available toolset.",
+            "additionalProperties": false,
+            "properties": {
+                "maxCutLength": {
+                    "description": "Kreg ACS track saw on-table rip/crosscut capacity.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "sawKerf": {
+                    "description": "Kerf removed per cut by the ACS track saw blade.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "miterKerf": {
+                    "description": "Kerf removed per cut by the DeWalt miter saw blade.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "maxPlaneWidth": {
+                    "description": "DeWalt DW733 Type 2 planer maximum stock width.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "minPlaneLength": {
+                    "description": "DeWalt DW733 Type 2 planer minimum feed length.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "minPlaneThickness": {
+                    "description": "DeWalt DW733 Type 2 planer minimum planing height.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "minPlaneLoss": {
+                    "description": "DeWalt DW733 Type 2 planer recommended material removed from stock thickness in a single pass. Used as the per-strip face-cleanup loss when deriving a cut board's loss and margin bands.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "maxMiterCrosscut": {
+                    "description": "DeWalt DWS779 maximum clean crosscut width at 90 degrees.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "miterAngleRange": {
+                    "description": "DeWalt DWS779 miter angle range in degrees; negative = left, positive = right.",
+                    "$ref": "#/definitions/degree-range"
+                },
+                "sawAngleRange": {
+                    "description": "Kreg ACS track saw bevel range in degrees.",
+                    "$ref": "#/definitions/degree-range"
+                },
+                "maxCutDepth": {
+                    "description": "Kreg ACS track saw maximum plunge (cut depth) at 90 degrees.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "snipeTail": {
+                    "description": "Extra length added to a panel beyond its slices to absorb planer snipe (the less-accurate leading/trailing few inches). Added once per panel when deriving panel length.",
+                    "$ref": "#/definitions/measurement"
+                }
+            }
+        },
+        "degree-range": {
+            "type": "array",
+            "description": "An inclusive range of integer degrees, given as [min, max].",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "integer" }
+        },
+        "board": {
+            "type": "object",
+            "description": "An actual inventory board in hand.",
+            "required": ["id", "species", "length", "width", "thickness"],
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "$ref": "#/definitions/id",
+                    "description": "Unique identifier for this inventory board, referenced by cut-spec boards as their source."
+                },
+                "species": { "$ref": "#/definitions/species" },
+                "length": {
+                    "description": "The board's length.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "width": {
+                    "description": "The board's width.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "thickness": {
+                    "description": "The board's thickness.",
+                    "$ref": "#/definitions/measurement"
+                }
+            }
+        },
+        "species": {
+            "type": "string",
+            "description": "A board species.",
+            "enum": ["Brown Maple", "Walnut", "Cherry"]
+        },
+        "id": {
+            "type": "string",
+            "description": "An identifier. Strictly alphanumeric so ids can be joined with hyphens to address composed things like slices.",
+            "pattern": "^[A-Za-z\\d]+$"
+        },
+        "id-reference": {
+            "type": "string",
+            "description": "A reference to an id or a composed id: an alphanumeric id followed by up to one optional hyphenated alphanumeric suffix (e.g. S, S-L, H-R).",
+            "pattern": "^[A-Za-z\\d]+(-[A-Za-z\\d]+)?$"
+        },
+        "measurement": {
+            "type": "array",
+            "description": "A measurement tuple of integer inches with additional sixteenths (rounded to nearest sixteenth of an inch). [92, 4] represents 92 1/4\".",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": [
+                {
+                    "type": "integer",
+                    "description": "The number of inches, as an integer."
+                },
+                {
+                    "type": "integer",
+                    "description": "Any remainder of the measurement, given as an integer number of sixteenths, after rounding to the nearest value (actual measurement must only be plus or minus 1/32 inch, if not exact)."
+                }
+            ]
+        }
+    }
+}

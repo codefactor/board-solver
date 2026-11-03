@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "board-solver"
+version = "0.1.0"
+description = "Round 1 geometry helpers + drawing primitives for the board-solver plaid cutting-board planner."
+requires-python = ">=3.10"
+dependencies = ["Pillow>=10"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pyyaml>=6", "jsonschema>=4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

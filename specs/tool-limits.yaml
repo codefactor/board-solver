@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=../schema.json
+limits:
+  # Kreg ACS track saw, on-table cut capacity
+  maxCutLength: [48, 0]
+  # Saw kerf removed per cut (ACS track saw blade)
+  sawKerf: [0, 2]
+  # Kerf removed per cut on the DeWalt miter saw blade
+  miterKerf: [0, 2]
+  # DeWalt DW733 Type 2 thickness planer
+  maxPlaneWidth: [12, 8]
+  minPlaneLength: [12, 0]
+  minPlaneThickness: [0, 2]
+  # Recommended material removed from stock thickness per planer pass
+  minPlaneLoss: [0, 1]
+  # DeWalt DWS779 12" sliding compound miter saw
+  maxMiterCrosscut: [13, 12]
+  miterAngleRange: [-50, 60]   # degrees; negative = left, positive = right
+  # Kreg ACS track saw bevel range (degrees)
+  sawAngleRange: [-1, 47]
+  # Kreg ACS track saw maximum plunge (cut depth) at 90°
+  maxCutDepth: [2, 2]
+  # Extra panel length to absorb planer snipe
+  snipeTail: [1, 8]
