@@ -1,24 +1,22 @@
 # Chess v1 — Cut Plan
 
-*Two end-grain chess-pattern boards, walnut and brown maple 0.5 in cells, cherry border 0.25 in all sides, built from thin strips only (no component wider than 0.5 in).*
+*One end-grain chess-pattern board, walnut and brown maple 2.25 in cells, cherry border 1.125 in all sides, finished 20.25 in square, 0.5 in thick. Each row is built as two half-width panels split at the centre line (left half mirrors right half), so no panel is wider than 10.125 in and every panel fits the 12.5 in planer.*
 
 This is a generated plan: the finished design and the cut list that realizes it on the boards in hand. Where the cut list cannot be met from inventory it calls for **bought boards** — buy those and re-run before cutting. The sections follow the build order, from the first crosscut to the final slice-grid assembly.
 
 ## 1. Finished board pattern
 
-2 finished boards. Final thickness 1¼″.
-
-![Finished board](images/finished-board-c49f044c259b.png)
+![Finished board](images/finished-board-892237c8dbeb.png)
 
 ## 2. Volume Sanity Check
 
-A per-species feasibility check in board feet (1 BF = 144 cubic inches). **Required** is the surfaced volume of every installed slice across all 2 board(s) plus the volume that must be removed to produce them — flattening (sliceDepth − finishedThickness), planing all four edges (minPlaneLoss), and one miter kerf per slice. **Available** is the inventory stock volume. **Volume Offset** = available − required, with available as a percentage of required in parentheses (100% means they are equal); a negative value means the project cannot be built from stock in hand.
+A per-species feasibility check in board feet (1 BF = 144 cubic inches). **Required** is the surfaced volume of every installed slice across all 1 board(s) plus the volume that must be removed to produce them — flattening (sliceDepth − finishedThickness), planing all four edges (minPlaneLoss), and one miter kerf per slice. **Available** is the inventory stock volume. **Volume Offset** = available − required, with available as a percentage of required in parentheses (100% means they are equal); a negative value means the project cannot be built from stock in hand.
 
 | Species | Available | Required | Volume Offset |
 | --- | --- | --- | --- |
-| maple | 6.9 BF | 0.1 BF + 0.1 BF loss = 0.3 BF | +6.6 BF (2615%) |
-| cherry | 3.9 BF | 0.1 BF + 0.1 BF loss = 0.2 BF | +3.7 BF (2372%) |
-| walnut | 3.8 BF | 0.1 BF + 0.1 BF loss = 0.3 BF | +3.5 BF (1430%) |
+| maple | 6.9 BF | 0.6 BF + 1.5 BF loss = 2.0 BF | +4.9 BF (342%) |
+| cherry | 3.9 BF | 0.3 BF + 0.8 BF loss = 1.1 BF | +2.7 BF (343%) |
+| walnut | 3.8 BF | 0.6 BF + 1.5 BF loss = 2.0 BF | +1.8 BF (187%) |
 
 ## 3. Crosscut Blanks
 
@@ -28,8 +26,8 @@ The first operation: crosscut each raw inventory board along its length into the
 | --- | --- | --- | --- | --- |
 | BM1 | maple | 98¹⁄₁₆″ | BM1A = 48″ | 50¹⁄₁₆″ |
 | BC1 | cherry | 48⅛″ | BC1A = 48″ | ⅛″ |
+| BC2 | cherry | 48¹⁄₁₆″ | BC2A = 48″ | ¹⁄₁₆″ |
 | BW1 | walnut | 54⁵⁄₁₆″ | BW1A = 48″ | 6⁵⁄₁₆″ |
-| BC2 | cherry | 48¹⁄₁₆″ | — (untouched spare) | — |
 | BW2 | walnut | 54⁵⁄₁₆″ | — (untouched spare) | — |
 | BM2 | maple | 47¹⁵⁄₁₆″ | — (untouched spare) | — |
 
@@ -37,37 +35,43 @@ The first operation: crosscut each raw inventory board along its length into the
 
 Each bar is one raw board drawn to scale by length; segments are the blanks (labeled with id and length inside), reddish stripes are crosscut kerfs (sawdust), and the pale tail is leftover length. A red tail means the blanks overflow the raw board. An untouched spare is shown washed-out and uncut; a board used whole goes straight to the rip diagram.
 
-![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-9ca7b508cff3.png)
+![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-6219f038c7cc.png)
 
 ## 4. Panels overview
 
 | Panel | Qty | Length | Slices | Height | Ripped | Sequence (outer → in) |
 | --- | --- | --- | --- | --- | --- | --- |
-| A | 1 | 16⅛″ | 9 | ½″ | — | CB · W · M · W · M · W · M · W · M · CB |
-| B | 1 | 16⅛″ | 9 | ½″ | — | CB · M · W · M · W · M · W · M · W · CB |
-| C | 1 | 16⅛″ | 9 | ¼″ | — | CT · CT · CT · CT · CT · CT · CT · CT · CT |
+| AL | 1 | 9⅝″ | 5 | 2¼″ | — | CB · W · M · W · M |
+| AR | 1 | 9⅝″ | 5 | 2¼″ | — | W · M · W · M · CB |
+| BL | 1 | 9⅝″ | 5 | 2¼″ | — | CB · M · W · M · W |
+| BR | 1 | 9⅝″ | 5 | 2¼″ | — | M · W · M · W · CB |
+| CL | 1 | 9⅝″ | 5 | 1⅛″ | — | CT · CT · CT · CT · CTH |
+| CR | 1 | 9⅝″ | 5 | 1⅛″ | — | CTH · CT · CT · CT · CT |
 
 ### Panel End Grain Diagram
 
 Each panel's end-grain cross-section (the glue-up of component stripes).
 
-![Panel end-grain cross-sections](images/panels-91027eeed544.png)
+![Panel end-grain cross-sections](images/panels-39be4adc9cfe.png)
 
 ### Panel Face Diagram
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-74991757e188.png)
+![Panel faces to scale](images/panel-faces-2d4efbcfb150.png)
 
 ### Slice Fulfillment
 
-**Demand** is every slice the grid places across all 2 finished board(s). **Supplied** is the slices the panels above produce — snipe lost, ripped panels multiplied by their strip count. **Supply Offset** = supplied − demand: negative is a shortfall, positive is extra (ideally non-negative everywhere).
+**Demand** is every slice the grid places across all 1 finished board(s). **Supplied** is the slices the panels above produce — snipe lost, ripped panels multiplied by their strip count. **Supply Offset** = supplied − demand: negative is a shortfall, positive is extra (ideally non-negative everywhere).
 
 | Slice | Demand | Supplied | Supply Offset |
 | --- | --- | --- | --- |
-| C | 2 × 2 = 4 | 9 | +5 |
-| A | 4 × 2 = 8 | 9 | +1 |
-| B | 4 × 2 = 8 | 9 | +1 |
+| CL | 2 × 1 = 2 | 5 | +3 |
+| CR | 2 × 1 = 2 | 5 | +3 |
+| AL | 4 × 1 = 4 | 5 | +1 |
+| AR | 4 × 1 = 4 | 5 | +1 |
+| BL | 4 × 1 = 4 | 5 | +1 |
+| BR | 4 × 1 = 4 | 5 | +1 |
 
 _The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in this section. A panel type may have more than one instance; the ideal panels are always quantity 1._
 
@@ -77,15 +81,16 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 
 | Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | ½″ ×4 | 2″ | ¾″ | 5¹¹⁄₁₆″ |
-| BC1A @ 7¼″ | BC1 | cherry | 48″ | ½″ ×5 · ¼″ ×2 | 3″ | 1⁵⁄₁₆″ | 2¹⁵⁄₁₆″ |
-| BW1A @ 6¼″ | BW1 | walnut | 48″ | ½″ ×4 | 2″ | ¾″ | 3½″ |
+| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | 2¼″ ×2 | 4½″ | ⅜″ | 3⁹⁄₁₆″ |
+| BC1A @ 7¼″ | BC1 | cherry | 48″ | 2¼″ ×2 · 1⅛″ ×1 | 5⅝″ | ⁹⁄₁₆″ | 1¹⁄₁₆″ |
+| BC2A @ 6¹⁵⁄₁₆″ | BC2 | cherry | 48″ | 1⅛″ ×1 | 1⅛″ | ³⁄₁₆″ | 5⅝″ |
+| BW1A @ 6¼″ | BW1 | walnut | 48″ | 2¼″ ×2 | 4½″ | ⅜″ | 1⅜″ |
 
 ### Board Rip Diagram
 
 Each labeled block below is one physical board. Horizontal bands are the strips ripped down the board's width; within a band, the colored cells are the crosscut pieces (with thin kerf gaps between them) and the lightened tail is the offcut. The pale band under the strips is the leftover margin; a gray title marks a board that must be bought.
 
-![Board Rip Diagram — how the cut list lands on each board](images/strip-map-37d036939571.png)
+![Board Rip Diagram — how the cut list lands on each board](images/strip-map-ce9b81864431.png)
 
 ## 6. Components
 
@@ -93,10 +98,11 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 | Component | Species | Width | Length | Demand | Fulfilled | Shortfall |
 | --- | --- | --- | --- | --- | --- | --- |
-| CB | cherry | ¼″ | 16⅛″ | 4 | 4 | 0 |
-| CT | cherry | ½″ | 16⅛″ | 9 | 9 | 0 |
-| M | maple | ½″ | 16⅛″ | 8 | 8 | 0 |
-| W | walnut | ½″ | 16⅛″ | 8 | 8 | 0 |
+| CB | cherry | 1⅛″ | 9⅝″ | 4 | 4 | 0 |
+| CT | cherry | 2¼″ | 9⅝″ | 8 | 8 | 0 |
+| CTH | cherry | 1⅛″ | 9⅝″ | 2 | 2 | 0 |
+| M | maple | 2¼″ | 9⅝″ | 8 | 8 | 0 |
+| W | walnut | 2¼″ | 9⅝″ | 8 | 8 | 0 |
 
 ## 7. Panels (profiles and sequence)
 
@@ -104,12 +110,15 @@ The physical panels this plan builds (from the project's panel specs), grouped b
 
 | Panel | Qty | Length | Profiles (slices) | Component sequence |
 | --- | --- | --- | --- | --- |
-| A | 1 | 16⅛″ | single: 9 | CB · W · M · W · M · W · M · W · M · CB |
-| B | 1 | 16⅛″ | single: 9 | CB · M · W · M · W · M · W · M · W · CB |
-| C | 1 | 16⅛″ | single: 9 | CT · CT · CT · CT · CT · CT · CT · CT · CT |
+| AL | 1 | 9⅝″ | single: 5 | CB · W · M · W · M |
+| AR | 1 | 9⅝″ | single: 5 | W · M · W · M · CB |
+| BL | 1 | 9⅝″ | single: 5 | CB · M · W · M · W |
+| BR | 1 | 9⅝″ | single: 5 | M · W · M · W · CB |
+| CL | 1 | 9⅝″ | single: 5 | CT · CT · CT · CT · CTH |
+| CR | 1 | 9⅝″ | single: 5 | CTH · CT · CT · CT · CT |
 
 ## 8. Slice Grid
 
 The final step: arrange the slices into the finished face. The same grid keyed by slice id — each slice is framed in its legend color so you can see how to arrange the grid cell by cell. A corner triangle marks a slice placed horizontally flipped.
 
-![Slice grid keyed by slice id](images/slice-map-d91dfcef0f65.png)
+![Slice grid keyed by slice id](images/slice-map-253acd6a2712.png)

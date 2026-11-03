@@ -307,13 +307,20 @@ def component_supply(
     comes from the strip's source board. Each crosscut length on the strip is one
     produced piece. A strip whose (species, width) matches NO project component is
     not an error — its pieces carry ``component_id = None`` and are reported as
-    wasted (an end-grain shape the project cannot consume). The duplicate-shape
-    project invariant is still enforced.
+    wasted (an end-grain shape the project cannot consume).
+
+    NOTE: several components may share one (species, width) — they differ by
+    thickness, which is set when the panel is planed/sliced, not at rip time
+    (e.g. a 1 1/8 in cherry strip can become a 2 1/4 in-tall border piece or a
+    1 1/8 in-tall one). ``component_id`` here is therefore only a shape
+    representative (the last matching component), NOT an allocation: consumers
+    must pool supply by (species, width) and allocate it across every demand
+    row sharing that shape, or they will report phantom shortfalls.
     """
     validate_components_unique(project)
-    # Index components by (species, width) -> id. Unique per the project invariant
-    # (width alone is enough within a species; thickness is planed later so the
-    # rip-time match is species + width).
+    # Index components by (species, width) -> id. NOT unique: components
+    # sharing a shape differ by thickness, which is planed later, so the
+    # rip-time match is species + width and the id here is representative only.
     by_sw: Dict[tuple, str] = {}
     for c in project["components"]:
         by_sw[(c["species"], measure_to_sixteenths(c["width"]))] = c["id"]
@@ -382,33 +389,44 @@ def match_supply_to_demand(
       * match_rows   — one per demand row (fulfilled / shortfall / overcut),
       * unused_pieces— matched-component pieces left over after demand is met,
       * wasted_pieces— produced pieces whose shape matches no component at all.
+
+    Supply is pooled by (species, width), NOT by component id: components
+    sharing a rip shape but differing in thickness draw from one shared pool,
+    allocated longest-demand-first within the shape. Pooling by id would
+    assign every shared-shape piece to a single component and report the
+    others short even when the cut list produced exactly enough.
     """
     demand = component_demand(project, tool_limits)
     supply = component_supply(project, cut_spec, tool_limits)
 
-    # Pieces that match no component are wasted; the rest form the demand pool.
+    # Pieces that match no component are wasted; the rest form the demand pool,
+    # keyed by rip shape (species, width) — see component_supply's note.
     wasted_tally: "OrderedDict[tuple, int]" = OrderedDict()
-    pool: Dict[str, List[Sixteenths]] = {}
-    comp_meta: Dict[str, tuple] = {}
+    pool: Dict[tuple, List[Sixteenths]] = {}
+    shape_first_id: Dict[tuple, str] = {}
     for p in supply:
         if p.component_id is None:
             key = (p.species, p.width, p.length, p.board_id)
             wasted_tally[key] = wasted_tally.get(key, 0) + 1
             continue
-        pool.setdefault(p.component_id, []).append(p.length)
-        comp_meta[p.component_id] = (p.species, p.width)
+        shape = (p.species, p.width)
+        pool.setdefault(shape, []).append(p.length)
+        # Unused pieces need a representative id; the first demand row for
+        # this shape supplies it (filled in below once demand is known).
 
-    # Demand rows grouped by component id, each row longest-first.
-    demand_by_comp: Dict[str, List[ComponentDemand]] = {}
+    # Demand rows grouped by rip shape, each row longest-first.
+    demand_by_shape: Dict[tuple, List[ComponentDemand]] = {}
     for d in demand:
-        demand_by_comp.setdefault(d.id, []).append(d)
+        shape = (d.species, d.width)
+        demand_by_shape.setdefault(shape, []).append(d)
+        shape_first_id.setdefault(shape, d.id)
 
     rows: List[MatchRow] = []
 
-    # Process each component's demand rows longest-first against its pool.
+    # Process each shape's demand rows longest-first against its shared pool.
     results: Dict[tuple, MatchRow] = {}
-    for comp_id, drows in demand_by_comp.items():
-        avail = sorted(pool.get(comp_id, []))  # ascending lengths
+    for shape, drows in demand_by_shape.items():
+        avail = sorted(pool.get(shape, []))  # ascending lengths
         for d in sorted(drows, key=lambda r: r.length, reverse=True):
             need = d.count
             fulfilled = 0
@@ -431,30 +449,27 @@ def match_supply_to_demand(
                 overcut += piece - d.length
                 fulfilled += 1
                 need -= 1
-            results[(comp_id, d.length)] = MatchRow(
-                component_id=comp_id, species=d.species, width=d.width,
+            results[(d.id, d.length)] = MatchRow(
+                component_id=d.id, species=d.species, width=d.width,
                 length=d.length, demand=d.count, fulfilled=fulfilled,
                 shortfall=d.count - fulfilled, overcut=overcut,
             )
-        pool[comp_id] = avail  # remaining unused pieces
+        pool[shape] = avail  # remaining unused pieces
 
     # Emit match rows in the original demand order.
     for d in demand:
         rows.append(results[(d.id, d.length)])
 
-    # Unused pieces: whatever remains in each pool, grouped by (comp, length).
-    unused_tally: "OrderedDict[tuple, int]" = OrderedDict()
-    for comp_id, lengths in pool.items():
-        for L in lengths:
-            key = (comp_id, L)
-            unused_tally[key] = unused_tally.get(key, 0) + 1
-    unused = [
-        UnusedPiece(
-            component_id=cid, species=comp_meta[cid][0], width=comp_meta[cid][1],
-            length=L, count=n,
-        )
-        for (cid, L), n in unused_tally.items()
-    ]
+    # Unused pieces: whatever remains in each shape pool, grouped by
+    # (representative component, length).
+    unused = []
+    for shape, lengths in pool.items():
+        from collections import Counter as _UC
+        for L, n in _UC(lengths).items():
+            unused.append(UnusedPiece(
+                component_id=shape_first_id[shape], species=shape[0],
+                width=shape[1], length=L, count=n,
+            ))
     wasted = [
         WastedPiece(species=sp, width=w, length=L, count=n, board_id=bid)
         for (sp, w, L, bid), n in wasted_tally.items()
@@ -848,17 +863,28 @@ def warnings(
 
     # --- Components cannot fulfill the speced panels ---------------------- #
     # Every component the panel specs require vs. what the cut list supplies.
+    # Compared by rip shape (species, width, length), not component id:
+    # components sharing a shape draw from one pool (see component_supply).
     panel_need = _panel_component_demand(project, cut_spec, tool_limits)
     supply = component_supply(project, cut_spec, tool_limits)
     from collections import Counter as _C
-    have = _C((p.component_id, p.length) for p in supply if p.component_id)
-    unmet = {}
+    comp_by_id = {c["id"]: c for c in project["components"]}
+    have = _C((p.species, p.width, p.length) for p in supply if p.component_id)
+    need_shape: "_C" = _C()
+    shape_ids: Dict[tuple, List[str]] = {}
     for (cid, length), need in panel_need.items():
-        deficit = need - have.get((cid, length), 0)
+        c = comp_by_id[cid]
+        shape = (c["species"], measure_to_sixteenths(c["width"]), length)
+        need_shape[shape] += need
+        shape_ids.setdefault(shape, []).append(cid)
+    unmet = {}
+    for shape, need in need_shape.items():
+        deficit = need - have.get(shape, 0)
         if deficit > 0:
-            unmet[cid] = unmet.get(cid, 0) + deficit
+            label = "/".join(shape_ids[shape])
+            unmet[label] = unmet.get(label, 0) + deficit
     if unmet:
-        names = ", ".join(f"{cid} (short {n})" for cid, n in unmet.items())
+        names = ", ".join(f"{label} (short {n})" for label, n in unmet.items())
         out.append(Warning(
             "yellow", "panel_components_short",
             f"The cut list cannot supply all components the speced panels need: "
@@ -1070,6 +1096,31 @@ def actual_panels(
         got = [p.component_id for p in pieces]
         ideal = _ideal_sequences(project, panel_id)
         sequence_ok = got in ideal
+        if not sequence_ok:
+            # A piece's component id is ambiguous when several components
+            # share its (species, width) and differ only by thickness, so
+            # the shape representative above may not be the component this
+            # panel position needs. Resolve by position: if an ideal
+            # sequence's shapes match the pieces' shapes in order, that
+            # sequence's ids are the pieces' components.
+            from dataclasses import replace as _replace
+            comp_by_id = {c["id"]: c for c in project["components"]}
+            for seq in ideal:
+                if len(seq) != len(pieces):
+                    continue
+                if all(
+                    (p.species, p.width) == (
+                        comp_by_id[cid]["species"],
+                        measure_to_sixteenths(comp_by_id[cid]["width"]),
+                    )
+                    for p, cid in zip(pieces, seq)
+                ):
+                    pieces = [
+                        _replace(p, component_id=cid)
+                        for p, cid in zip(pieces, seq)
+                    ]
+                    sequence_ok = True
+                    break
         out.append(ActualPanel(panel_id=panel_id, code=code, pieces=pieces,
                                length=length, sequence_ok=sequence_ok))
     return out
@@ -1143,21 +1194,23 @@ def auto_panels(
     lim = _limits(tool_limits)
     snipe = measure_to_sixteenths(lim.get("snipeTail", [0, 0]))
 
-    # Supply pool: component_id -> length -> list of refs (mutable, consumable).
-    pool: Dict[str, Dict[Sixteenths, List[str]]] = {}
-    comp_by_sw: Dict[tuple, str] = {
-        (c["species"], measure_to_sixteenths(c["width"])): c["id"]
+    # Supply pool: rip shape (species, width) -> length -> list of refs
+    # (mutable, consumable). Pooled by shape, not component id: components
+    # sharing a shape but differing in thickness draw from one pool.
+    pool: Dict[tuple, Dict[Sixteenths, List[str]]] = {}
+    valid_shapes = {
+        (c["species"], measure_to_sixteenths(c["width"]))
         for c in project["components"]
     }
     for r in board_rips(project, cut_spec, tool_limits):
         for si, strip in enumerate(r.strips):
             width = measure_to_sixteenths(strip["width"])
-            cid = comp_by_sw.get((r.species, width))
-            if cid is None:
+            if (r.species, width) not in valid_shapes:
                 continue
             for ci, cut in enumerate(strip.get("cuts", [])):
                 L = measure_to_sixteenths(cut)
-                pool.setdefault(cid, {}).setdefault(L, []).append(f"{r.id}/{si}/{ci}")
+                pool.setdefault((r.species, width), {}).setdefault(L, []).append(
+                    f"{r.id}/{si}/{ci}")
 
     recipes = {p["id"]: panel_recipe(project, p) for p in project["panels"]}
     codes: List[str] = []
@@ -1169,35 +1222,36 @@ def auto_panels(
             rec = recipes[panel["id"]]
             # Candidate body lengths: any length that could satisfy the whole main
             # list. Try longest first so bigger panels form first.
-            main_ids = [p.component_id for p in rec.main]
+            main_shapes = [(p.species, p.width) for p in rec.main]
             lengths = sorted(
-                {L for cid in set(main_ids) for L in pool.get(cid, {})},
+                {L for shape in set(main_shapes) for L in pool.get(shape, {})},
                 reverse=True,
             )
             for body_len in lengths:
                 # Enough main-list pieces at body_len?
                 from collections import Counter
-                need = Counter(main_ids)
-                if any(len(pool.get(cid, {}).get(body_len, [])) < n for cid, n in need.items()):
+                need = Counter(main_shapes)
+                if any(len(pool.get(shape, {}).get(body_len, [])) < n for shape, n in need.items()):
                     continue
                 usable = body_len - snipe
                 # Assemble the full sequence in position order, consuming pieces.
                 # If any part can't be filled, roll back every pop and move on.
                 seq_parts = sorted(rec.main + rec.smaller, key=lambda p: p.position)
                 refs_in_order = []
-                popped = []  # (cid, length, ref) to restore on failure
+                popped = []  # (shape, length, ref) to restore on failure
                 good = True
                 for p in seq_parts:
+                    shape = (p.species, p.width)
                     if p.ratio >= 1.0:
-                        refs = pool.get(p.component_id, {}).get(body_len, [])
+                        refs = pool.get(shape, {}).get(body_len, [])
                         if not refs:
                             good = False
                             break
                         ref = refs.pop()
-                        popped.append((p.component_id, body_len, ref))
+                        popped.append((shape, body_len, ref))
                     else:
                         target = round(p.ratio * usable)
-                        lengths_map = pool.get(p.component_id, {})
+                        lengths_map = pool.get(shape, {})
                         cand = sorted(
                             (abs(L - target), L)
                             for L, rs in lengths_map.items()
@@ -1207,12 +1261,12 @@ def auto_panels(
                             good = False
                             break
                         L = cand[0][1]
-                        ref = pool[p.component_id][L].pop()
-                        popped.append((p.component_id, L, ref))
+                        ref = pool[shape][L].pop()
+                        popped.append((shape, L, ref))
                     refs_in_order.append(ref)
                 if not good:
-                    for cid, L, ref in popped:
-                        pool[cid][L].append(ref)
+                    for shape, L, ref in popped:
+                        pool[shape][L].append(ref)
                     continue
                 codes.append(f"{panel['id']}:" + ";".join(refs_in_order))
                 made_one = True

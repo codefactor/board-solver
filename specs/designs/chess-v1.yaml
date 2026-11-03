@@ -1,76 +1,105 @@
 name: Chess v1
-description: Two end-grain chess-pattern boards, walnut and brown maple 0.5 in cells,
-  cherry border 0.25 in all sides, built from thin strips only (no component wider
-  than 0.5 in).
-batch: 2
-finishedThickness: [1, 4]
+description: One end-grain chess-pattern board, walnut and brown maple 2.25 in cells,
+  cherry border 1.125 in all sides, finished 20.25 in square, 0.5 in thick.
+  Each row is built as two half-width panels split at the centre line
+  (left half mirrors right half), so no panel is wider than 10.125 in
+  and every panel fits the 12.5 in planer.
+batch: 1
+finishedThickness: [0, 8]
 sliceDepth: [1, 8]
 sliceGrid:
-- - sliceId: C
-- - sliceId: A
-- - sliceId: B
-- - sliceId: A
-- - sliceId: B
-- - sliceId: A
-- - sliceId: B
-- - sliceId: A
-- - sliceId: B
-- - sliceId: C
+- - sliceId: CL
+  - sliceId: CR
+- - sliceId: AL
+  - sliceId: AR
+- - sliceId: BL
+  - sliceId: BR
+- - sliceId: AL
+  - sliceId: AR
+- - sliceId: BL
+  - sliceId: BR
+- - sliceId: AL
+  - sliceId: AR
+- - sliceId: BL
+  - sliceId: BR
+- - sliceId: AL
+  - sliceId: AR
+- - sliceId: BL
+  - sliceId: BR
+- - sliceId: CL
+  - sliceId: CR
 components:
 - id: W
   species: Walnut
-  width: [0, 8]
-  thickness: [0, 8]
+  width: [2, 4]
+  thickness: [2, 4]
 - id: M
   species: Brown Maple
-  width: [0, 8]
-  thickness: [0, 8]
+  width: [2, 4]
+  thickness: [2, 4]
 - id: CB
   species: Cherry
-  width: [0, 4]
-  thickness: [0, 8]
+  width: [1, 2]
+  thickness: [2, 4]
 - id: CT
   species: Cherry
-  width: [0, 8]
-  thickness: [0, 4]
+  width: [2, 4]
+  thickness: [1, 2]
+- id: CTH
+  species: Cherry
+  width: [1, 2]
+  thickness: [1, 2]
 panels:
-- id: A
-  thickness: [0, 8]
-  slices: 9
+- id: AL
+  thickness: [2, 4]
+  slices: 5
   components:
   - type: CB
   - type: W
   - type: M
   - type: W
   - type: M
+- id: AR
+  thickness: [2, 4]
+  slices: 5
+  components:
   - type: W
   - type: M
   - type: W
   - type: M
   - type: CB
-- id: B
-  thickness: [0, 8]
-  slices: 9
+- id: BL
+  thickness: [2, 4]
+  slices: 5
   components:
   - type: CB
   - type: M
   - type: W
   - type: M
   - type: W
+- id: BR
+  thickness: [2, 4]
+  slices: 5
+  components:
   - type: M
   - type: W
   - type: M
   - type: W
   - type: CB
-- id: C
-  thickness: [0, 4]
-  slices: 9
+- id: CL
+  thickness: [1, 2]
+  slices: 5
   components:
   - type: CT
   - type: CT
   - type: CT
   - type: CT
-  - type: CT
+  - type: CTH
+- id: CR
+  thickness: [1, 2]
+  slices: 5
+  components:
+  - type: CTH
   - type: CT
   - type: CT
   - type: CT

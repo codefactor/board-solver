@@ -6,6 +6,7 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 
 | Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | ½″ ×4 | 2″ | ¾″ | 5¹¹⁄₁₆″ |
-| BC1A @ 7¼″ | BC1 | cherry | 48″ | ½″ ×5 · ¼″ ×2 | 3″ | 1⁵⁄₁₆″ | 2¹⁵⁄₁₆″ |
-| BW1A @ 6¼″ | BW1 | walnut | 48″ | ½″ ×4 | 2″ | ¾″ | 3½″ |
+| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | 2¼″ ×2 | 4½″ | ⅜″ | 3⁹⁄₁₆″ |
+| BC1A @ 7¼″ | BC1 | cherry | 48″ | 2¼″ ×2 · 1⅛″ ×1 | 5⅝″ | ⁹⁄₁₆″ | 1¹⁄₁₆″ |
+| BC2A @ 6¹⁵⁄₁₆″ | BC2 | cherry | 48″ | 1⅛″ ×1 | 1⅛″ | ³⁄₁₆″ | 5⅝″ |
+| BW1A @ 6¼″ | BW1 | walnut | 48″ | 2¼″ ×2 | 4½″ | ⅜″ | 1⅜″ |
