@@ -110,14 +110,16 @@ def test_markdown_has_sections_and_diagnostics(project, tool_limits, cut_spec):
         "## 2. Finished board pattern",
         "## 3. Slice Grid",
         "## 4. Panels overview",
-        "## 5. Panel Faces",
-        "## 6. Crosscut Blanks",
-        "## 7. Initial board rips",
-        "## 8. Components",
-        "## 9. Panels",
-        "## 10. Plane, slice, and flatten",
+        "## 5. Crosscut Blanks",
+        "## 6. Initial board rips",
+        "## 7. Components",
+        "## 8. Panels",
+        "## 9. Plane, slice, and flatten",
     ]:
         assert heading in md
+    # Panel diagrams are sub-sections of Panels overview, not top-level sections.
+    assert "### Panel End Grain Diagram" in md
+    assert "### Panel Face Diagram" in md
     assert "must be bought" in md and "GHC" in md
     assert "66½″" in md  # panel length rendered as unicode fraction
 

@@ -31,21 +31,25 @@ The same grid keyed by slice id: each slice is framed in its legend color so you
 
 ## 4. Panels overview
 
-![Panel cross-sections](images/panels-b9a40d7c0fb8.png)
-
 | Panel | Length | Slices | Height | Ripped | Sequence (outer → in) |
 | --- | --- | --- | --- | --- | --- |
 | S | 66½″ | 40 (L:20 + R:20) | ¾″ | — | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
 | M | 66½″ | 40 (L:20 + R:20) | ¾″ | — | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
 | H | 27½″ | 16 (L:8 + R:8) | ¼″ | 2× (¼″) | Me · W1 · Md · W1 · Md |
 
-## 5. Panel Faces
+### Panel End Grain Diagram
+
+Each panel's end-grain cross-section (the glue-up of component stripes).
+
+![Panel end-grain cross-sections](images/panels-b9a40d7c0fb8.png)
+
+### Panel Face Diagram
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
 ![Panel faces to scale](images/panel-faces-4bee84a516b7.png)
 
-## 6. Crosscut Blanks
+## 5. Crosscut Blanks
 
 The first operation: crosscut each raw inventory board along its length into the labeled board blanks that get ripped later (the Initial board rips section). Boards that start from another board's leftover margin are not raw-stock crosscuts — they appear as the labeled offcuts in the Board Rip Diagram.
 
@@ -64,7 +68,7 @@ Each bar is one raw board drawn to scale by length; segments are the blanks (lab
 
 ![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-512943d28810.png)
 
-## 7. Initial board rips (the cut list)
+## 6. Initial board rips (the cut list)
 
 Each row is one physical board at the saw: rip the strips down its width, then crosscut each strip to the piece lengths. The **Board** column shows `id @ width` — the board's width when ripping begins. **Used** is the summed strip width, **Loss** is rip kerf + planer cleanup per strip, **Margin** is the leftover width (negative = the strips do not fit; large = the board is oversized for what it yields).
 
@@ -86,7 +90,7 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 ![Board Rip Diagram — how the cut list lands on each board](images/strip-map-0bdef5eca8ff.png)
 
-## 8. Components
+## 7. Components
 
 **Demand** is what the finished pattern needs (counted from the slice grid; length is the panel the component belongs to). **Fulfilled** is how many the cut list supplies, matched longest-demand-first using exact-length pieces first, then longer pieces cut down (a piece shorter than the demand cannot be used). **Shortfall** is the unmet count.
 
@@ -111,7 +115,7 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 | W2 | walnut | ¾″ | 34″ | 12 |
 | M1 | maple | 1½″ | 34″ | 4 |
 
-## 9. Panels (profiles and sequence)
+## 8. Panels (profiles and sequence)
 
 | Panel | Length | Profiles (slices) | Component sequence |
 | --- | --- | --- | --- |
@@ -119,7 +123,7 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 | M | 66½″ | L: 20, R: 20 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
 | H | 27½″ | L: 8, R: 8 | Me · W1 · Md · W1 · Md |
 
-## 10. Plane, slice, and flatten
+## 9. Plane, slice, and flatten
 
 Glue up each panel, plane to its thickness, then slice crosswise at the slice depth (1½″) with the miter kerf (⅛″) between slices.
 

@@ -113,10 +113,8 @@ def build_markdown(
     L.append(f"![Slice grid keyed by slice id]({images['slice_map']})")
     L.append("")
 
-    # --- Section 3: panels overview -------------------------------------- #
+    # --- Section: panels overview (table + two diagram sub-sections) ----- #
     L.append(sec("Panels overview"))
-    L.append("")
-    L.append(f"![Panel cross-sections]({images['panels']})")
     L.append("")
     L.append("| Panel | Length | Slices | Height | Ripped | Sequence (outer → in) |")
     L.append("| --- | --- | --- | --- | --- | --- |")
@@ -129,8 +127,14 @@ def build_markdown(
         )
     L.append("")
 
-    # --- Section: panel faces (to-scale) --------------------------------- #
-    L.append(sec("Panel Faces"))
+    L.append("### Panel End Grain Diagram")
+    L.append("")
+    L.append("Each panel's end-grain cross-section (the glue-up of component stripes).")
+    L.append("")
+    L.append(f"![Panel end-grain cross-sections]({images['panels']})")
+    L.append("")
+
+    L.append("### Panel Face Diagram")
     L.append("")
     L.append(
         "Each panel drawn to scale with its length running top-to-bottom. "
