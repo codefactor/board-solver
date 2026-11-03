@@ -117,7 +117,7 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 ## 7. Components
 
-**Demand** is what the finished pattern needs (counted from the slice grid; length is the panel the component belongs to). **Fulfilled** is how many the cut list supplies, matched longest-demand-first using exact-length pieces first, then longer pieces cut down (a piece shorter than the demand cannot be used). **Shortfall** is the unmet count.
+**Demand** is what the finished pattern needs (counted from the slice grid; length is the panel the component belongs to). **Fulfilled** is how many the cut list supplies, matched longest-demand-first using exact-length pieces first, then longer pieces cut down (a piece shorter than the demand cannot be used). **Shortfall** is the unmet count. **Total Overcut** is the wasted length trimmed off — the sum of (piece length − demand length) across every longer piece that had to be cut down to fill this row (0 when exact-length pieces covered it).
 
 | Component | Species | Width | Length | Demand | Fulfilled | Shortfall | Total Overcut |
 | --- | --- | --- | --- | --- | --- | --- | --- |

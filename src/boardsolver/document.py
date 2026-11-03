@@ -280,7 +280,10 @@ def build_markdown(
         "grid; length is the panel the component belongs to). **Fulfilled** is how "
         "many the cut list supplies, matched longest-demand-first using exact-length "
         "pieces first, then longer pieces cut down (a piece shorter than the demand "
-        "cannot be used). **Shortfall** is the unmet count."
+        "cannot be used). **Shortfall** is the unmet count. **Total Overcut** is the "
+        "wasted length trimmed off — the sum of (piece length − demand length) across "
+        "every longer piece that had to be cut down to fill this row (0 when exact-"
+        "length pieces covered it)."
     )
     L.append("")
     rows, unused, wasted = match_supply_to_demand(project, cut_spec, tool_limits)
