@@ -154,9 +154,9 @@ panels:
       width: [0, 4]
     profiles:
       - id: L
-        slices: 5
+        slices: 4
       - id: R
-        slices: 5
+        slices: 4
     components:
       - type: Me
       - type: W1

@@ -57,7 +57,7 @@ Each bar is one raw board drawn to scale by length; segments are the blanks (lab
 
 Each panel's end-grain cross-section (the glue-up of component stripes).
 
-![Panel end-grain cross-sections](images/panels-94d637788828.png)
+![Panel end-grain cross-sections](images/panels-109a0558aeaa.png)
 
 ### Panel Face Diagram
 
