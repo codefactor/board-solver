@@ -121,9 +121,9 @@ def test_markdown_has_sections(project, tool_limits, cut_spec):
         "## 6. Initial board rips",
         "## 7. Components",
         "## 8. Panels",
-        "## 9. Plane, slice, and flatten",
     ]:
         assert heading in md
+    assert "Plane, slice, and flatten" not in md
     assert "### Panel End Grain Diagram" in md
     assert "### Panel Face Diagram" in md
     # The synthetic cut-spec has a buy board (GHX) -> a ghost-boards warning.

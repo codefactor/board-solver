@@ -339,34 +339,6 @@ def build_markdown(
         L.append(f"| {s.id} | {frac_inches(s.length)} | {profs} | {s.sequence} |")
     L.append("")
 
-    # --- Section 8: plane, slice, flatten -------------------------------- #
-    L.append(sec("Plane, slice, and flatten"))
-    L.append("")
-    sd = measure_to_sixteenths(project["sliceDepth"])
-    ftn = measure_to_sixteenths(ft) if ft else None
-    L.append(
-        f"Glue up each panel, plane to its thickness, then slice crosswise at the "
-        f"slice depth ({frac_inches(sd)}) with the miter kerf "
-        f"({frac_inches(measure_to_sixteenths(lim['miterKerf']))}) between slices."
-    )
-    ripped_panels = [s for s in summaries if s.ripped]
-    for s in ripped_panels:
-        L.append("")
-        L.append(
-            f"**Panel {s.id} is ripped, not planed thin:** each sliced piece is ripped "
-            f"into {s.ripped} strips of {frac_inches(s.height)} (the installed row "
-            f"height), so {s.total_slices} sliced pieces yield "
-            f"{s.total_slices * s.ripped} installed slices — saving the costlier wood "
-            f"from being planed to dust."
-        )
-    if ftn:
-        L.append("")
-        L.append(
-            f"Finally flatten the end-grain faces to the finished thickness "
-            f"({frac_inches(ftn)}); the difference from the slice depth is the whole "
-            f"budget for flattening and misalignment."
-        )
-    L.append("")
     return "\n".join(L)
 
 

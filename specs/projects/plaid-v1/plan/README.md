@@ -147,11 +147,3 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 | S | 66½″ | L: 20, R: 20 | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
 | M | 66½″ | L: 20, R: 20 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
 | H | 27½″ | L: 8, R: 8 | Me · W1 · Md · W1 · Md |
-
-## 9. Plane, slice, and flatten
-
-Glue up each panel, plane to its thickness, then slice crosswise at the slice depth (1½″) with the miter kerf (⅛″) between slices.
-
-**Panel H is ripped, not planed thin:** each sliced piece is ripped into 2 strips of ¼″ (the installed row height), so 16 sliced pieces yield 32 installed slices — saving the costlier wood from being planed to dust.
-
-Finally flatten the end-grain faces to the finished thickness (1¼″); the difference from the slice depth is the whole budget for flattening and misalignment.
