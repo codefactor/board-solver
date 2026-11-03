@@ -134,9 +134,10 @@ def build_markdown(
         L.append(f"| {r.slice_id} | {dem} | {r.supplied} | {off} |")
     L.append("")
     L.append(
-        "_Supplied is based on the panels built in the Panels overview section "
-        "(see its Qty column). A panel type may have more than one instance; the "
-        "ideal panels are always quantity 1._"
+        "_The slice counts supplied are calculated assuming the panels and their "
+        "quantities are delivered perfectly according to the specs in the Panels "
+        "overview section. A panel type may have more than one instance; the ideal "
+        "panels are always quantity 1._"
     )
     L.append("")
 

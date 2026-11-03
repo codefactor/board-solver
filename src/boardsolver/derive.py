@@ -1117,29 +1117,48 @@ class PanelSpec:
 def _actual_profile_slices(project, panel, ap, snipe, pitch, rip_mult):
     """Derive [(profile_id, slice_count)] for an actual panel from its pieces.
 
-    An actual panel realizes exactly the profile whose component sequence its
-    pieces match. All its slices belong to that profile: count = usable length /
-    pitch, times rip_mult for a sliceStrips panel. (A single physical panel is one
-    profile; profile variety across the design comes from building different
-    actual panels, not from one panel spanning multiple profiles.)
+    A single physical panel produces slices of MULTIPLE profiles: components are
+    glued aligned on the squared edge, and a component that is shorter ends its
+    region early. The slices cut from the length where a trailing component is
+    still present belong to the fuller profile; past its end, the next profile.
+
+    Per profile index j (0 = fullest): the region reaches as far as the SHORTEST
+    piece whose component is present in profile j. Slices in region j = that
+    usable extent / pitch, minus the slices already attributed to fuller regions.
+    sliceStrips multiplies each region's slice count by rip_mult.
     """
-    usable = ap.length - snipe
-    n = max(usable // pitch, 0) * rip_mult
     if "profiles" not in panel:
-        return [(None, n)]
-    # Which profile did this panel's sequence match?
-    got = [p.component_id for p in ap.pieces]
-    matched = None
-    for prof in panel["profiles"]:
-        seq = [c.id for c in resolve_slice(project, f"{panel['id']}-{prof['id']}").components]
-        if seq == got:
-            matched = prof["id"]
-            break
-    if matched is None:
-        # Sequence doesn't match any profile (invalid panel); attribute to the
-        # fullest profile so the slices still surface somewhere.
-        matched = panel["profiles"][0]["id"]
-    return [(matched, n)]
+        usable = ap.length - snipe
+        return [(None, max(usable // pitch, 0) * rip_mult)]
+
+    profs = panel["profiles"]
+    nprof = len(profs)
+    # Pair each actual piece with its panel-component entry (same order) to know
+    # each component's maxProfile (how many leading profiles it appears in).
+    pcs = panel["components"]
+    # ap.pieces are in sequence order matching the matched profile's components,
+    # which may be shorter than the full component list (dropped trailing ones).
+    # Align from the left; a piece at position i corresponds to panel component i.
+    out = []
+    prev_slices = 0
+    for j, prof in enumerate(profs):
+        # Components present in profile j: maxProfile is None or > j.
+        present_idx = [
+            i for i, pc in enumerate(pcs)
+            if pc.get("maxProfile") is None or pc.get("maxProfile") > j
+        ]
+        # The panel can only make profile j if it HAS a piece for every component
+        # present in j. A panel built as a shorter profile lacks the trailing
+        # pieces, so it cannot produce the fuller profiles at all.
+        if any(i >= len(ap.pieces) for i in present_idx):
+            out.append((prof["id"], 0))
+            continue
+        extent = min(ap.pieces[i].length for i in present_idx) - snipe
+        slices_to_here = max(extent // pitch, 0)
+        n = max(slices_to_here - prev_slices, 0)
+        out.append((prof["id"], n * rip_mult))
+        prev_slices = slices_to_here
+    return out
 
 
 def panel_specs(
