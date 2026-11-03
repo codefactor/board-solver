@@ -14,6 +14,7 @@ from .derive import (
     crosscut_blanks,
     match_supply_to_demand,
     panel_summaries,
+    slice_fulfillment,
     validate_components_unique,
     warnings,
 )
@@ -111,6 +112,25 @@ def build_markdown(
     )
     L.append("")
     L.append(f"![Slice grid keyed by slice id]({images['slice_map']})")
+    L.append("")
+
+    L.append("### Slice Fulfillment")
+    L.append("")
+    L.append(
+        f"**Demand** is every slice the grid places across all {batch} finished "
+        f"board(s). **Supplied** is the slices the panels (Panels overview) produce "
+        f"— snipe lost, ripped panels multiplied by their strip count. **Supply "
+        f"Offset** = supplied − demand: negative is a shortfall, positive is extra "
+        f"(ideally non-negative everywhere)."
+    )
+    L.append("")
+    L.append("| Slice | Demand | Supplied | Supply Offset |")
+    L.append("| --- | --- | --- | --- |")
+    for r in slice_fulfillment(project, cut_spec, tool_limits):
+        offset = r.supplied - r.demand
+        off = f"+{offset}" if offset > 0 else str(offset)
+        dem = f"{r.per_board} × {r.batch} = {r.demand}"
+        L.append(f"| {r.slice_id} | {dem} | {r.supplied} | {off} |")
     L.append("")
 
     # --- Section: panels overview (table + two diagram sub-sections) ----- #

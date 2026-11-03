@@ -31,6 +31,19 @@ The same grid keyed by slice id: each slice is framed in its legend color so you
 
 ![Slice grid keyed by slice id](images/slice-map-b513ce4c791c.png)
 
+### Slice Fulfillment
+
+**Demand** is every slice the grid places across all 2 finished board(s). **Supplied** is the slices the panels (Panels overview) produce — snipe lost, ripped panels multiplied by their strip count. **Supply Offset** = supplied − demand: negative is a shortfall, positive is extra (ideally non-negative everywhere).
+
+| Slice | Demand | Supplied | Supply Offset |
+| --- | --- | --- | --- |
+| S-L | 10 × 2 = 20 | 40 | +20 |
+| S-R | 10 × 2 = 20 | 0 | -20 |
+| M-L | 10 × 2 = 20 | 20 | 0 |
+| M-R | 10 × 2 = 20 | 20 | 0 |
+| H-L | 4 × 2 = 8 | 0 | -8 |
+| H-R | 4 × 2 = 8 | 40 | +32 |
+
 ## 4. Panels overview
 
 | Panel | Length | Slices | Height | Ripped | Sequence (outer → in) |

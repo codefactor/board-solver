@@ -1120,7 +1120,9 @@ def panel_specs(
 @dataclass(frozen=True)
 class SliceDemandRow:
     slice_id: str       # "S-L", "H-R", ...
-    demand: int         # grid placements x batch
+    per_board: int      # grid placements in one finished board
+    batch: int          # number of finished boards
+    demand: int         # per_board * batch
     supplied: int       # slices produced by panel specs
     shortfall: int
 
@@ -1135,12 +1137,12 @@ def slice_fulfillment(
     Whether the panels were fully built from the cut list is IGNORED here.
     """
     batch = project.get("batch", 1)
-    # Demand: count slice placements in the grid.
-    demand: "OrderedDict[str, int]" = OrderedDict()
+    # Demand: count slice placements in one board's grid (per-board).
+    per_board: "OrderedDict[str, int]" = OrderedDict()
     for row in project.get("sliceGrid", []):
         for cell in row:
             sid = cell["sliceId"]
-            demand[sid] = demand.get(sid, 0) + batch
+            per_board[sid] = per_board.get(sid, 0) + 1
 
     # Supply: slices produced by panel specs, keyed as panel-profile.
     supply: Dict[str, int] = {}
@@ -1150,8 +1152,9 @@ def slice_fulfillment(
             supply[sid] = supply.get(sid, 0) + n
 
     rows = []
-    for sid, d in demand.items():
+    for sid, pb in per_board.items():
+        d = pb * batch
         s = supply.get(sid, 0)
-        rows.append(SliceDemandRow(slice_id=sid, demand=d, supplied=s,
-                                   shortfall=max(d - s, 0)))
+        rows.append(SliceDemandRow(slice_id=sid, per_board=pb, batch=batch,
+                                   demand=d, supplied=s, shortfall=max(d - s, 0)))
     return rows
