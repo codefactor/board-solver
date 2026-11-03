@@ -17,7 +17,6 @@ This is a generated plan: the finished design and the cut list that realizes it 
 | 7 | 🟡 | small_margin | Board BC2A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 8 | 🟡 | small_margin | Board GHC leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 9 | 🟡 | panel_components_short | The cut list cannot supply all components the speced panels need: Me (short 5), C2 (short 8), M1 (short 4), Md (short 10), W2 (short 8), C1 (short 4), W1 (short 2). |
-| 10 | ⚪ | no_spare_slices | No spare slices for: H-L, H-R (supply exactly meets demand). Consider slightly larger/more panels so a bad slice does not cause a shortfall. |
 
 ## 2. Finished board pattern
 
@@ -52,19 +51,19 @@ Each bar is one raw board drawn to scale by length; segments are the blanks (lab
 | --- | --- | --- | --- | --- | --- | --- |
 | S | 2 | 37¼″ | 22 (L:11 + R:11) | ¾″ | — | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
 | M | 2 | 37¼″ | 22 (L:11 + R:11) | ¾″ | — | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
-| H | 1 | 14½″ | 8 (L:4 + R:4) | ¼″ | 2× (¼″) | Me · W1 · Md · W1 · Md |
+| H | 1 | 17¾″ | 10 (L:5 + R:5) | ¼″ | 2× (¼″) | Me · W1 · Md · W1 · Md |
 
 ### Panel End Grain Diagram
 
 Each panel's end-grain cross-section (the glue-up of component stripes).
 
-![Panel end-grain cross-sections](images/panels-109a0558aeaa.png)
+![Panel end-grain cross-sections](images/panels-94d637788828.png)
 
 ### Panel Face Diagram
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-a1ff713cd134.png)
+![Panel faces to scale](images/panel-faces-baefbc3996c1.png)
 
 ### Slice Fulfillment
 
@@ -76,8 +75,8 @@ Each panel drawn to scale with its length running top-to-bottom. Components are 
 | S-R | 10 × 2 = 20 | 22 | +2 |
 | M-L | 10 × 2 = 20 | 22 | +2 |
 | M-R | 10 × 2 = 20 | 22 | +2 |
-| H-L | 4 × 2 = 8 | 4 × 2 = 8 | 0 |
-| H-R | 4 × 2 = 8 | 4 × 2 = 8 | 0 |
+| H-L | 4 × 2 = 8 | 5 × 2 = 10 | +2 |
+| H-R | 4 × 2 = 8 | 5 × 2 = 10 | +2 |
 
 _The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in this section. A panel type may have more than one instance; the ideal panels are always quantity 1._
 
@@ -85,7 +84,7 @@ _The slice counts supplied are calculated assuming the panels and their quantiti
 
 Slices from panels that are ripped (sliceStrips). Identical slices across panels are merged into one diagram, labeled with how many to cut. The horizontal axis is the slice length (end-grain face); dashed lines are the rip cuts; the red band is rip kerf + planing / margin loss.
 
-![Ripped slice diagrams](images/ripped-slices-421c6aec158c.png)
+![Ripped slice diagrams](images/ripped-slices-b6e00be46ac1.png)
 
 ## 5. Initial board rips (the cut list)
 
@@ -119,10 +118,10 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 | C2 | cherry | ¾″ | 37¼″ | 160 | 0 | 160 | 0 |
 | M1 | maple | 1½″ | 37¼″ | 80 | 0 | 80 | 0 |
 | Md | maple | ¼″ | 37¼″ | 120 | 0 | 120 | 0 |
-| Md | maple | ¼″ | 14½″ | 24 | 5 | 19 | 91″ |
+| Md | maple | ¼″ | 17¾″ | 24 | 5 | 19 | 74¾″ |
 | Me | maple | ¾″ | 37¼″ | 80 | 0 | 80 | 0 |
-| Me | maple | ¾″ | 14½″ | 16 | 4 | 12 | 71½″ |
-| W1 | walnut | 3″ | 14½″ | 32 | 2 | 30 | 26″ |
+| Me | maple | ¾″ | 17¾″ | 16 | 4 | 12 | 58½″ |
+| W1 | walnut | 3″ | 17¾″ | 32 | 2 | 30 | 19½″ |
 | W2 | walnut | ¾″ | 37¼″ | 160 | 0 | 160 | 0 |
 
 **Unused pieces** — produced by the cut list but not attributable to any demand (wrong length for every demand row that needed this component):
@@ -142,7 +141,7 @@ The physical panels this plan builds (from the project's panel specs), grouped b
 | --- | --- | --- | --- | --- |
 | S | 2 | 37¼″ | L: 11, R: 11 | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
 | M | 2 | 37¼″ | L: 11, R: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
-| H | 1 | 14½″ | L: 4, R: 4 | Me · W1 · Md · W1 · Md |
+| H | 1 | 17¾″ | L: 5, R: 5 | Me · W1 · Md · W1 · Md |
 
 ## 8. Slice Grid
 

@@ -154,9 +154,9 @@ panels:
       width: [0, 4]
     profiles:
       - id: L
-        slices: 4
+        slices: 5
       - id: R
-        slices: 4
+        slices: 5
     components:
       - type: Me
       - type: W1
@@ -170,8 +170,8 @@ panels:
 # [1 1/2"] + miterKerf[1/8"] = 1 10/16".
 #   S,M: two panels x (11 L + 11 R) -> 22/22 supplied vs 20/20 demand = 1 spare
 #        slice per panel per profile; 11 x 26/16 = 17 14/16" per region.
-#   H:   one panel x (4 L + 4 R) crosscut slices, ripped x2 = 8/8 installed =
-#        the 8/8 demand; 4 x 26/16 = 6 1/2" per region.
+#   H:   one panel x (5 L + 5 R) crosscut slices, ripped x2 = 10/10 installed vs
+#        8/8 demand = 1 spare slice per profile; 5 x 26/16 = 8 2/16" per region.
 panelSpecs:
   - panel: S
     profileLengths: [[17, 14], [17, 14]]
@@ -180,7 +180,7 @@ panelSpecs:
     profileLengths: [[17, 14], [17, 14]]
     count: 2
   - panel: H
-    profileLengths: [[6, 8], [6, 8]]
+    profileLengths: [[8, 2], [8, 2]]
     count: 1
 
 boards:
