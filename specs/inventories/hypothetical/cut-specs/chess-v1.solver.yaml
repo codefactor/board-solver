@@ -11,22 +11,12 @@ boards:
   strips:
   - width: [2, 4]
     cuts:
-    - [12, 14]
-    - [12, 14]
-    - [12, 14]
+    - [16, 2]
+    - [16, 2]
   - width: [2, 4]
     cuts:
-    - [12, 14]
-    - [12, 14]
-    - [12, 14]
-- id: BM2A
-  source: BM2
-  length: [48, 0]
-  strips:
-  - width: [2, 4]
-    cuts:
-    - [12, 14]
-    - [12, 14]
+    - [16, 2]
+    - [16, 2]
 - id: BC1A
   source: BC1
   length: [40, 0]
@@ -39,29 +29,14 @@ boards:
   - width: [2, 4]
     cuts:
     - [12, 14]
-    - [12, 14]
-    - [12, 14]
 - id: BC2A
   source: BC2
   length: [40, 0]
   strips:
-  - width: [2, 4]
-    cuts:
-    - [12, 14]
-    - [12, 14]
   - width: [1, 2]
     cuts:
-    - [12, 14]
-    - [12, 14]
-    - [12, 14]
-  - width: [1, 2]
-    cuts:
-    - [12, 14]
-    - [12, 14]
-- id: GH-C
-  buySpecies: Cherry
-  length: [48, 0]
-  strips:
+    - [16, 2]
+    - [16, 2]
   - width: [1, 2]
     cuts:
     - [12, 14]
@@ -71,19 +46,9 @@ boards:
   strips:
   - width: [2, 4]
     cuts:
-    - [12, 14]
-    - [12, 14]
-    - [12, 14]
+    - [16, 2]
+    - [16, 2]
   - width: [2, 4]
     cuts:
-    - [12, 14]
-    - [12, 14]
-    - [12, 14]
-- id: BW2A
-  source: BW2
-  length: [48, 0]
-  strips:
-  - width: [2, 4]
-    cuts:
-    - [12, 14]
-    - [12, 14]
+    - [16, 2]
+    - [16, 2]
