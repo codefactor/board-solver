@@ -4,41 +4,43 @@ description: One end-grain chess-pattern board, walnut and brown maple 2.25 in c
   Each row is built as two half-width panels split at the centre line
   (left half mirrors right half), so no panel is wider than 10.125 in
   and every panel fits the 12.5 in planer. Only three panel patterns are
-  built, AL, AR and CL. Their mirrors are the same slices placed flipped
-  (flip H), AL flipped is BR, AR flipped is BL, CL flipped is CR.
+  built, A, B and C, and both A and B start with a cherry component.
+  Their mirrors are the same slices placed flipped (flip H), A flipped
+  covers the old BR half, B flipped covers the old AR half, C flipped
+  covers the old CR half.
 batch: 1
 finishedThickness: [0, 8]
 sliceDepth: [1, 8]
 sliceGrid:
-- - sliceId: CL
-  - sliceId: CL
+- - sliceId: C
+  - sliceId: C
     flip: H
-- - sliceId: AL
-  - sliceId: AR
-- - sliceId: AR
+- - sliceId: A
+  - sliceId: B
     flip: H
-  - sliceId: AL
+- - sliceId: B
+  - sliceId: A
     flip: H
-- - sliceId: AL
-  - sliceId: AR
-- - sliceId: AR
+- - sliceId: A
+  - sliceId: B
     flip: H
-  - sliceId: AL
+- - sliceId: B
+  - sliceId: A
     flip: H
-- - sliceId: AL
-  - sliceId: AR
-- - sliceId: AR
+- - sliceId: A
+  - sliceId: B
     flip: H
-  - sliceId: AL
+- - sliceId: B
+  - sliceId: A
     flip: H
-- - sliceId: AL
-  - sliceId: AR
-- - sliceId: AR
+- - sliceId: A
+  - sliceId: B
     flip: H
-  - sliceId: AL
+- - sliceId: B
+  - sliceId: A
     flip: H
-- - sliceId: CL
-  - sliceId: CL
+- - sliceId: C
+  - sliceId: C
     flip: H
 components:
 - id: W
@@ -62,7 +64,7 @@ components:
   width: [1, 2]
   thickness: [1, 2]
 panels:
-- id: AL
+- id: A
   thickness: [2, 4]
   slices: 7
   components:
@@ -71,16 +73,16 @@ panels:
   - type: M
   - type: W
   - type: M
-- id: AR
+- id: B
   thickness: [2, 4]
   slices: 7
   components:
-  - type: W
-  - type: M
-  - type: W
-  - type: M
   - type: CB
-- id: CL
+  - type: M
+  - type: W
+  - type: M
+  - type: W
+- id: C
   thickness: [1, 2]
   slices: 7
   components:

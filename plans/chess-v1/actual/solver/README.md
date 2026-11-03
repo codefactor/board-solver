@@ -1,6 +1,6 @@
 # Chess v1 — Cut Plan
 
-*One end-grain chess-pattern board, walnut and brown maple 2.25 in cells, cherry border 1.125 in all sides, finished 20.25 in square, 0.5 in thick. Each row is built as two half-width panels split at the centre line (left half mirrors right half), so no panel is wider than 10.125 in and every panel fits the 12.5 in planer. Only three panel patterns are built, AL, AR and CL. Their mirrors are the same slices placed flipped (flip H), AL flipped is BR, AR flipped is BL, CL flipped is CR.*
+*One end-grain chess-pattern board, walnut and brown maple 2.25 in cells, cherry border 1.125 in all sides, finished 20.25 in square, 0.5 in thick. Each row is built as two half-width panels split at the centre line (left half mirrors right half), so no panel is wider than 10.125 in and every panel fits the 12.5 in planer. Only three panel patterns are built, A, B and C, and both A and B start with a cherry component. Their mirrors are the same slices placed flipped (flip H), A flipped covers the old BR half, B flipped covers the old AR half, C flipped covers the old CR half.*
 
 This is a generated plan: the finished design and the cut list that realizes it on the boards in hand. Where the cut list cannot be met from inventory it calls for **bought boards** — buy those and re-run before cutting. The sections follow the build order, from the first crosscut to the final slice-grid assembly.
 
@@ -41,21 +41,21 @@ Each bar is one raw board drawn to scale by length; segments are the blanks (lab
 
 | Panel | Qty | Length | Slices | Height | Ripped | Sequence (outer → in) |
 | --- | --- | --- | --- | --- | --- | --- |
-| AL | 1 | 16⅛″ | 9 | 2¼″ | — | CB · W · M · W · M |
-| AR | 1 | 16⅛″ | 9 | 2¼″ | — | W · M · W · M · CB |
-| CL | 1 | 12⅞″ | 7 | 1⅛″ | — | CT · CT · CT · CT · CTH |
+| A | 1 | 16⅛″ | 9 | 2¼″ | — | CB · W · M · W · M |
+| B | 1 | 16⅛″ | 9 | 2¼″ | — | CB · M · W · M · W |
+| C | 1 | 12⅞″ | 7 | 1⅛″ | — | CT · CT · CT · CT · CTH |
 
 ### Panel End Grain Diagram
 
 Each panel's end-grain cross-section (the glue-up of component stripes).
 
-![Panel end-grain cross-sections](images/panels-1e849ae3b84d.png)
+![Panel end-grain cross-sections](images/panels-47ee05df9784.png)
 
 ### Panel Face Diagram
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-956758f58e60.png)
+![Panel faces to scale](images/panel-faces-3510cda6dd43.png)
 
 ### Slice Fulfillment
 
@@ -63,9 +63,9 @@ Each panel drawn to scale with its length running top-to-bottom. Components are 
 
 | Slice | Demand | Supplied | Supply Offset |
 | --- | --- | --- | --- |
-| CL | 4 × 1 = 4 | 7 | +3 |
-| AL | 8 × 1 = 8 | 9 | +1 |
-| AR | 8 × 1 = 8 | 9 | +1 |
+| C | 4 × 1 = 4 | 7 | +3 |
+| A | 8 × 1 = 8 | 9 | +1 |
+| B | 8 × 1 = 8 | 9 | +1 |
 
 _The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in this section. A panel type may have more than one instance; the ideal panels are always quantity 1._
 
@@ -104,12 +104,12 @@ The physical panels this plan builds (from the project's panel specs), grouped b
 
 | Panel | Qty | Length | Profiles (slices) | Component sequence |
 | --- | --- | --- | --- | --- |
-| AL | 1 | 16⅛″ | single: 9 | CB · W · M · W · M |
-| AR | 1 | 16⅛″ | single: 9 | W · M · W · M · CB |
-| CL | 1 | 12⅞″ | single: 7 | CT · CT · CT · CT · CTH |
+| A | 1 | 16⅛″ | single: 9 | CB · W · M · W · M |
+| B | 1 | 16⅛″ | single: 9 | CB · M · W · M · W |
+| C | 1 | 12⅞″ | single: 7 | CT · CT · CT · CT · CTH |
 
 ## 8. Slice Grid
 
 The final step: arrange the slices into the finished face. The same grid keyed by slice id — each slice is framed in its legend color so you can see how to arrange the grid cell by cell. A corner triangle marks a slice placed horizontally flipped.
 
-![Slice grid keyed by slice id](images/slice-map-166dbb7fb7d3.png)
+![Slice grid keyed by slice id](images/slice-map-0fc533d8de8f.png)
