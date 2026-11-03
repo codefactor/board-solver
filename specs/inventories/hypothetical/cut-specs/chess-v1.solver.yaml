@@ -1,0 +1,78 @@
+# Cut-spec for design chess-v1, inventory hypothetical.
+# Kind: solver, date: 2026-11-03.
+design: chess-v1
+inventory: hypothetical
+kind: solver
+date: '2026-11-03'
+boards:
+- id: BM1A
+  source: BM1
+  length: [48, 0]
+  strips:
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+- id: BC1A
+  source: BC1
+  length: [40, 0]
+  strips:
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+  - width: [0, 4]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 4]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+- id: BW1A
+  source: BW1
+  length: [48, 0]
+  strips:
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
