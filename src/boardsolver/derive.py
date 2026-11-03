@@ -1042,6 +1042,51 @@ class PanelSpec:
     code: Optional[str]         # the actual panel code, if source == "actual"
 
 
+def _actual_profile_slices(panel, ap, snipe, pitch, rip_mult):
+    """Derive [(profile_id, slice_count)] for an actual panel from its real pieces.
+
+    The fullest-profile body length is the longest piece. Each profile region's
+    extent is set by how far its components reach: a trailing (smaller) component
+    that is shorter ends the fuller profile early. Slice counts come from each
+    region's usable length / pitch; sliceStrips multiplies by rip_mult.
+    """
+    if "profiles" not in panel:
+        usable = ap.length - snipe
+        return [(None, max(usable // pitch, 0) * rip_mult)]
+
+    profs = panel["profiles"]
+    # Map each profile id to the set of component positions present in it.
+    # Profile index k includes a component iff maxProfile is None or > k.
+    # The region for profile k spans from the (k-1) boundary to where profile k's
+    # LAST distinct component ends. We approximate region extents from the actual
+    # piece lengths: the shortest piece present defines the innermost boundary.
+    # For the common single-drop case (one smaller component) this is exact.
+    full = ap.length                      # longest piece
+    # Lengths of the "smaller" (drop-out) pieces, shortest first.
+    # A piece shorter than full ends a profile region.
+    piece_lens = sorted(p.length for p in ap.pieces)
+    usable_full = full - snipe
+    total_slices = max(usable_full // pitch, 0)
+
+    # Fraction of the panel each profile spans, from the actual shortest drop piece.
+    # profile 0 (fullest) spans up to the shortest piece; the remainder is the
+    # next profile. Generalize: boundaries at each distinct shorter length.
+    distinct_short = sorted({L for L in piece_lens if L < full})
+    boundaries = [L - snipe for L in distinct_short]  # usable extents
+    # Build cumulative region slice counts.
+    out = []
+    prev = 0
+    # profile 0 region = up to first boundary (or full if none)
+    region_tops = boundaries + [usable_full]
+    for i, pr in enumerate(profs):
+        top = region_tops[i] if i < len(region_tops) else usable_full
+        slices_to_top = max(top // pitch, 0)
+        n = max(slices_to_top - prev, 0)
+        out.append((pr["id"], n * rip_mult))
+        prev = slices_to_top
+    return out
+
+
 def panel_specs(
     project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any]
 ) -> List[PanelSpec]:
@@ -1066,41 +1111,19 @@ def panel_specs(
     specs: List[PanelSpec] = []
     for panel in project["panels"]:
         pid = panel["id"]
+        ss = panel.get("sliceStrips")
+        rip_mult = ss["count"] if ss else 1
         if pid in by_type:
-            rec = panel_recipe(project, panel)
             for ap in by_type[pid]:
-                usable = ap.length - snipe
-                total = max(usable // pitch, 0)
-                # Profile slice split: each profile region's share by ratio.
-                if "profiles" in panel:
-                    prof_slices = []
-                    assigned = 0
-                    profs = panel["profiles"]
-                    for i, pr in enumerate(profs):
-                        # ratio for this profile = fraction of panel its region spans.
-                        # Region i spans from previous boundary to this profile's end.
-                        # Use the cumulative ratio of components present only through
-                        # profile i: approximate by (profiles up to i)/total profiles
-                        # weighted by ideal slice share.
-                        ideal_total = sum(p["slices"] for p in profs)
-                        share = pr["slices"] / ideal_total
-                        n = round(total * share)
-                        prof_slices.append((pr["id"], n))
-                        assigned += n
-                    # Fix rounding drift onto the first profile.
-                    if prof_slices:
-                        pid0, n0 = prof_slices[0]
-                        prof_slices[0] = (pid0, n0 + (total - assigned))
-                else:
-                    prof_slices = [(None, total)]
+                prof_slices = _actual_profile_slices(panel, ap, snipe, pitch, rip_mult)
                 specs.append(PanelSpec(
-                    panel_id=pid, source="actual", length=ap.length, usable=usable,
-                    profile_slices=prof_slices, code=ap.code,
+                    panel_id=pid, source="actual", length=ap.length,
+                    usable=ap.length - snipe, profile_slices=prof_slices, code=ap.code,
                 ))
         else:
             # Ideal default: ideal profile slice counts, length derived.
             if "profiles" in panel:
-                prof_slices = [(p["id"], p["slices"]) for p in panel["profiles"]]
+                prof_slices = [(p["id"], p["slices"] * rip_mult) for p in panel["profiles"]]
             else:
                 prof_slices = [(None, panel["slices"])]
             length = panel_length(panel, project, tool_limits)

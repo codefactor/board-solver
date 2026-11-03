@@ -29,20 +29,21 @@ SCALE = 40.0
 
 def test_draw_slice_bbox_matches_slice_length_and_height(project):
     rc = RecordingCanvas()
-    r = resolve_slice(project, "H-R")
-    bb = draw_slice(rc, project, "H-R", "H", (0, 0), SCALE, DEFAULT_COLORS)
-    # H-R reversed = [Me, W1, Md, W1]; length 7"; height = sliceStrips width 1/4"
+    r = resolve_slice(project, "R-R")
+    bb = draw_slice(rc, project, "R-R", "H", (0, 0), SCALE, DEFAULT_COLORS)
+    # R-R = [M, W] reversed; height = sliceStrips width 1/4"
     assert bb.w == px(slice_length(r), SCALE)
     assert bb.h == px(r.height, SCALE)
-    assert bb.h == px(measure_to_sixteenths([0, 4]), SCALE)  # 0.25*40 = 10
-    assert bb.w == px(measure_to_sixteenths([7, 0]), SCALE)  # 7*40 = 280
+    assert bb.h == px(measure_to_sixteenths([0, 4]), SCALE)
+    # R-R drops trailing D: M(3/4) + W(3) = 3 3/4"
+    assert bb.w == px(measure_to_sixteenths([3, 12]), SCALE)
 
 
 def test_draw_slice_flip_reverses_component_order(project):
     base = RecordingCanvas()
     flip = RecordingCanvas()
-    draw_slice(base, project, "H-R", None, (0, 0), SCALE)
-    draw_slice(flip, project, "H-R", "H", (0, 0), SCALE)
+    draw_slice(base, project, "R-R", None, (0, 0), SCALE)
+    draw_slice(flip, project, "R-R", "H", (0, 0), SCALE)
     base_fills = [r.fill for r in base.rects]
     flip_fills = [r.fill for r in flip.rects]
     assert flip_fills == list(reversed(base_fills))
@@ -52,23 +53,21 @@ def test_draw_slice_flip_reverses_component_order(project):
 # draw_panel
 # --------------------------------------------------------------------------- #
 
-def test_draw_panel_S_bbox(project):
+def test_draw_panel_P_bbox(project):
     rc = RecordingCanvas()
-    bb = draw_panel(rc, project, "S", (0, 0), SCALE)
-    # fullest profile S-L: 9 cells, length 7 1/4"; cell height = panel thickness 3/4"
-    assert bb.w == px(measure_to_sixteenths([7, 4]), SCALE)  # 290
-    assert len(rc.rects) == 9
-    cell_h = px(measure_to_sixteenths([0, 12]), SCALE)  # 30
+    bb = draw_panel(rc, project, "P", (0, 0), SCALE)
+    # fullest profile P-L: 5 cells, length 4"; cell height = panel thickness 3/4"
+    assert bb.w == px(measure_to_sixteenths([4, 0]), SCALE)
+    assert len(rc.rects) == 5
+    cell_h = px(measure_to_sixteenths([0, 12]), SCALE)
     assert all(r.h == cell_h for r in rc.rects)
-    # bbox height includes the slice-count annotation line beneath the cells.
-    assert bb.h > cell_h
-    # annotation reports total slice count + region breakdown.
-    assert rc.texts and rc.texts[0].s == "Slice Count: 40 - Regions [L=20, R=20]"
+    assert bb.h > cell_h  # annotation line adds height
+    assert rc.texts and rc.texts[0].s == "Slice Count: 20 - Regions [L=10, R=10]"
 
 
 def test_draw_panel_no_annotation_bbox_is_cell_height(project):
     rc = RecordingCanvas()
-    bb = draw_panel(rc, project, "S", (0, 0), SCALE, annotate=False)
+    bb = draw_panel(rc, project, "P", (0, 0), SCALE, annotate=False)
     assert bb.h == px(measure_to_sixteenths([0, 12]), SCALE)
     assert rc.texts == []
 
@@ -112,8 +111,8 @@ def test_draw_cut_strip_two_cuts_last_reaches_end_has_one_kerf():
 
 
 def test_draw_cut_strip_full_length_cut_has_no_kerf():
-    # BW1A case: a single cut equal to the full board length is the whole strip,
-    # not a crosscut => no kerf stripe, no offcut, just one cell.
+    # A single cut equal to the full board length is the whole strip, not a
+    # crosscut => no kerf stripe, no offcut, just one cell.
     rc = RecordingCanvas()
     strip = {"width": [3, 0], "cuts": [[27, 8]]}
     board_len = measure_to_sixteenths([27, 8])
@@ -142,22 +141,20 @@ def test_draw_cut_strip_no_cuts_is_single_cell():
 
 def test_draw_cut_board_traces_source_species(project, tool_limits, cut_spec):
     rc = RecordingCanvas()
-    bw1a = next(b for b in cut_spec["boards"] if b["id"] == "BW1A")
-    draw_cut_board(rc, bw1a, project, tool_limits, (0, 0), SCALE, DEFAULT_COLORS, cut_spec)
-    # BW1A sources BW1 (Walnut) => strip cells use the walnut color.
+    iw1a = next(b for b in cut_spec["boards"] if b["id"] == "IW1A")
+    draw_cut_board(rc, iw1a, project, tool_limits, (0, 0), SCALE, DEFAULT_COLORS, cut_spec)
+    # IW1A sources IW1 (Walnut) => strip cells use the walnut color.
     walnut = DEFAULT_COLORS["Walnut"]
     assert any(r.fill == walnut for r in rc.rects)
-    # title present
-    assert rc.texts and rc.texts[0].s.startswith("BW1A")
-    # title carries starting dimensions in parentheses
+    assert rc.texts and rc.texts[0].s.startswith("IW1A")
     assert "(" in rc.texts[0].s and ")" in rc.texts[0].s
 
 
 def test_draw_cut_board_buy_board_has_gray_title(project, tool_limits, cut_spec):
     rc = RecordingCanvas()
-    ghc = next(b for b in cut_spec["boards"] if b["id"] == "GHC")
-    draw_cut_board(rc, ghc, project, tool_limits, (0, 0), SCALE, DEFAULT_COLORS, cut_spec)
-    assert rc.texts[0].s.startswith("GHC")
+    ghx = next(b for b in cut_spec["boards"] if b["id"] == "GHX")
+    draw_cut_board(rc, ghx, project, tool_limits, (0, 0), SCALE, DEFAULT_COLORS, cut_spec)
+    assert rc.texts[0].s.startswith("GHX")
     assert "(Not Available)" in rc.texts[0].s  # ghost board has no stock
     assert rc.texts[0].color == "#888888"  # buy-required gray title
 
@@ -166,8 +163,8 @@ def test_draw_cut_board_buy_board_no_false_alert(project, tool_limits, cut_spec)
     # A bought board is sized to strips + its own loss => margin is exactly 0,
     # so there must be no alert band.
     rc = RecordingCanvas()
-    ghc = next(b for b in cut_spec["boards"] if b["id"] == "GHC")
-    draw_cut_board(rc, ghc, project, tool_limits, (0, 0), SCALE, DEFAULT_COLORS, cut_spec)
+    ghx = next(b for b in cut_spec["boards"] if b["id"] == "GHX")
+    draw_cut_board(rc, ghx, project, tool_limits, (0, 0), SCALE, DEFAULT_COLORS, cut_spec)
     from boardsolver.draw import _ALERT_COLOR
     assert not any(r.fill == _ALERT_COLOR for r in rc.rects)
 
@@ -285,11 +282,12 @@ def test_render_finished_board_grid_png(project, out_dir):
     """Render the full sliceGrid as a plaid board image for visual review."""
     grid = project["sliceGrid"]
     scale = 26.0
-    # Compute cell sizes from the first row to size the canvas.
     pad = 20
-    # width = sum of two slice widths in a row; use S-L + S-R (7 1/4 + 7).
-    row_w = px(measure_to_sixteenths([14, 4]), scale)
-    # measure total height by summing each row's height.
+    # row width = sum of the first row's slice lengths (true grid: all rows equal)
+    row_w = sum(
+        px(slice_length(resolve_slice(project, cell["sliceId"])), scale)
+        for cell in grid[0]
+    )
     def row_h(row):
         r0 = resolve_slice(project, row[0]["sliceId"])
         return px(r0.height, scale)

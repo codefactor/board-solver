@@ -13,11 +13,13 @@ This is a generated plan: the finished design (sections 1, 2, 4, 5) and the cut 
 | 3 | 🔴 | over_rip | Cut list for board BC1A over-rips by ¹⁄₁₆″: the strips are wider than the board. |
 | 4 | 🔴 | over_rip | Cut list for board BW1A over-rips by ⅛″: the strips are wider than the board. |
 | 5 | 🟡 | ghost_boards | 1 board(s) must be bought (not in inventory): GHC. |
-| 6 | 🟡 | shortfall | The cut list under-supplies 365 component piece(s) across 9 demand row(s) — see the Components section. |
+| 6 | 🟡 | shortfall | The cut list under-supplies 741 component piece(s) across 9 demand row(s) — see the Components section. |
 | 7 | 🟡 | small_margin | Board BC2A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 8 | 🟡 | small_margin | Board GHC leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 
 ## 2. Finished board pattern
+
+2 finished boards. Final thickness 1¼″.
 
 The finished plaid face.
 
@@ -102,15 +104,15 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 | Component | Species | Width | Length | Demand | Fulfilled | Shortfall | Total Overcut |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Me | maple | ¾″ | 66½″ | 40 | 0 | 40 | 0 |
-| C2 | cherry | ¾″ | 66½″ | 80 | 0 | 80 | 0 |
-| M1 | maple | 1½″ | 66½″ | 40 | 0 | 40 | 0 |
-| Md | maple | ¼″ | 66½″ | 60 | 0 | 60 | 0 |
-| W2 | walnut | ¾″ | 66½″ | 80 | 0 | 80 | 0 |
-| C1 | cherry | 1½″ | 66½″ | 40 | 0 | 40 | 0 |
-| Me | maple | ¾″ | 27½″ | 8 | 4 | 4 | 19½″ |
-| W1 | walnut | 3″ | 27½″ | 16 | 2 | 14 | 0 |
-| Md | maple | ¼″ | 27½″ | 12 | 5 | 7 | 26″ |
+| Me | maple | ¾″ | 66½″ | 80 | 0 | 80 | 0 |
+| C2 | cherry | ¾″ | 66½″ | 160 | 0 | 160 | 0 |
+| M1 | maple | 1½″ | 66½″ | 80 | 0 | 80 | 0 |
+| Md | maple | ¼″ | 66½″ | 120 | 0 | 120 | 0 |
+| W2 | walnut | ¾″ | 66½″ | 160 | 0 | 160 | 0 |
+| C1 | cherry | 1½″ | 66½″ | 80 | 0 | 80 | 0 |
+| Me | maple | ¾″ | 27½″ | 16 | 4 | 12 | 19½″ |
+| W1 | walnut | 3″ | 27½″ | 32 | 2 | 30 | 0 |
+| Md | maple | ¼″ | 27½″ | 24 | 5 | 19 | 26″ |
 
 **Unused pieces** — produced by the cut list but not attributable to any demand (wrong length for every demand row that needed this component):
 

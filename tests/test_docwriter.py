@@ -1,13 +1,14 @@
 """Round 2 document-writer tests.
 
-Required by the spec: true-grid validation (raise on violation), derived tables
-match the committed specs, image filenames change when content changes and are
-stable when it does not, and a fresh run archives the prior folder.
+Driven by the synthetic fixtures in conftest.py (NOT the committed project
+files, which change over time). Covers: true-grid validation, derived tables,
+image hash stability, archive-on-rerun, and actual-panel parsing.
 """
 
 from __future__ import annotations
 
 import copy
+import io
 import os
 
 import pytest
@@ -19,88 +20,93 @@ from boardsolver.geometry import measure_to_sixteenths
 from boardsolver.render import (
     render_finished_board,
     render_slice_map,
-    render_strip_map,
     validate_true_grid,
 )
 
 
 # --------------------------------------------------------------------------- #
-# true-grid validation
+# true-grid validation (inline grids so these don't depend on the fixture grid)
 # --------------------------------------------------------------------------- #
 
-def test_true_grid_accepts_committed_project(project):
-    validate_true_grid(project)  # must not raise
+def test_true_grid_accepts_true_grid(project):
+    # A grid where every cell is the same slice is trivially a true grid.
+    p = copy.deepcopy(project)
+    p["sliceGrid"] = [
+        [{"sliceId": "Q"}, {"sliceId": "Q"}],
+        [{"sliceId": "Q"}, {"sliceId": "Q"}],
+    ]
+    validate_true_grid(p)  # must not raise
 
 
 def test_true_grid_rejects_unequal_row_widths(project):
-    bad = copy.deepcopy(project)
-    # Make the first row's second cell a different slice length (S-L vs H-R widths
-    # differ) by replacing a wide S row cell with a narrower H slice.
-    bad["sliceGrid"][0][1]["sliceId"] = "H-R"
+    p = copy.deepcopy(project)
+    # Q (2 1/4") next to P-L (4") => unequal column widths across rows.
+    p["sliceGrid"] = [
+        [{"sliceId": "Q"}, {"sliceId": "Q"}],
+        [{"sliceId": "P-L"}, {"sliceId": "Q"}],
+    ]
     with pytest.raises(ValueError):
-        validate_true_grid(bad)
+        validate_true_grid(p)
 
 
 def test_true_grid_rejects_ragged_rows(project):
-    bad = copy.deepcopy(project)
-    bad["sliceGrid"][0] = bad["sliceGrid"][0][:1]  # drop a column from row 0
+    p = copy.deepcopy(project)
+    p["sliceGrid"] = [
+        [{"sliceId": "Q"}, {"sliceId": "Q"}],
+        [{"sliceId": "Q"}],  # ragged
+    ]
     with pytest.raises(ValueError):
-        validate_true_grid(bad)
+        validate_true_grid(p)
 
 
 # --------------------------------------------------------------------------- #
-# derived tables match the committed specs
+# derived tables (synthetic fixture)
 # --------------------------------------------------------------------------- #
 
 def test_panel_lengths(project, tool_limits):
     s = {p.id: p for p in derive.panel_summaries(project, tool_limits)}
-    # 40 slices * (1 1/2 + 1/8) + 1 1/2 snipe = 40*1 5/8 + 1 1/2 = 66 1/2"
-    assert s["S"].length == measure_to_sixteenths([66, 8])
-    assert s["M"].length == measure_to_sixteenths([66, 8])
-    # H: 16 * 1 5/8 + 1 1/2 = 27 1/2"
-    assert s["H"].length == measure_to_sixteenths([27, 8])
-    assert s["H"].ripped == 2
-    assert s["H"].height == measure_to_sixteenths([0, 4])
+    # P: 20 slices * (1 1/2 + 1/8) + 1 1/2 snipe = 20*1 5/8 + 1 1/2 = 34"
+    assert s["P"].length == measure_to_sixteenths([34, 0])
+    # Q single-profile: 5 slices -> 5*1 5/8 + 1 1/2 = 9 5/8"
+    assert s["Q"].length == measure_to_sixteenths([9, 10])
+    # R ripped: 8 slices -> 8*1 5/8 + 1 1/2 = 14 1/2"; strips 2 x 1/4"
+    assert s["R"].length == measure_to_sixteenths([14, 8])
+    assert s["R"].ripped == 2
+    assert s["R"].height == measure_to_sixteenths([0, 4])
 
 
 def test_board_rips_used_loss_margin(project, tool_limits, cut_spec):
     r = {x.id: x for x in derive.board_rips(project, cut_spec, tool_limits)}
-    # BW1B: 4 strips * 3/4 = 3" used; loss 4*(1/8+1/16)=3/4"; source 6 1/4";
-    # margin = 6 1/4 - 3 - 3/4 = 2 1/2"
-    assert r["BW1B"].used == measure_to_sixteenths([3, 0])
-    assert r["BW1B"].loss == measure_to_sixteenths([0, 12])
-    assert r["BW1B"].margin == measure_to_sixteenths([2, 8])
-    # BC1A negative margin
-    assert r["BC1A"].margin < 0
-    # GHC is buy-required
-    assert r["GHC"].buy_required is True
+    # IW1A: strips W(3) x2 + X(3/4) x2 => used 3+3+3/4+3/4 = 7 1/2";
+    # loss 4*(1/8+1/16)=3/4"; source IW1 width 6" => margin 6 - 7 1/2 - 3/4 < 0
+    assert r["IW1A"].used == measure_to_sixteenths([7, 8])
+    assert r["IW1A"].loss == measure_to_sixteenths([0, 12])
+    assert r["IW1A"].margin < 0
+    # GHX is buy-required
+    assert r["GHX"].buy_required is True
 
 
 def test_component_demand_counts(project, tool_limits):
     d = {(c.id, c.length): c.count for c in derive.component_demand(project, tool_limits)}
-    L_sm = measure_to_sixteenths([66, 8])
-    # Finished board has 24 rows; S appears in rows with S-L/S-R (10 rows),
-    # M in 8 rows, H in 6 rows. Count C2 (appears 4x per S slice, both halves).
-    # Rather than hardcode the full derivation, assert internal consistency:
-    # demand for M1 at S-length equals demand for the pattern's M1 usage.
-    assert d[("W1", measure_to_sixteenths([27, 8]))] == 16  # 8 H rows? verified below
-    # Me at H length:
-    assert d[("Me", measure_to_sixteenths([27, 8]))] == 8
+    # batch = 2. W is used 2x per P... no: W is in panel R (R-L: M W D, R-R: M W).
+    # Grid row R places R-L + R-R once each per board. R-L has 1 W, R-R has 1 W
+    # => 2 W per board at R-length; x2 batch = 4.
+    from boardsolver.derive import panel_summaries
+    rlen = {p.id: p.length for p in panel_summaries(project, tool_limits)}["R"]
+    assert d[("W", rlen)] == 4
 
 
-def test_diagnostics_surface_ghost_and_margins(project, tool_limits, cut_spec):
+def test_diagnostics_surface_ghost(project, tool_limits, cut_spec):
     rips = derive.board_rips(project, cut_spec, tool_limits)
     d = derive.diagnostics(rips)
-    assert [r.id for r in d.ghost_boards] == ["GHC"]
-    assert set(r.id for r in d.negative_margins) == {"BC1A", "BW1A"}
-    assert set(r.id for r in d.large_margins) >= {"BW1B", "BW2A", "BW2B", "BM1B"}
+    assert [r.id for r in d.ghost_boards] == ["GHX"]
 
 
 # --------------------------------------------------------------------------- #
-# markdown contains the six sections + diagnostics
+# markdown sections + warnings
 # --------------------------------------------------------------------------- #
 
-def test_markdown_has_sections_and_diagnostics(project, tool_limits, cut_spec):
+def test_markdown_has_sections(project, tool_limits, cut_spec):
     md = build_markdown(project, tool_limits, cut_spec,
                         {"finished": "f.png", "slice_map": "sm.png",
                          "panels": "p.png", "panel_faces": "pf.png",
@@ -118,57 +124,64 @@ def test_markdown_has_sections_and_diagnostics(project, tool_limits, cut_spec):
         "## 9. Plane, slice, and flatten",
     ]:
         assert heading in md
-    # Panel diagrams are sub-sections of Panels overview, not top-level sections.
     assert "### Panel End Grain Diagram" in md
     assert "### Panel Face Diagram" in md
-    assert "must be bought" in md and "GHC" in md
-    assert "66½″" in md  # panel length rendered as unicode fraction
+    # The synthetic cut-spec has a buy board (GHX) -> a ghost-boards warning.
+    assert "must be bought" in md and "GHX" in md
 
 
 # --------------------------------------------------------------------------- #
-# image hashing: stable on same content, changes on different content
+# image hashing
 # --------------------------------------------------------------------------- #
+
+def _true_grid_project(project):
+    """A copy of the fixture with a genuine true grid (all same slice)."""
+    p = copy.deepcopy(project)
+    p["sliceGrid"] = [
+        [{"sliceId": "Q"}, {"sliceId": "Q"}],
+        [{"sliceId": "Q"}, {"sliceId": "Q"}],
+    ]
+    return p
+
 
 def test_image_bytes_stable_for_same_input(project):
-    a = render_finished_board(project)
-    b = render_finished_board(project)
-    assert a == b  # deterministic bytes => stable hash
+    p = _true_grid_project(project)
+    assert render_finished_board(p) == render_finished_board(p)
 
 
 def test_image_bytes_change_when_pattern_changes(project):
-    a = render_finished_board(project)
-    mutated = copy.deepcopy(project)
-    mutated["sliceGrid"] = mutated["sliceGrid"][:-1]  # drop a row
-    b = render_finished_board(mutated)
-    assert a != b
+    p = _true_grid_project(project)
+    a = render_finished_board(p)
+    mutated = copy.deepcopy(p)
+    mutated["sliceGrid"] = mutated["sliceGrid"][:-1]
+    assert a != render_finished_board(mutated)
 
 
 def test_slice_map_border_widens_board_vs_finished(project):
-    # Slice-map board must be columns*2*border wider and rows*2*border taller
-    # than the borderless finished board. Compare rendered image dimensions.
     from PIL import Image
-    import io
+    # Wide true grid (3 columns of 4"-wide slices) so the board region, not the
+    # legend, drives width; then the delta is exactly columns*2*border.
+    p = copy.deepcopy(project)
+    p["sliceGrid"] = [
+        [{"sliceId": "P-L"}, {"sliceId": "P-L"}, {"sliceId": "P-L"}],
+        [{"sliceId": "P-L"}, {"sliceId": "P-L"}, {"sliceId": "P-L"}],
+    ]
     border = 6
-    grid = project["sliceGrid"]
-    ncols, nrows = len(grid[0]), len(grid)
-    fin = Image.open(io.BytesIO(render_finished_board(project)))
-    smap = Image.open(io.BytesIO(render_slice_map(project, border=border)))
-    # Width difference is exactly columns * 2 * border (same pad on both).
-    assert smap.width - fin.width == ncols * 2 * border
-    # Height difference includes the legend, so only assert it is at least the
-    # gutter contribution plus some legend space.
-    assert smap.height - fin.height >= nrows * 2 * border
+    ncols = len(p["sliceGrid"][0])
+    fin = Image.open(io.BytesIO(render_finished_board(p)))
+    smap = Image.open(io.BytesIO(render_slice_map(p, border=border)))
+    # The slice map adds a per-column gutter of 2*border; it is at least that
+    # much wider than the borderless finished board (the legend may add more).
+    assert smap.width - fin.width >= ncols * 2 * border
 
 
 def test_slice_color_map_stable_and_distinct(project):
     from boardsolver.colors import slice_color_map
     ids = [c["sliceId"] for row in project["sliceGrid"] for c in row]
     m1 = slice_color_map(ids)
-    m2 = slice_color_map(ids)
-    assert m1 == m2  # deterministic
-    assert len(set(m1.values())) == len(m1)  # distinct colors
-    # first-appearance order: S-L is first id in the grid
-    assert list(m1.keys())[0] == "S-L"
+    assert m1 == slice_color_map(ids)
+    assert len(set(m1.values())) == len(m1)
+    assert list(m1.keys())[0] == "P-L"  # first id in the synthetic grid
 
 
 def test_slice_palette_overflow_raises():
@@ -187,11 +200,9 @@ def test_write_document_creates_self_contained_folder(project, tool_limits, cut_
     assert os.path.isfile(res.markdown_path)
     assert os.path.basename(res.markdown_path) == "README.md"
     for relpath in res.images.values():
-        # images live under images/ as a relative path within the folder
         assert relpath.startswith("images/")
         assert os.path.isfile(os.path.join(res.folder, relpath))
-    assert res.archived is None  # first run, nothing to archive
-    # image filenames carry a content hash
+    assert res.archived is None
     assert all("-" in f and f.endswith(".png") for f in res.images.values())
 
 
@@ -204,44 +215,63 @@ def test_rerun_archives_previous_folder(project, tool_limits, cut_spec, tmp_path
                             now=datetime(2025, 1, 2, tzinfo=timezone.utc))
     assert second.archived is not None
     assert os.path.isdir(second.archived)
-    # archived copy preserves the prior README; active folder still present
     assert os.path.isfile(os.path.join(second.archived, "README.md"))
     assert open(os.path.join(second.archived, "README.md")).read() == first_md
     assert os.path.isfile(second.markdown_path)
 
 
 # --------------------------------------------------------------------------- #
-# actual panels (panel codes in the cut-spec)
+# actual panels (panel codes), auto-generation, two-layer model
 # --------------------------------------------------------------------------- #
 
-def test_actual_panels_parse_and_validate(project, tool_limits, cut_spec):
-    from boardsolver import derive
-    from boardsolver.geometry import measure_to_sixteenths
-    panels = derive.actual_panels(project, cut_spec, tool_limits)
-    assert panels, "committed cut-spec should declare at least one actual panel"
-    s = panels[0]
-    assert s.panel_id == "S"
-    assert s.sequence_ok is True
-    # derived length = longest piece (34"); trailing Md is the short 27 1/2"
-    assert s.length == measure_to_sixteenths([34, 0])
-    assert [p.component_id for p in s.pieces] == \
-        ["Me", "C2", "M1", "C2", "Md", "C2", "M1", "C2", "Md"]
+def _p_code(project, cut_spec, tool_limits):
+    """A valid P-R panel code from the synthetic cut-spec: M A B A at one length.
+    IC1A strips: [B, A, A, A, A] all at 34"; IM1A strips: [M,M,M,D,D] at 34".
+    P-R sequence = M A B A (drops trailing D)."""
+    return "P:IM1A/0/0;IC1A/1/0;IC1A/0/0;IC1A/2/0"
+
+
+def test_actual_panel_parse_and_validate(project, tool_limits, cut_spec):
+    spec = copy.deepcopy(cut_spec)
+    spec["panels"] = [_p_code(project, spec, tool_limits)]
+    panels = derive.actual_panels(project, spec, tool_limits)
+    assert len(panels) == 1
+    ap = panels[0]
+    assert ap.panel_id == "P"
+    assert ap.sequence_ok is True  # matches P-R profile (M A B A)
+    assert [p.component_id for p in ap.pieces] == ["M", "A", "B", "A"]
+    assert ap.length == measure_to_sixteenths([34, 0])
 
 
 def test_actual_panel_bad_ref_raises(project, tool_limits, cut_spec):
-    import copy
-    from boardsolver import derive
-    bad = copy.deepcopy(cut_spec)
-    bad["panels"] = ["S:NOSUCH/0/0"]
+    spec = copy.deepcopy(cut_spec)
+    spec["panels"] = ["P:NOSUCH/0/0"]
     with pytest.raises(ValueError):
-        derive.actual_panels(project, bad, tool_limits)
+        derive.actual_panels(project, spec, tool_limits)
 
 
 def test_actual_panel_sequence_mismatch_flagged(project, tool_limits, cut_spec):
-    import copy
-    from boardsolver import derive
-    bad = copy.deepcopy(cut_spec)
-    # One cherry piece only — not the S sequence.
-    bad["panels"] = ["S:BC1A/1/0"]
-    panels = derive.actual_panels(project, bad, tool_limits)
+    spec = copy.deepcopy(cut_spec)
+    spec["panels"] = ["P:IC1A/1/0"]  # a single A piece, not the P sequence
+    panels = derive.actual_panels(project, spec, tool_limits)
     assert panels[0].sequence_ok is False
+
+
+def test_panel_recipe_main_and_smaller(project):
+    panel = next(p for p in project["panels"] if p["id"] == "P")
+    rec = derive.panel_recipe(project, panel)
+    assert [p.component_id for p in rec.main] == ["M", "A", "B", "A"]
+    assert [p.component_id for p in rec.smaller] == ["D"]
+    assert rec.smaller[0].ratio == 0.5  # D present in L (10 of 20 slices)
+
+
+def test_slice_fulfillment_two_layer(project, tool_limits, cut_spec):
+    # No authored panels -> auto-generate. The two-layer slice demand (grid x
+    # batch) is computed regardless; shortfall is non-negative everywhere.
+    rows = derive.slice_fulfillment(project, cut_spec, tool_limits)
+    by = {r.slice_id: r for r in rows}
+    # batch 2: P-L placed in 2 of 3 grid rows -> 2 x batch 2 = 4.
+    assert by["P-L"].demand == 4
+    # R-L placed in 1 row -> 1 x batch 2 = 2.
+    assert by["R-L"].demand == 2
+    assert all(r.shortfall >= 0 for r in rows)

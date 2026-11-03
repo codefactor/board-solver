@@ -177,15 +177,3 @@ boards:
   - width: [0, 12]
     cuts:
     - [34, 0]
-
-# Actual panels this plan builds, as panel codes:
-#   {panelId}:{boardId/strip/cut};...  (pieces glued in order, top-aligned)
-# Hand-arranged from the produced pieces. The supply's binding constraint is Me
-# (only 4) and Md (only 5), plus M1=4 and W1=2 — so the pieces complete 2 S panels
-# and 1 H panel (R profile) before trailing-Md runs out; the rest can't form a
-# full panel. S#1's trailing Md (BM1A/6/0 @27 1/2") is the short piece that
-# defines its L region.
-panels:
-  - "S:BM1A/2/0;BC1A/1/0;BM1A/0/0;BC1A/2/0;BM1A/4/0;BC1A/3/0;BM1A/1/0;BC1A/4/0;BM1A/6/0"
-  - "S:BM1A/3/0;BC1A/5/0;BM1B/0/0;BC1A/6/0;BM1B/4/0;BC2A/3/0;BM1B/1/0;BC2A/4/0;BM1B/5/0"
-  - "H:BM1B/3/0;BW1A/0/0;BM1A/5/0;BW1A/1/0"
