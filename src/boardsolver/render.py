@@ -291,9 +291,15 @@ def render_panel_faces(
         x = cell_x + overflow
         full_w_px = px(m["full_w"], scale)
         qty = (quantities or {}).get(panel["id"], 1)
+        per = m["n"]  # slices from one panel = sum of its profile slice counts
+        if qty > 1:
+            slice_txt = f"({per} x {qty} = {per * qty} slices)"
+        else:
+            slice_txt = f"({per} slices)"
         canvas.text(x, cell_y, f"Panel {panel['id']}  ×{qty}", title_px, "#222222")
         canvas.text(x, cell_y + title_px + 2,
-                    f"{frac_inches(m['total_len'], ascii=True)} long", title_px - 1, "#555555")
+                    f"{frac_inches(m['total_len'], ascii=True)} long  {slice_txt}",
+                    title_px - 1, "#555555")
         y0 = cell_y + label_h
         half_snipe = px(snipe / 2, scale)
         body_y = y0 + half_snipe

@@ -67,7 +67,7 @@ Each panel's end-grain cross-section (the glue-up of component stripes).
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-55083a9f88ba.png)
+![Panel faces to scale](images/panel-faces-beba3bc5b0d8.png)
 
 ### Ripped Slice Diagram
 
