@@ -49,7 +49,7 @@ The same grid keyed by slice id: each slice is framed in its legend color so you
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-d21173274c2e.png)
+![Panel faces to scale](images/panel-faces-02b5333557bd.png)
 
 ## 6. Crosscut Blanks
 

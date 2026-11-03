@@ -215,7 +215,7 @@ _SNIPE_HATCH = "#7a2d20"  # darker-red hatch over snipe
 
 def render_panel_faces(
     project: Dict[str, Any], tool_limits: Dict[str, Any],
-    scale: float = 7.0, colors: ColorMap = DEFAULT_COLORS,
+    scale: float = 16.0, colors: ColorMap = DEFAULT_COLORS,
 ) -> bytes:
     """Each panel drawn to-scale, length running top-to-bottom.
 
