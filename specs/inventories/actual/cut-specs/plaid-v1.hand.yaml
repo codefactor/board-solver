@@ -1,9 +1,7 @@
-# yaml-language-server: $schema=../../../schema.json
-# Packed cut-specs for Plaid v1, derived from project.yaml panelSpecs (stick model:
-# one full-length stick per component position per panel, glued then sliced).
-# Boards ripped full-length into component-width strips; each strip crosscut into
-# panel-length sticks. Per-strip width budget reserves saw kerf + planing loss.
-# Panel codes address sticks as boardId/strip/cut. One ghost board covers the spill.
+design: plaid-v1
+inventory: actual
+kind: hand
+date: '2026-11-03'
 boards:
 - id: BM1A
   source: BM1

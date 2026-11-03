@@ -163,19 +163,22 @@ The system is **two runnable processes** plus a shared library of primitives:
   depend on these.
 - **Document-writer process:** reads the YAML specs, renders sections into images, and
   writes a self-contained versioned document folder (Markdown + images).
-- **Solver process:** reads `project.yaml` (+ `tool-limits.yaml`) and writes a new
-  `cut-specs.yaml`, backing up the previous one.
+- **Solver process:** reads a design + inventory (+ `tool-limits.yaml`) and writes a new
+  cut-spec into that inventory's `cut-specs/` folder.
 
-### Shared artifact-versioning rules (both processes)
+### Shared artifact rules (both processes)
 
-No generated artifact is ever silently overwritten.
+A rerun overwrites the current output in place. The project lives in git, so an
+old plan is recovered by checking out an old commit, using the
+design + inventory + cut-spec tuple as its identity. No side copy is kept.
 
-- **Solver output (`cut-specs.yaml`):** before writing a new one, archive the existing file
-  (e.g. into an adjacent `archive/` with a timestamp or incrementing version), then write
-  the new file in place. Repeated solver runs never lose a prior plan.
-- **Document output:** each run writes a **self-contained versioned folder** containing the
-  `.md` and all its image files together. A new run archives the previous folder the same
-  way and writes a fresh one.
+- **Solver output (a cut-spec):** writing a new cut-spec overwrites the
+  file of the same name in that inventory's `cut-specs/` folder. A hand
+  cut-spec and a solver cut-spec are different files and never overwrite
+  each other.
+- **Document output:** each run writes a **self-contained folder** containing the
+  `.md` and all its image files together, under
+  `plans/<design>/<inventory>/<cut-spec>/`.
 - **Image filenames carry a content hash** (hash of the image bytes), so a filename changes
   whenever its content changes (cache-busting), and identical content can reuse a name. The
   Markdown references images by these hashed filenames (relative paths within the folder).
@@ -218,17 +221,16 @@ images using Round 1 primitives, and writes a self-contained versioned document 
   a content hash.
 - **Document assembly:** emit a Markdown document with the six known sections (see below),
   embedding the hashed image references and the derived tables, for a human to decorate.
-- **Versioning:** write into a new versioned folder; archive the previous one. Follow the
-  shared artifact-versioning rules above.
+  A rerun overwrites the plan folder in place, per the shared artifact rules above.
 - **Tests (required):** grid layout satisfies the true-grid assumption (equal row heights
   per row, equal column widths per column; raise on violation); derived tables match the
   committed specs; image filenames change when content changes and are stable when it does
-  not; a fresh run archives the prior folder rather than overwriting it.
+  not; a fresh run overwrites the plan folder in place.
 
 ### Round 3 (LATER, separate) — solver process
-A runnable process: `solve(project, tool_limits) -> cut_spec`, reading `project.yaml` (+
-`tool-limits.yaml`) and writing a new `cut-specs.yaml` while archiving the previous one per
-the shared versioning rules. Contract and hard constraints are specified in their own round.
+A runnable process: `solve(project, tool_limits) -> cut_spec`, reading a design +
+inventory (+ `tool-limits.yaml`) and writing a new cut-spec into that inventory's
+`cut-specs/` folder. Contract and hard constraints are specified in their own round.
 Out of scope until Rounds 1–2 are done.
 
 ## Starting Round 1

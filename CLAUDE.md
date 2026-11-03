@@ -11,7 +11,7 @@ Quick reminders (full rules in AGENTS.md):
 - Measurements are `[whole_inches, sixteenths]` integer tuples — never floats in YAML.
 - Atomic ids are strictly alphanumeric; references join them with hyphens (`S-L`).
 - Implement only the development round you were asked to (see docs/function-specs.md).
-- Generated artifacts are versioned/archived, never silently overwritten; images use
+- Generated plans are overwritten on rerun; git history is the recovery path. Images use
   content-hash filenames.
 - The axis/term vocabulary (length, width, thickness, height, sliceDepth, profile, slice,
   strip, component, panel, offcut, loss, margin) has fixed meanings — use them exactly.

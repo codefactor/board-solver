@@ -3,6 +3,8 @@
     "type": "object",
     "oneOf": [
         {"$ref": "#/definitions/project"},
+        {"$ref": "#/definitions/design"},
+        {"$ref": "#/definitions/inventory"},
         {"$ref": "#/definitions/tool-limits-doc"},
         {"$ref": "#/definitions/cut-spec"}
     ],
@@ -59,6 +61,73 @@
                 "boards": {
                     "type": "array",
                     "description": "The actual inventory boards in hand for this project.",
+                    "items": { "$ref": "#/definitions/board" }
+                }
+            }
+        },
+        "design": {
+            "type": "object",
+            "description": "A pattern only: the design of a board, with no inventory and no chosen panels. Panels are derived from the grid demand (see bundle.derive_panel_specs); boards come from an inventory.",
+            "required": ["name", "components", "panels"],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Short name of this design."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Longer human description of what this design builds."
+                },
+                "finishedThickness": {
+                    "description": "Final thickness of the finished board after flattening.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "sliceDepth": {
+                    "description": "How thick each slice is cut from a panel (the crosscut pitch along the panel's length).",
+                    "$ref": "#/definitions/measurement"
+                },
+                "sliceGrid": {
+                    "type": "array",
+                    "description": "Reconstructs one finished board's face from the slices produced by the panels.",
+                    "items": {
+                        "type": "array",
+                        "items": { "$ref": "#/definitions/slice-grid-item" }
+                    }
+                },
+                "batch": {
+                    "type": "integer",
+                    "description": "How many finished pieces this design produces."
+                },
+                "components": {
+                    "type": "array",
+                    "description": "The stripe vocabulary: every unique component this design's panels are built from.",
+                    "items": { "$ref": "#/definitions/component" }
+                },
+                "panels": {
+                    "type": "array",
+                    "description": "The glue-up panels, each an ordered list of components cut to length.",
+                    "items": { "$ref": "#/definitions/panel" }
+                }
+            }
+        },
+        "inventory": {
+            "type": "object",
+            "description": "A reusable pile of boards, referenced by name. The same inventory is usable by more than one design.",
+            "required": ["name", "boards"],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Inventory name, used to select it by name (e.g. actual)."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Where this pile came from."
+                },
+                "boards": {
+                    "type": "array",
+                    "description": "The boards in this pile.",
                     "items": { "$ref": "#/definitions/board" }
                 }
             }
@@ -227,6 +296,23 @@
                     "type": "array",
                     "description": "Every board that is produced and used. Each board has exactly one origin: ripped from a project board (source), the width-remainder of another cut-spec board (sourceRemainder), or a bought board (buySpecies).",
                     "items": { "$ref": "#/definitions/board-cut-spec" }
+                },
+                "design": {
+                    "type": "string",
+                    "description": "Design this cut-spec was made for (metadata; absent on legacy cut-specs)."
+                },
+                "inventory": {
+                    "type": "string",
+                    "description": "Inventory this cut-spec was made from (metadata; absent on legacy cut-specs)."
+                },
+                "kind": {
+                    "type": "string",
+                    "enum": ["hand", "solver"],
+                    "description": "How this cut-spec was made: hand-crafted, or solver-generated."
+                },
+                "date": {
+                    "type": "string",
+                    "description": "Date this cut-spec was written, YYYY-MM-DD."
                 },
                 "panels": {
                     "type": "array",

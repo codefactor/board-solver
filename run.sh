@@ -2,28 +2,21 @@
 # board-solver task runner. Single entrypoint for tests and plan generation.
 #
 # Usage:
-#   ./run.sh <action> [args...]
-#
-# Actions:
-#   plan <project> [--replace]   Generate the plan document for a project under
-#                                specs/projects/<project>/. Writes a versioned
-#                                plan/ folder (README.md + images/) and archives
-#                                the previous one. With --replace, overwrite the
-#                                active plan/ in place WITHOUT archiving.
-#   solve <project> [--out=PATH] Run the greedy solver (Round 3): writes
-#                                cut-specs.yaml (default: the project's own,
-#                                or --out=PATH for a test copy).
-#   pdf <project> [--out=PATH]   Render the project's plan/ README.md plus
-#                                diagrams to PDF (default: plan/<project>-
-#                                cut-plan.pdf, or --out=PATH).
-#   test [pytest args...]        Run the test suite.
-#   help | --help | -h           Show this help.
+#   ./run.sh deliver <design> --inventory <inv> [--cut-spec <variant>]
+#                                [--what cut-list|strip-map|finished|plan|pdf|all]
+#                                [--out=DIR] [--no-save-cut-spec]
+#                                Design + inventory + cut-spec -> exactly the
+#                                requested output, under
+#                                plans/<design>/<inventory>/<cut-spec>/
+#                                by default. --out is only an override for
+#                                a shelf copy outside the repo.
+#   ./run.sh test [pytest args...]        Run the test suite.
+#   ./run.sh help | --help | -h           Show this help.
 #
 # Examples:
-#   ./run.sh plan plaid-v1
-#   ./run.sh plan plaid-v1 --replace
-#   ./run.sh solve plaid-v1
-#   ./run.sh pdf plaid-v1
+#   ./run.sh deliver plaid-v1 --inventory actual --cut-spec hand --what all
+#   ./run.sh deliver chess-v1 --inventory hypothetical --what pdf
+#   ./run.sh deliver plaid-v1 --inventory actual --what all
 #   ./run.sh test
 #   ./run.sh test -k geometry
 
@@ -31,8 +24,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY="$ROOT/.venv/bin/python"
-SPECS="$ROOT/specs"
-TOOL_LIMITS="$SPECS/tool-limits.yaml"
 
 if [[ ! -x "$PY" ]]; then
   PY="$(command -v python3 || true)"
@@ -43,19 +34,7 @@ if [[ ! -x "$PY" ]]; then
 fi
 
 usage() {
-  sed -n '2,27p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
-}
-
-project_dir() {
-  local proj="$1"
-  local dir="$SPECS/projects/$proj"
-  if [[ ! -d "$dir" ]]; then
-    echo "error: no project '$proj' at $dir" >&2
-    echo "available projects:" >&2
-    ls -1 "$SPECS/projects" 2>/dev/null | sed 's/^/  /' >&2
-    exit 1
-  fi
-  echo "$dir"
+  sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 action="${1:-help}"
@@ -71,76 +50,15 @@ case "$action" in
     exec "$PY" -m pytest "$@"
     ;;
 
-  plan)
-    proj="${1:-}"
-    if [[ -z "$proj" ]]; then
-      echo "error: 'plan' needs a project, e.g. ./run.sh plan plaid-v1" >&2
+  deliver)
+    design="${1:-}"
+    if [[ -z "$design" ]]; then
+      echo "error: 'deliver' needs a design, e.g. ./run.sh deliver plaid-v1 --inventory actual" >&2
       exit 1
     fi
     shift
-    replace=""
-    for arg in "$@"; do
-      case "$arg" in
-        --replace) replace="--replace" ;;
-        *) echo "error: unknown option for plan: $arg" >&2; exit 1 ;;
-      esac
-    done
-    dir="$(project_dir "$proj")"
     cd "$ROOT"
-    exec "$PY" -m boardsolver.docwriter \
-      --project "$dir/project.yaml" \
-      --tool-limits "$TOOL_LIMITS" \
-      --cut-spec "$dir/cut-specs.yaml" \
-      $replace
-    ;;
-
-  pdf)
-    proj="${1:-}"
-    if [[ -z "$proj" ]]; then
-      echo "error: 'pdf' needs a project, e.g. ./run.sh pdf plaid-v1" >&2
-      exit 1
-    fi
-    shift
-    out=""
-    for arg in "$@"; do
-      case "$arg" in
-        --out=*) out="${arg#--out=}" ;;
-        *) echo "error: unknown option for pdf: $arg" >&2; exit 1 ;;
-      esac
-    done
-    dir="$(project_dir "$proj")"
-    if [[ -z "$out" ]]; then
-      out="$dir/plan/$proj-cut-plan.pdf"
-    fi
-    cd "$ROOT"
-    exec "$PY" -m boardsolver.pdf \
-      --project "$dir" \
-      --out "$out"
-    ;;
-
-  solve)
-    proj="${1:-}"
-    if [[ -z "$proj" ]]; then
-      echo "error: 'solve' needs a project, e.g. ./run.sh solve plaid-v1" >&2
-      exit 1
-    fi
-    shift
-    out=""
-    for arg in "$@"; do
-      case "$arg" in
-        --out=*) out="${arg#--out=}" ;;
-        *) echo "error: unknown option for solve: $arg" >&2; exit 1 ;;
-      esac
-    done
-    dir="$(project_dir "$proj")"
-    if [[ -z "$out" ]]; then
-      out="$dir/cut-specs.yaml"
-    fi
-    cd "$ROOT"
-    exec "$PY" -m boardsolver.solver \
-      --project "$dir/project.yaml" \
-      --tool-limits "$TOOL_LIMITS" \
-      --out "$out"
+    exec "$PY" -m boardsolver.deliver "$design" --root "$ROOT" "$@"
     ;;
 
   *)

@@ -1,0 +1,77 @@
+name: Chess v1
+description: Two end-grain chess-pattern boards, walnut and brown maple 0.5 in cells,
+  cherry border 0.25 in all sides, built from thin strips only (no component wider
+  than 0.5 in).
+batch: 2
+finishedThickness: [1, 4]
+sliceDepth: [1, 8]
+sliceGrid:
+- - sliceId: C
+- - sliceId: A
+- - sliceId: B
+- - sliceId: A
+- - sliceId: B
+- - sliceId: A
+- - sliceId: B
+- - sliceId: A
+- - sliceId: B
+- - sliceId: C
+components:
+- id: W
+  species: Walnut
+  width: [0, 8]
+  thickness: [0, 8]
+- id: M
+  species: Brown Maple
+  width: [0, 8]
+  thickness: [0, 8]
+- id: CB
+  species: Cherry
+  width: [0, 4]
+  thickness: [0, 8]
+- id: CT
+  species: Cherry
+  width: [0, 8]
+  thickness: [0, 4]
+panels:
+- id: A
+  thickness: [0, 8]
+  slices: 9
+  components:
+  - type: CB
+  - type: W
+  - type: M
+  - type: W
+  - type: M
+  - type: W
+  - type: M
+  - type: W
+  - type: M
+  - type: CB
+- id: B
+  thickness: [0, 8]
+  slices: 9
+  components:
+  - type: CB
+  - type: M
+  - type: W
+  - type: M
+  - type: W
+  - type: M
+  - type: W
+  - type: M
+  - type: W
+  - type: CB
+- id: C
+  thickness: [0, 4]
+  slices: 9
+  components:
+  - type: CT
+  - type: CT
+  - type: CT
+  - type: CT
+  - type: CT
+  - type: CT
+  - type: CT
+  - type: CT
+  - type: CT

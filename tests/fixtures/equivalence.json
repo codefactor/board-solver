@@ -1,0 +1,1283 @@
+{
+ "plaid-v1": {
+  "board_rips": [
+   {
+    "id": "BM1A",
+    "origin": "source:BM1",
+    "species": "Brown Maple",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 135,
+    "used": 112,
+    "loss": 18,
+    "margin": 5,
+    "strips": [
+     {
+      "width": [
+       1,
+       8
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       1,
+       8
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       1,
+       8
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       1,
+       8
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     }
+    ]
+   },
+   {
+    "id": "BM1B",
+    "origin": "source:BM1",
+    "species": "Brown Maple",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 135,
+    "used": 72,
+    "loss": 30,
+    "margin": 33,
+    "strips": [
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        17,
+        12
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        17,
+        12
+       ],
+       [
+        17,
+        12
+       ]
+      ]
+     }
+    ]
+   },
+   {
+    "id": "BC1A",
+    "origin": "source:BC1",
+    "species": "Cherry",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 116,
+    "used": 96,
+    "loss": 21,
+    "margin": -1,
+    "strips": [
+     {
+      "width": [
+       1,
+       8
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     }
+    ]
+   },
+   {
+    "id": "BC2A",
+    "origin": "source:BC2",
+    "species": "Cherry",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 111,
+    "used": 96,
+    "loss": 15,
+    "margin": 0,
+    "strips": [
+     {
+      "width": [
+       1,
+       8
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       1,
+       8
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       1,
+       8
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     }
+    ]
+   },
+   {
+    "id": "BW1A",
+    "origin": "source:BW1",
+    "species": "Walnut",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 100,
+    "used": 84,
+    "loss": 12,
+    "margin": 4,
+    "strips": [
+     {
+      "width": [
+       3,
+       0
+      ],
+      "cuts": [
+       [
+        17,
+        12
+       ],
+       [
+        17,
+        12
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     }
+    ]
+   },
+   {
+    "id": "BW2A",
+    "origin": "source:BW2",
+    "species": "Walnut",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 97,
+    "used": 60,
+    "loss": 15,
+    "margin": 22,
+    "strips": [
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       12
+      ],
+      "cuts": [
+       [
+        19,
+        6
+       ],
+       [
+        19,
+        6
+       ]
+      ]
+     }
+    ]
+   }
+  ],
+  "slice_fulfillment": [
+   {
+    "slice_id": "SL",
+    "per_board": 10,
+    "batch": 2,
+    "demand": 20,
+    "supplied": 22,
+    "shortfall": 0,
+    "pre_rip_supplied": 22,
+    "rip_mult": 1
+   },
+   {
+    "slice_id": "SR",
+    "per_board": 10,
+    "batch": 2,
+    "demand": 20,
+    "supplied": 22,
+    "shortfall": 0,
+    "pre_rip_supplied": 22,
+    "rip_mult": 1
+   },
+   {
+    "slice_id": "ML",
+    "per_board": 10,
+    "batch": 2,
+    "demand": 20,
+    "supplied": 22,
+    "shortfall": 0,
+    "pre_rip_supplied": 22,
+    "rip_mult": 1
+   },
+   {
+    "slice_id": "MR",
+    "per_board": 10,
+    "batch": 2,
+    "demand": 20,
+    "supplied": 22,
+    "shortfall": 0,
+    "pre_rip_supplied": 22,
+    "rip_mult": 1
+   },
+   {
+    "slice_id": "H-L",
+    "per_board": 4,
+    "batch": 2,
+    "demand": 8,
+    "supplied": 10,
+    "shortfall": 0,
+    "pre_rip_supplied": 5,
+    "rip_mult": 2
+   },
+   {
+    "slice_id": "H-R",
+    "per_board": 4,
+    "batch": 2,
+    "demand": 8,
+    "supplied": 10,
+    "shortfall": 0,
+    "pre_rip_supplied": 5,
+    "rip_mult": 2
+   }
+  ],
+  "supply": [
+   {
+    "component_id": "Me",
+    "species": "Brown Maple",
+    "width": 12,
+    "length": 310,
+    "demand": 8,
+    "fulfilled": 8,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "C2",
+    "species": "Cherry",
+    "width": 12,
+    "length": 310,
+    "demand": 16,
+    "fulfilled": 16,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "M1",
+    "species": "Brown Maple",
+    "width": 24,
+    "length": 310,
+    "demand": 8,
+    "fulfilled": 8,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "Md",
+    "species": "Brown Maple",
+    "width": 4,
+    "length": 310,
+    "demand": 12,
+    "fulfilled": 12,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "W2",
+    "species": "Walnut",
+    "width": 12,
+    "length": 310,
+    "demand": 16,
+    "fulfilled": 16,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "C1",
+    "species": "Cherry",
+    "width": 24,
+    "length": 310,
+    "demand": 8,
+    "fulfilled": 8,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "Me",
+    "species": "Brown Maple",
+    "width": 12,
+    "length": 284,
+    "demand": 1,
+    "fulfilled": 1,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "W1",
+    "species": "Walnut",
+    "width": 48,
+    "length": 284,
+    "demand": 2,
+    "fulfilled": 2,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "Md",
+    "species": "Brown Maple",
+    "width": 4,
+    "length": 284,
+    "demand": 2,
+    "fulfilled": 2,
+    "shortfall": 0,
+    "overcut": 0
+   }
+  ],
+  "images": [
+   "crosscut-blanks-e975ed1558d3.png",
+   "finished-board-efc2cfcb00db.png",
+   "panel-faces-7fd4892e88fe.png",
+   "panels-fb362659de83.png",
+   "slice-map-fd4dd65df9fe.png",
+   "strip-map-8094ffeaabd7.png"
+  ],
+  "panelSpecs": [
+   {
+    "panel": "SL",
+    "profileLengths": [
+     [
+      17,
+      14
+     ]
+    ],
+    "count": 2
+   },
+   {
+    "panel": "SR",
+    "profileLengths": [
+     [
+      17,
+      14
+     ]
+    ],
+    "count": 2
+   },
+   {
+    "panel": "ML",
+    "profileLengths": [
+     [
+      17,
+      14
+     ]
+    ],
+    "count": 2
+   },
+   {
+    "panel": "MR",
+    "profileLengths": [
+     [
+      17,
+      14
+     ]
+    ],
+    "count": 2
+   },
+   {
+    "panel": "H",
+    "profileLengths": [
+     [
+      8,
+      2
+     ],
+     [
+      8,
+      2
+     ]
+    ],
+    "count": 1
+   }
+  ]
+ },
+ "chess-v1": {
+  "board_rips": [
+   {
+    "id": "BM1A",
+    "origin": "source:BM1",
+    "species": "Brown Maple",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 135,
+    "used": 32,
+    "loss": 12,
+    "margin": 91,
+    "strips": [
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     }
+    ]
+   },
+   {
+    "id": "BC1A",
+    "origin": "source:BC1",
+    "species": "Cherry",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 116,
+    "used": 48,
+    "loss": 21,
+    "margin": 47,
+    "strips": [
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       4
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     }
+    ]
+   },
+   {
+    "id": "BW1A",
+    "origin": "source:BW1",
+    "species": "Walnut",
+    "buy_required": false,
+    "length": 768,
+    "source_width": 100,
+    "used": 32,
+    "loss": 12,
+    "margin": 56,
+    "strips": [
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     },
+     {
+      "width": [
+       0,
+       8
+      ],
+      "cuts": [
+       [
+        16,
+        2
+       ],
+       [
+        16,
+        2
+       ]
+      ]
+     }
+    ]
+   }
+  ],
+  "slice_fulfillment": [
+   {
+    "slice_id": "C",
+    "per_board": 2,
+    "batch": 2,
+    "demand": 4,
+    "supplied": 9,
+    "shortfall": 0,
+    "pre_rip_supplied": 9,
+    "rip_mult": 1
+   },
+   {
+    "slice_id": "A",
+    "per_board": 4,
+    "batch": 2,
+    "demand": 8,
+    "supplied": 9,
+    "shortfall": 0,
+    "pre_rip_supplied": 9,
+    "rip_mult": 1
+   },
+   {
+    "slice_id": "B",
+    "per_board": 4,
+    "batch": 2,
+    "demand": 8,
+    "supplied": 9,
+    "shortfall": 0,
+    "pre_rip_supplied": 9,
+    "rip_mult": 1
+   }
+  ],
+  "supply": [
+   {
+    "component_id": "CB",
+    "species": "Cherry",
+    "width": 4,
+    "length": 258,
+    "demand": 4,
+    "fulfilled": 4,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "W",
+    "species": "Walnut",
+    "width": 8,
+    "length": 258,
+    "demand": 8,
+    "fulfilled": 8,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "M",
+    "species": "Brown Maple",
+    "width": 8,
+    "length": 258,
+    "demand": 8,
+    "fulfilled": 8,
+    "shortfall": 0,
+    "overcut": 0
+   },
+   {
+    "component_id": "CT",
+    "species": "Cherry",
+    "width": 8,
+    "length": 258,
+    "demand": 9,
+    "fulfilled": 9,
+    "shortfall": 0,
+    "overcut": 0
+   }
+  ],
+  "images": [
+   "crosscut-blanks-9ca7b508cff3.png",
+   "finished-board-c49f044c259b.png",
+   "panel-faces-74991757e188.png",
+   "panels-91027eeed544.png",
+   "slice-map-d91dfcef0f65.png",
+   "strip-map-37d036939571.png"
+  ],
+  "panelSpecs": [
+   {
+    "panel": "A",
+    "profileLengths": [
+     [
+      14,
+      10
+     ]
+    ],
+    "count": 1
+   },
+   {
+    "panel": "B",
+    "profileLengths": [
+     [
+      14,
+      10
+     ]
+    ],
+    "count": 1
+   },
+   {
+    "panel": "C",
+    "profileLengths": [
+     [
+      14,
+      10
+     ]
+    ],
+    "count": 1
+   }
+  ]
+ }
+}

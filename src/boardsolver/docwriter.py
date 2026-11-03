@@ -1,15 +1,15 @@
 """Round 2 document-writer process: the runnable output stage.
 
 Reads the three YAML docs, renders the visual sections to content-hashed PNGs,
-assembles the Markdown, and writes a self-contained versioned folder. A new run
-archives the previous folder instead of overwriting it.
+assembles the Markdown, and writes a self-contained folder. A rerun
+overwrites the folder in place: the project lives in git, so recovering
+an old plan is done by checking out an old commit, not by keeping a
+copy beside the current one.
 
-Shared artifact-versioning rules:
+Shared artifact rules:
   * image filenames carry a content hash (changed bytes => new name; identical
     bytes => reused name),
-  * each run writes a fresh versioned folder,
-  * the prior folder is archived (moved under an ``archive/`` sibling), never
-    clobbered.
+  * each run writes the folder named by the caller.
 """
 
 from __future__ import annotations
@@ -18,7 +18,6 @@ import hashlib
 import os
 import shutil
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 import yaml
@@ -49,7 +48,6 @@ class WriteResult:
     folder: str
     markdown_path: str
     images: Dict[str, str]
-    archived: Optional[str]
 
 
 def write_document(
@@ -58,36 +56,18 @@ def write_document(
     cut_spec: Dict[str, Any],
     out_root: str,
     folder_name: str = "plan",
-    now: Optional[datetime] = None,
-    replace: bool = False,
 ) -> WriteResult:
-    """Render + assemble + write a versioned document folder under ``out_root``.
+    """Render + assemble + write a document folder under ``out_root``.
 
-    The active folder is ``out_root/<folder_name>``. If it already exists it is
-    moved into ``out_root/archive/<folder_name>-<timestamp>/`` first — unless
-    ``replace`` is true, in which case the existing active folder is deleted (a
-    one-off overwrite with no archive copy).
+    The folder is ``out_root/<folder_name>``. If it already exists it
+    is overwritten in place: git history, not a side copy, is how an
+    old plan is recovered.
     """
     os.makedirs(out_root, exist_ok=True)
     active = os.path.join(out_root, folder_name)
 
-    archived = None
     if os.path.exists(active):
-        if replace:
-            shutil.rmtree(active)
-        else:
-            now = now or datetime.now(timezone.utc)
-            stamp = now.strftime("%Y%m%dT%H%M%SZ")
-            archive_dir = os.path.join(out_root, "archive")
-            os.makedirs(archive_dir, exist_ok=True)
-            archived = os.path.join(archive_dir, f"{folder_name}-{stamp}")
-            # Avoid collision if two runs land in the same second.
-            suffix = 0
-            base = archived
-            while os.path.exists(archived):
-                suffix += 1
-                archived = f"{base}-{suffix}"
-            shutil.move(active, archived)
+        shutil.rmtree(active)
 
     os.makedirs(active)
     images_dir = os.path.join(active, "images")
@@ -124,7 +104,7 @@ def write_document(
     with open(md_path, "w") as f:
         f.write(md)
 
-    return WriteResult(folder=active, markdown_path=md_path, images=images, archived=archived)
+    return WriteResult(folder=active, markdown_path=md_path, images=images)
 
 
 def run(
@@ -133,15 +113,12 @@ def run(
     cut_spec_path: str,
     out_root: Optional[str] = None,
     folder_name: str = "plan",
-    replace: bool = False,
 ) -> WriteResult:
     """File-path entrypoint: load the three YAML docs and write the document.
 
-    ``out_root`` defaults to the project's own directory, so the generated plan
-    lives adjacent to ``project.yaml`` / ``cut-specs.yaml`` (with its ``archive/``
-    sibling there too), mirroring the spec's "write in place, archive adjacent"
-    rule for the solver's cut-specs output. ``replace`` overwrites the active
-    folder without archiving.
+    ``out_root`` defaults to the directory of the project file given.
+    A rerun overwrites the folder in place; git history is the
+    recovery path for an old plan.
     """
     if out_root is None:
         out_root = os.path.dirname(os.path.abspath(project_path))
@@ -151,7 +128,6 @@ def run(
         _load(cut_spec_path),
         out_root,
         folder_name,
-        replace=replace,
     )
 
 
@@ -168,14 +144,9 @@ def _main(argv=None):
         help="output root directory (default: the project's own directory)",
     )
     ap.add_argument("--name", default="plan", help="active folder name")
-    ap.add_argument("--replace", action="store_true",
-                    help="overwrite the active plan folder without archiving")
     args = ap.parse_args(argv)
-    res = run(args.project, args.tool_limits, args.cut_spec, args.out, args.name,
-              replace=args.replace)
+    res = run(args.project, args.tool_limits, args.cut_spec, args.out, args.name)
     print(f"wrote {res.markdown_path}")
-    if res.archived:
-        print(f"archived previous -> {res.archived}")
     return 0
 
 
