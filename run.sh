@@ -10,7 +10,9 @@
 #                                plan/ folder (README.md + images/) and archives
 #                                the previous one. With --replace, overwrite the
 #                                active plan/ in place WITHOUT archiving.
-#   solve <project>              Run the solver (Round 3 — not implemented yet).
+#   solve <project> [--out=PATH] Run the greedy solver (Round 3): writes
+#                                cut-specs.yaml (default: the project's own,
+#                                or --out=PATH for a test copy).
 #   test [pytest args...]        Run the test suite.
 #   help | --help | -h           Show this help.
 #
@@ -94,10 +96,23 @@ case "$action" in
       echo "error: 'solve' needs a project, e.g. ./run.sh solve plaid-v1" >&2
       exit 1
     fi
-    echo "solve: the solver (Round 3) is not implemented yet." >&2
-    echo "it will read specs/projects/$proj/project.yaml (+ tool-limits) and write" >&2
-    echo "a new cut-specs.yaml, archiving the previous one." >&2
-    exit 2
+    shift
+    out=""
+    for arg in "$@"; do
+      case "$arg" in
+        --out=*) out="${arg#--out=}" ;;
+        *) echo "error: unknown option for solve: $arg" >&2; exit 1 ;;
+      esac
+    done
+    dir="$(project_dir "$proj")"
+    if [[ -z "$out" ]]; then
+      out="$dir/cut-specs.yaml"
+    fi
+    cd "$ROOT"
+    exec "$PY" -m boardsolver.solver \
+      --project "$dir/project.yaml" \
+      --tool-limits "$TOOL_LIMITS" \
+      --out "$out"
     ;;
 
   *)
