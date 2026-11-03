@@ -75,21 +75,32 @@ def build_markdown(
     )
     L.append("")
 
-    rips = board_rips(project, cut_spec, tool_limits)
+    # Cut list order is always alphabetical by species, then board id,
+    # regardless of the order boards appear in the cut-spec file, so
+    # the table and the Board Rip Diagram always match.
+    rips = sorted(board_rips(project, cut_spec, tool_limits),
+                  key=lambda r: (r.species, r.id))
     summaries = panel_summaries(project, tool_limits)
 
     # --- Section: warnings (omitted entirely when there are none) -------- #
     warns = warnings(project, cut_spec, tool_limits)
     if warns:
         order = {"red": 0, "yellow": 1, "gray": 2}
-        emoji = {"red": "\U0001F534", "yellow": "\U0001F7E1", "gray": "\u26AA"}
+        # The MD is the visual representation, so levels and types are
+        # written as human words here, not as internal codes or colours.
+        # derive.py keeps the machine values ("red"/"yellow"/"gray" and
+        # snake_case codes); this rendering layer is where they become
+        # ERROR/WARNING/NOTE and "Ghost Boards" etc. The PDF then renders
+        # the MD faithfully, with no content transformation of its own.
+        level_label = {"red": "ERROR", "yellow": "WARNING", "gray": "NOTE"}
         warns_sorted = sorted(warns, key=lambda w: order.get(w.level, 9))
         L.append(sec("Warnings"))
         L.append("")
         L.append("| # | Lvl | Type | Message |")
         L.append("| --- | --- | --- | --- |")
         for i, w in enumerate(warns_sorted, 1):
-            L.append(f"| {i} | {emoji.get(w.level, '')} | {w.code} | {w.message} |")
+            type_label = w.code.replace("_", " ").title()
+            L.append(f"| {i} | {level_label.get(w.level, w.level)} | {type_label} | {w.message} |")
         L.append("")
 
     # --- Section: finished board ----------------------------------------- #
@@ -99,9 +110,7 @@ def build_markdown(
     if batch > 1:
         L.append(f"{batch} finished boards." + (f" Final thickness {frac_inches(measure_to_sixteenths(ft))}." if ft else ""))
         L.append("")
-    L.append("The finished plaid face.")
-    L.append("")
-    L.append(f"![Finished plaid face]({images['finished']})")
+    L.append(f"![Finished board]({images['finished']})")
     L.append("")
 
     # --- Section: volume sanity check ------------------------------------ #
@@ -251,18 +260,6 @@ def build_markdown(
         "A panel type may have more than one instance; the ideal panels are always "
         "quantity 1._"
     )
-    L.append("")
-
-    L.append("### Ripped Slice Diagram")
-    L.append("")
-    L.append(
-        "Slices from panels that are ripped (sliceStrips). Identical slices across "
-        "panels are merged into one diagram, labeled with how many to cut. The "
-        "horizontal axis is the slice length (end-grain face); dashed lines are the "
-        "rip cuts; the red band is rip kerf + planing / margin loss."
-    )
-    L.append("")
-    L.append(f"![Ripped slice diagrams]({images['ripped_slices']})")
     L.append("")
 
     # --- Section 5: initial board rips (the actual cut list) ------------- #

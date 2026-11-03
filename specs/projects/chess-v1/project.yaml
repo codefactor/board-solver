@@ -1,0 +1,130 @@
+# yaml-language-server: $schema=../../../schema.json
+name: Chess v1
+description: Two end-grain chess-pattern boards, walnut and brown maple 0.5 in cells, cherry border 0.25 in all sides, built from thin strips only (no component wider than 0.5 in).
+batch: 2
+finishedThickness: [1, 4]
+sliceDepth: [1, 8]
+
+# Finished face, 4.5 in square: 0.25 in cherry border top and bottom (rows C),
+# 8 chess rows of 0.5 in, each row 0.25 in cherry border left and right inside
+# panels A/B, 8 cells of 0.5 in in between. Row heights: C 0.25 + 8 x 0.5 + C 0.25 = 4.5.
+# Top/bottom border panel C is nine 0.5 in cherry strips, not one wide strip.
+sliceGrid:
+  - - sliceId: C
+  - - sliceId: A
+  - - sliceId: B
+  - - sliceId: A
+  - - sliceId: B
+  - - sliceId: A
+  - - sliceId: B
+  - - sliceId: A
+  - - sliceId: B
+  - - sliceId: C
+
+components:
+  - id: W
+    species: Walnut
+    width: [0, 8]
+    thickness: [0, 8]
+  - id: M
+    species: Brown Maple
+    width: [0, 8]
+    thickness: [0, 8]
+  - id: CB
+    species: Cherry
+    width: [0, 4]
+    thickness: [0, 8]
+  - id: CT
+    species: Cherry
+    width: [0, 8]
+    thickness: [0, 4]
+
+panels:
+  - id: A
+    thickness: [0, 8]
+    slices: 9
+    components:
+      - type: CB
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: CB
+  - id: B
+    thickness: [0, 8]
+    slices: 9
+    components:
+      - type: CB
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: CB
+  - id: C
+    thickness: [0, 4]
+    slices: 9
+    components:
+      - type: CT
+      - type: CT
+      - type: CT
+      - type: CT
+      - type: CT
+      - type: CT
+      - type: CT
+      - type: CT
+      - type: CT
+
+# Each panel yields 9 slices (body 9 x pitch 1 10/16 = 14 10/16, plus 1 8/16 snipe
+# = 16 2/16 long). Demand for 2 boards: A 8, B 8, C 4; supply 9 each, so +1, +1, +5.
+panelSpecs:
+  - panel: A
+    profileLengths: [[14, 10]]
+    count: 1
+  - panel: B
+    profileLengths: [[14, 10]]
+    count: 1
+  - panel: C
+    profileLengths: [[14, 10]]
+    count: 1
+
+# TESTING ONLY: Scott's actual measured boards, copied from plaid-v1 inventory.
+# Red warnings here are expected and ignored for this test run.
+boards:
+ - id: BC1
+   species: Cherry
+   length: [48, 2]
+   width: [7, 4]
+   thickness: [0, 13]
+ - id: BC2
+   species: Cherry
+   length: [48, 1]
+   width: [6, 15]
+   thickness: [0, 13]
+ - id: BW1
+   species: Walnut
+   length: [54, 5]
+   width: [6, 4]
+   thickness: [0, 13]
+ - id: BW2
+   species: Walnut
+   length: [54, 5]
+   width: [6, 1]
+   thickness: [0, 13]
+ - id: BM1
+   species: Brown Maple
+   length: [98, 1]
+   width: [8, 7]
+   thickness: [0, 13]
+ - id: BM2
+   species: Brown Maple
+   length: [47, 15]
+   width: [8, 4]
+   thickness: [0, 13]

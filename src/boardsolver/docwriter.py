@@ -29,7 +29,6 @@ from .render import (
     render_finished_board,
     render_panel_faces,
     render_panels,
-    render_ripped_slices,
     render_slice_map,
     render_strip_map,
 )
@@ -102,7 +101,6 @@ def write_document(
     from collections import Counter as _Counter
     _qty = _Counter(s.panel_id for s in _panel_specs(project, cut_spec, tool_limits))
     panel_faces = render_panel_faces(project, tool_limits, quantities=dict(_qty))
-    ripped_slices = render_ripped_slices(project, tool_limits)
     crosscut = render_crosscut_blanks(project, cut_spec, tool_limits)
     strip_map = render_strip_map(project, cut_spec, tool_limits)
 
@@ -112,7 +110,6 @@ def write_document(
         ("slice_map", "slice-map", slice_map),
         ("panels", "panels", panels),
         ("panel_faces", "panel-faces", panel_faces),
-        ("ripped_slices", "ripped-slices", ripped_slices),
         ("crosscut", "crosscut-blanks", crosscut),
         ("strip_map", "strip-map", strip_map),
     ):

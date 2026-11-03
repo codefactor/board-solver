@@ -14,12 +14,20 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .canvas import PILCanvas
 from .colors import DEFAULT_COLORS, ColorMap, slice_color_map, text_on, lighten
-from .derive import board_rips, crosscut_blanks, panel_summaries, ripped_slice_profiles
+from .derive import board_rips, crosscut_blanks, panel_summaries
 from .draw import draw_cut_board, draw_panel, draw_slice, _KERF_COLOR, _LOSS_COLOR, _OUTLINE
 from .geometry import measure_to_sixteenths, px, resolve_slice, slice_length
 from .format import frac_inches
 
 _BG = "#f7f4e9"
+
+# Finished-board image margins: dimension line on the left, outer pad on
+# both sides, and the drop-shadow offset on the right. The finished face
+# itself is fin.width minus these, which tests use to compare against
+# the slice map's board region.
+_FINISHED_DIM_LEFT = 68
+_FINISHED_OUTER = 12
+_FINISHED_SHADOW_DX = 10
 
 
 def _to_png_bytes(canvas: PILCanvas) -> bytes:
@@ -73,38 +81,144 @@ def validate_true_grid(project: Dict[str, Any]) -> None:
 # section 1: finished board grid
 # --------------------------------------------------------------------------- #
 
+def _dim_font(size: int):
+    from PIL import ImageFont
+
+    for name in ("DejaVuSans-Bold.ttf", "DejaVuSans.ttf", "Arial Bold.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except Exception:
+            continue
+    return ImageFont.load_default()
+
+
 def render_finished_board(
     project: Dict[str, Any], scale: float = 26.0, colors: ColorMap = DEFAULT_COLORS
 ) -> bytes:
+    """Finished board face with final dimensions and a drop shadow.
+
+    Typical measurement lines sit above (width) and left (height) of the
+    board: an extension line from each corner, a dimension line with
+    arrowheads at both ends, and the finished size as its label. A soft
+    drop shadow sits under the board, offset down-right.
+    """
+    from PIL import Image, ImageDraw, ImageFilter
+
     validate_true_grid(project)
     grid = project["sliceGrid"]
-    pad = 20
 
-    # Row heights and the single row width (true grid => every row same width).
+    # Row heights and the single row width (true grid => every row same width),
+    # in pixels and in sixteenths (for the dimension labels).
     row_heights = []
+    row_heights_16 = []
     for row in grid:
         r0 = resolve_slice(project, row[0]["sliceId"])
         row_heights.append(px(r0.height, scale))
+        row_heights_16.append(r0.height)
     row_w = sum(
         px(slice_length(resolve_slice(project, cell["sliceId"])), scale)
         for cell in grid[0]
     )
+    row_w_16 = sum(
+        slice_length(resolve_slice(project, cell["sliceId"]))
+        for cell in grid[0]
+    )
     total_h = sum(row_heights)
-    canvas = PILCanvas(int(row_w + 2 * pad), int(total_h + 2 * pad), _BG)
-    y = pad
+    total_h_16 = sum(row_heights_16)
+    board_w = int(round(row_w))
+    board_h = int(round(total_h))
+
+    # Draw the face itself into a tight temporary canvas first, so the
+    # shadow and dimension lines can sit outside it.
+    face = PILCanvas(board_w, board_h, _BG)
+    y = 0
     for row, h in zip(grid, row_heights):
-        x = pad
+        x = 0
         for cell in row:
             # Borderless component cells: the only border is around the whole board.
             bb = draw_slice(
-                canvas, project, cell["sliceId"], cell.get("flip"),
+                face, project, cell["sliceId"], cell.get("flip"),
                 (x, y), scale, colors, outline=None,
             )
             x += bb.w
         y += h
+
+    # Final canvas: room for the dimension lines, the shadow, and an outer pad.
+    dim_top, dim_left, outer = 52, _FINISHED_DIM_LEFT, _FINISHED_OUTER
+    sh_dx, sh_dy, sh_blur = _FINISHED_SHADOW_DX, 10, 6
+    bx, by = dim_left + outer, dim_top + outer
+    W = bx + board_w + sh_dx + outer
+    H = by + board_h + sh_dy + outer
+    img = Image.new("RGB", (W, H), _BG)
+
+    # Drop shadow: blurred black rectangle offset down-right under the board.
+    shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+    sd.rectangle([bx + sh_dx, by + sh_dy, bx + board_w + sh_dx, by + board_h + sh_dy],
+                 fill=(0, 0, 0, 90))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(sh_blur))
+    img.paste(Image.alpha_composite(img.convert("RGBA"), shadow).convert("RGB"), (0, 0))
+
+    img.paste(face._img, (bx, by))
+    d = ImageDraw.Draw(img)
     # Single border around the entire board face.
-    canvas.rect(pad, pad, row_w, total_h, fill=None, outline="#222222")
-    return _to_png_bytes(canvas)
+    d.rectangle([bx, by, bx + board_w, by + board_h], outline="#222222", width=2)
+
+    # Measurement lines.
+    dim_color = "#333333"
+    ext_gap, dim_off = 6, 28
+    font = _dim_font(14)
+
+    def arrow_h(cx, cy, pointing_right):
+        s = 6
+        if pointing_right:
+            d.polygon([(cx, cy), (cx - s, cy - s // 2), (cx - s, cy + s // 2)],
+                      fill=dim_color)
+        else:
+            d.polygon([(cx, cy), (cx + s, cy - s // 2), (cx + s, cy + s // 2)],
+                      fill=dim_color)
+
+    def arrow_v(cx, cy, pointing_down):
+        s = 6
+        if pointing_down:
+            d.polygon([(cx, cy), (cx - s // 2, cy - s), (cx + s // 2, cy - s)],
+                      fill=dim_color)
+        else:
+            d.polygon([(cx, cy), (cx - s // 2, cy + s), (cx + s // 2, cy + s)],
+                      fill=dim_color)
+
+    # Width, above the board.
+    y_dim = by - dim_off
+    d.line([bx, by - ext_gap, bx, y_dim - 6], fill=dim_color, width=1)
+    d.line([bx + board_w, by - ext_gap, bx + board_w, y_dim - 6], fill=dim_color, width=1)
+    d.line([bx, y_dim, bx + board_w, y_dim], fill=dim_color, width=1)
+    arrow_h(bx, y_dim, pointing_right=False)
+    arrow_h(bx + board_w, y_dim, pointing_right=True)
+    w_label = frac_inches(row_w_16)
+    tw = d.textlength(w_label, font=font)
+    d.rectangle([bx + board_w / 2 - tw / 2 - 4, y_dim - 22,
+                 bx + board_w / 2 + tw / 2 + 4, y_dim - 4], fill=_BG)
+    d.text((bx + board_w / 2 - tw / 2, y_dim - 21), w_label, fill=dim_color, font=font)
+
+    # Height, left of the board, label rotated.
+    x_dim = bx - dim_off
+    d.line([bx - ext_gap, by, x_dim - 6, by], fill=dim_color, width=1)
+    d.line([bx - ext_gap, by + board_h, x_dim - 6, by + board_h], fill=dim_color, width=1)
+    d.line([x_dim, by, x_dim, by + board_h], fill=dim_color, width=1)
+    arrow_v(x_dim, by, pointing_down=False)
+    arrow_v(x_dim, by + board_h, pointing_down=True)
+    h_label = frac_inches(total_h_16)
+    label_img = Image.new("RGBA", (200, 40), (0, 0, 0, 0))
+    ld = ImageDraw.Draw(label_img)
+    ld.text((100, 20), h_label, fill=dim_color, font=font, anchor="mm")
+    label_img = label_img.rotate(90, expand=True)
+    img.paste(label_img, (int(x_dim - label_img.width / 2 - 6),
+                          int(by + board_h / 2 - label_img.height / 2)),
+              label_img)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
 
 
 def render_slice_map(
@@ -292,7 +406,10 @@ def render_panel_faces(
     ]
     row_heights = [max(cell_h(m) for m in row) for row in rows]
     legend_h = 4 * 20 + 16  # four entries + heading padding
-    total_w = max(max(row_widths), 360) + 2 * pad
+    # Panel titles ("16⅛″ long (9 slices)") are wider than the narrow
+    # panel cells, so allow title overflow past the last cell in a row
+    # instead of clipping it at the canvas edge.
+    total_w = max(max(row_widths), 360) + 2 * pad + 80
     H = int(sum(row_heights) + row_gap * (len(rows) - 1) + 2 * pad + legend_h)
     canvas = PILCanvas(int(total_w), H, _BG)
 
@@ -310,7 +427,7 @@ def render_panel_faces(
             slice_txt = f"({per} slices)"
         canvas.text(x, cell_y, f"Panel {panel['id']}  ×{qty}", title_px, "#222222")
         canvas.text(x, cell_y + title_px + 2,
-                    f"{frac_inches(m['total_len'], ascii=True)} long  {slice_txt}",
+                    f"{frac_inches(m['total_len'])} long  {slice_txt}",
                     title_px - 1, "#555555")
         y0 = cell_y + label_h
         half_snipe = px(snipe / 2, scale)
@@ -394,98 +511,6 @@ def render_panel_faces(
 
 
 # --------------------------------------------------------------------------- #
-# ripped-slice diagrams: one per distinct ripped slice profile
-# --------------------------------------------------------------------------- #
-
-def render_ripped_slices(
-    project: Dict[str, Any], tool_limits: Dict[str, Any],
-    scale: float = 46.0, colors: ColorMap = DEFAULT_COLORS,
-) -> bytes:
-    """One zoomed diagram per distinct ripped-slice profile (merged across
-    panels). Horizontal axis = the slice's length (end-grain stripes as vertical
-    bands); vertical = the panel thickness, divided by dashed rip lines into
-    ``strip_count`` strips; a reddish full-width band at the bottom is the rip
-    kerf + planing/margin loss. Each diagram is labeled with how many identical
-    slices to cut and the contributing slice ids.
-    """
-    lim = tool_limits["limits"] if "limits" in tool_limits else tool_limits
-    miter_kerf = measure_to_sixteenths(lim["miterKerf"])  # (slices already cut)
-    profiles = ripped_slice_profiles(project, tool_limits)
-    pad = 20
-    title_px = 14
-    sub_px = 12
-    gap = 34
-    label_h = title_px + 4 + sub_px + 8
-    legend_h = 2 * 18 + 10
-
-    if not profiles:
-        canvas = PILCanvas(260, 60, _BG)
-        canvas.text(pad, pad, "No ripped slices in this project.", 13, "#555555")
-        return _to_png_bytes(canvas)
-
-    # Sizes.
-    def dims(rp):
-        w = px(rp.length, scale)
-        h = px(rp.panel_thickness, scale)
-        return w, h
-
-    max_w = max(dims(rp)[0] for rp in profiles)
-    total_h = 0
-    for rp in profiles:
-        total_h += label_h + dims(rp)[1] + gap
-    H = int(total_h + legend_h + 2 * pad)
-    W = int(max_w + 2 * pad)
-    canvas = PILCanvas(W, H, _BG)
-
-    y = pad
-    for rp in profiles:
-        w_px, h_px = dims(rp)
-        ids = ", ".join(rp.slice_ids)
-        canvas.text(pad, y, f"Slice {ids}  —  cut {rp.count} identical", title_px, "#222222")
-        canvas.text(pad, y + title_px + 4,
-                    f"{frac_inches(rp.length, ascii=True)} long, ripped into "
-                    f"{rp.strip_count} x {frac_inches(rp.strip_width, ascii=True)} strips",
-                    sub_px, "#555555")
-        by = y + label_h
-
-        # End-grain stripes: vertical bands across the length, full thickness.
-        cx = pad
-        for c in rp.components:
-            cwpx = px(c.width, scale)
-            canvas.rect(cx, by, cwpx, h_px, fill=colors[c.species], outline=_OUTLINE)
-            cx += cwpx
-
-        # Rip loss band at the bottom: thickness - strip_count * strip_width.
-        strips_h = px(rp.strip_count * rp.strip_width, scale)
-        loss_h = h_px - strips_h
-        if loss_h > 0:
-            canvas.rect(pad, by + strips_h, w_px, loss_h, fill=_LOSS_COLOR, outline=None)
-
-        # Dashed rip lines dividing the strips (strip_count - 1 interior lines),
-        # overflowing the width.
-        for i in range(1, rp.strip_count):
-            ly = by + px(i * rp.strip_width, scale)
-            canvas.dashed_hline(pad - 8, pad + w_px + 8, ly, "#444444", width=1)
-
-        # Outline the slice.
-        canvas.rect(pad, by, w_px, h_px, fill=None, outline="#222222")
-        y = by + h_px + gap
-
-    # Legend.
-    lx, ly = pad, y
-    sample_w = 34
-    tx = lx + sample_w + 10
-    cy = ly + 9
-    canvas.dashed_hline(lx, lx + sample_w, cy, "#444444", width=1)
-    canvas.text(tx, ly + 3, "dashed line = rip cut", 12, "#333333")
-    ly += 18
-    canvas.rect(lx, ly + 3, sample_w, 11, fill=_LOSS_COLOR, outline=_OUTLINE)
-    canvas.text(tx, ly + 3, "red = rip kerf + planing / margin loss", 12, "#333333")
-
-    return _to_png_bytes(canvas)
-
-
-# --------------------------------------------------------------------------- #
 # crosscut blanks diagram (to-scale by length; modest fixed bar height)
 # --------------------------------------------------------------------------- #
 
@@ -513,13 +538,13 @@ def render_crosscut_blanks(
     for cb in blanks:
         # Title: spares and whole-use boards are annotated distinctly.
         if cb.state == "spare":
-            title = f"{cb.source_id}  ({frac_inches(cb.length, ascii=True)} long)  — untouched spare"
+            title = f"{cb.source_id}  ({frac_inches(cb.length)} long)  — untouched spare"
             title_color = "#888888"
         elif cb.state == "whole":
-            title = f"{cb.source_id}  ({frac_inches(cb.length, ascii=True)} long)  — used whole (no crosscut)"
+            title = f"{cb.source_id}  ({frac_inches(cb.length)} long)  — used whole (no crosscut)"
             title_color = "#222222"
         else:
-            title = f"{cb.source_id}  ({frac_inches(cb.length, ascii=True)} long)"
+            title = f"{cb.source_id}  ({frac_inches(cb.length)} long)"
             title_color = "#222222"
         canvas.text(pad, y, title, title_px, title_color)
         by = y + title_px + 4
@@ -540,7 +565,7 @@ def render_crosscut_blanks(
         for i, bl in enumerate(cb.blanks):
             seg_w = px(bl.length, scale)
             canvas.rect(x, by, seg_w, bar_h, fill=species_color, outline=_OUTLINE)
-            label = f"{bl.blank_id} {frac_inches(bl.length, ascii=True)}"
+            label = f"{bl.blank_id} {frac_inches(bl.length)}"
             if cb.state == "whole":
                 label += "  → rip diagram"
             canvas.text(x + 4, by + bar_h / 2 - 6, label, 11, text_on(species_color))
@@ -561,13 +586,13 @@ def render_crosscut_blanks(
             lp = px(cb.leftover, scale)
             canvas.rect(x, by, lp, bar_h, fill="#e8e4d6", outline=_OUTLINE)
             canvas.text(x + 4, by + bar_h / 2 - 6,
-                        f"left {frac_inches(cb.leftover, ascii=True)}", 10, "#666666")
+                        f"left {frac_inches(cb.leftover)}", 10, "#666666")
         elif cb.leftover < 0:
             # Blanks overflow the raw board: draw a red overflow bar past the end.
             op = px(-cb.leftover, scale)
             canvas.rect(x, by, op, bar_h, fill="#c0392b", outline=_OUTLINE)
             canvas.text(x + 4, by + bar_h / 2 - 6,
-                        f"over {frac_inches(-cb.leftover, ascii=True)}", 10, "#ffffff")
+                        f"over {frac_inches(-cb.leftover)}", 10, "#ffffff")
         y = by + bar_h + gap
     return _to_png_bytes(canvas)
 
@@ -612,7 +637,12 @@ def render_strip_map(
 ) -> bytes:
     pad = 16
     gap = 30
-    boards = cut_spec["boards"]
+    # Board Rip Diagram order always matches the cut list table:
+    # alphabetical by species, then board id, regardless of the
+    # order boards appear in the cut-spec file.
+    _rips = {r.id: r for r in board_rips(project, cut_spec, tool_limits)}
+    boards = sorted(cut_spec["boards"],
+                    key=lambda b: (_rips[b["id"]].species, b["id"]))
     # Pre-measure height by drawing into a scratch canvas is overkill; estimate
     # generously, then crop by drawing into a correctly-sized canvas in one pass.
     # Width: longest board length * scale + source-width overhang margin.

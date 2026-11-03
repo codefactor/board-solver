@@ -18,6 +18,9 @@ from boardsolver.docwriter import write_document
 from boardsolver.document import build_markdown
 from boardsolver.geometry import measure_to_sixteenths
 from boardsolver.render import (
+    _FINISHED_DIM_LEFT,
+    _FINISHED_OUTER,
+    _FINISHED_SHADOW_DX,
     render_finished_board,
     render_slice_map,
     validate_true_grid,
@@ -185,8 +188,11 @@ def test_slice_map_border_widens_board_vs_finished(project):
     fin = Image.open(io.BytesIO(render_finished_board(p)))
     smap = Image.open(io.BytesIO(render_slice_map(p, border=border)))
     # The slice map adds a per-column gutter of 2*border; it is at least that
-    # much wider than the borderless finished board (the legend may add more).
-    assert smap.width - fin.width >= ncols * 2 * border
+    # much wider than the finished board's face. The finished image itself
+    # is wider still, because it now carries dimension lines and a shadow.
+    face_w = fin.width - (_FINISHED_DIM_LEFT + _FINISHED_OUTER
+                          + _FINISHED_SHADOW_DX + _FINISHED_OUTER)
+    assert smap.width - face_w >= ncols * 2 * border
 
 
 def test_slice_color_map_stable_and_distinct(project):
