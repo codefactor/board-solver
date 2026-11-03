@@ -47,9 +47,11 @@ def _xml_escape(text):
 def md_inline_to_xml(text):
     """Convert a small Markdown subset to ReportLab paragraph markup."""
     text = _xml_escape(text)
-    # Colour-emoji level markers -> coloured bullets (DejaVu has no emoji).
-    text = text.replace("\U0001f534", '<font color="#c00000">\u25cf</font>')
-    text = text.replace("\U0001f7e1", '<font color="#b88600">\u25cf</font>')
+    # Colour-emoji level markers -> semantic words (DejaVu has no emoji,
+    # and a colour alone is not a meaningful label). The coloured bullet
+    # is kept only as a secondary visual cue; the word carries the meaning.
+    text = text.replace("\U0001f534", '<font color="#c00000">\u25cf</font> ERROR')
+    text = text.replace("\U0001f7e1", '<font color="#b88600">\u25cf</font> WARNING')
     # Bold first, then italic, then inline code.
     text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
     text = re.sub(r"`([^`]+)`", r'<font face="DejaVuSansMono">\1</font>', text)
@@ -182,9 +184,15 @@ def build_pdf(md_path, out_path):
             rows = value
             ncols = max(len(r) for r in rows)
             rows = [r + [""] * (ncols - len(r)) for r in rows]
-            # Column widths: each column keeps at least its longest single
-            # token (so e.g. "small_margin" never wraps), then the remaining
-            # width is shared proportionally to longest-cell length.
+            # Column widths must always sum to the available page width --
+            # a table wider than the page is what made earlier PDFs look
+            # oddly shaped. Each column starts at its longest single token
+            # (so e.g. "small_margin" and "WARNING" do not wrap), capped so
+            # one long column cannot eat the page; remaining width is shared
+            # proportionally to longest-cell length. If even the capped
+            # minimums exceed the page, scale everything down proportionally
+            # rather than overflowing -- wrapping a long token is better
+            # than a table running off the page.
             from reportlab.pdfbase.pdfmetrics import stringWidth
             font = styles["cell"].fontName
             min_w = []
@@ -193,14 +201,20 @@ def build_pdf(md_path, out_path):
                     (stringWidth(tok, font, 8.5) for r in rows for tok in r[c].split()),
                     default=0,
                 )
-                min_w.append(max(0.6 * inch, longest_token + 10))
+                min_w.append(min(1.6 * inch, max(0.45 * inch, longest_token + 10)))
             maxlen = [max(len(r[c]) for r in rows) for c in range(ncols)]
             total = sum(maxlen) or 1
             remaining = avail_w - sum(min_w)
             if remaining > 0:
                 widths = [m + remaining * (l / total) for m, l in zip(min_w, maxlen)]
+                # Cap any single column, then renormalise to the page width.
+                widths = [min(w, 2.8 * inch) for w in widths]
+                s = sum(widths)
+                if s > 0:
+                    widths = [w * avail_w / s for w in widths]
             else:
-                widths = min_w
+                s = sum(min_w)
+                widths = [w * avail_w / s for w in min_w] if s > 0 else min_w
             data = []
             for ri, row in enumerate(rows):
                 style = styles["cellhead"] if ri == 0 else styles["cell"]
