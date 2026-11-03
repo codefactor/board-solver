@@ -177,3 +177,10 @@ boards:
   - width: [0, 12]
     cuts:
     - [34, 0]
+
+# Actual panels this plan builds, as panel codes:
+#   {panelId}:{boardId/strip/cut};...  (pieces glued in order, top-aligned)
+# One example S panel; the trailing Md (BM1A/6/0 at 27 1/2") is shorter, so it
+# defines the L-profile region; the full-length pieces run the R region too.
+panels:
+  - "S:BM1A/2/0;BC1A/1/0;BM1A/0/0;BC1A/2/0;BM1A/4/0;BC1A/3/0;BM1A/1/0;BC1A/4/0;BM1A/6/0"

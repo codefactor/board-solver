@@ -769,3 +769,98 @@ def ripped_slice_profiles(
                 g["slice_ids"].append(slice_id)
                 g["count"] += n
     return [RippedSliceProfile(**g) for g in groups.values()]
+
+
+# --------------------------------------------------------------------------- #
+# actual panels: parse panel codes from the cut-spec into real glue-ups
+# --------------------------------------------------------------------------- #
+
+@dataclass(frozen=True)
+class ActualPiece:
+    ref: str              # "boardId/stripIndex/cutIndex"
+    component_id: Optional[str]
+    species: str
+    width: Sixteenths
+    length: Sixteenths
+
+
+@dataclass(frozen=True)
+class ActualPanel:
+    panel_id: str                 # ideal panel this realizes
+    code: str                     # original panel code
+    pieces: List[ActualPiece]     # glued side by side, in order (top-aligned)
+    length: Sixteenths            # derived: the longest piece (full panel length)
+    sequence_ok: bool             # resolved components match the ideal sequence
+
+
+def _resolve_piece_ref(ref: str, cut_spec: Dict[str, Any], project: Dict[str, Any],
+                       tool_limits: Dict[str, Any], comp_by_sw: Dict[tuple, str]):
+    """Resolve 'boardId/stripIndex/cutIndex' to an ActualPiece.
+
+    Raises ValueError (invalid cut-spec panel code) if the reference does not
+    point at a real board/strip/cut.
+    """
+    parts = ref.split("/")
+    if len(parts) != 3:
+        raise ValueError(f"invalid piece ref {ref!r}: expected boardId/strip/cut")
+    board_id, si, ci = parts[0], int(parts[1]), int(parts[2])
+    # Find the board and its resolved species via board_rips (handles remainder/buy).
+    rips = {r.id: r for r in board_rips(project, cut_spec, tool_limits)}
+    if board_id not in rips:
+        raise ValueError(f"invalid piece ref {ref!r}: no board {board_id!r} in cut-spec")
+    r = rips[board_id]
+    if si < 0 or si >= len(r.strips):
+        raise ValueError(f"invalid piece ref {ref!r}: strip index {si} out of range")
+    strip = r.strips[si]
+    cuts = strip.get("cuts", [])
+    if ci < 0 or ci >= len(cuts):
+        raise ValueError(f"invalid piece ref {ref!r}: cut index {ci} out of range")
+    width = measure_to_sixteenths(strip["width"])
+    length = measure_to_sixteenths(cuts[ci])
+    comp_id = comp_by_sw.get((r.species, width))
+    return ActualPiece(ref=ref, component_id=comp_id, species=r.species,
+                       width=width, length=length)
+
+
+def _ideal_sequence(project: Dict[str, Any], panel_id: str) -> List[str]:
+    """Ideal panel's fullest-profile component id sequence."""
+    for panel in project["panels"]:
+        if panel["id"] == panel_id:
+            fid = f"{panel_id}-{panel['profiles'][0]['id']}" if "profiles" in panel else panel_id
+            return [c.id for c in resolve_slice(project, fid).components]
+    raise KeyError(f"no ideal panel {panel_id!r}")
+
+
+def actual_panels(
+    project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any]
+) -> List[ActualPanel]:
+    """Parse the cut-spec's ``panels`` codes into ActualPanel records.
+
+    Each code '{panelId}:{ref};{ref};...' builds one physical panel from the
+    referenced produced pieces (glued in order, top-aligned). The panel length is
+    the longest referenced piece. The resolved component sequence is validated
+    against the ideal panel's sequence (sequence_ok flags a mismatch). Empty when
+    the cut-spec declares no panels.
+    """
+    codes = cut_spec.get("panels", [])
+    if not codes:
+        return []
+    comp_by_sw: Dict[tuple, str] = {}
+    for c in project["components"]:
+        comp_by_sw[(c["species"], measure_to_sixteenths(c["width"]))] = c["id"]
+
+    out: List[ActualPanel] = []
+    for code in codes:
+        panel_id, _, refs_str = code.partition(":")
+        refs = refs_str.split(";") if refs_str else []
+        pieces = [
+            _resolve_piece_ref(ref, cut_spec, project, tool_limits, comp_by_sw)
+            for ref in refs
+        ]
+        length = max((p.length for p in pieces), default=0)
+        got = [p.component_id for p in pieces]
+        ideal = _ideal_sequence(project, panel_id)
+        sequence_ok = got == ideal
+        out.append(ActualPanel(panel_id=panel_id, code=code, pieces=pieces,
+                               length=length, sequence_ok=sequence_ok))
+    return out

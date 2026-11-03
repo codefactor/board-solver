@@ -208,3 +208,40 @@ def test_rerun_archives_previous_folder(project, tool_limits, cut_spec, tmp_path
     assert os.path.isfile(os.path.join(second.archived, "README.md"))
     assert open(os.path.join(second.archived, "README.md")).read() == first_md
     assert os.path.isfile(second.markdown_path)
+
+
+# --------------------------------------------------------------------------- #
+# actual panels (panel codes in the cut-spec)
+# --------------------------------------------------------------------------- #
+
+def test_actual_panels_parse_and_validate(project, tool_limits, cut_spec):
+    from boardsolver import derive
+    from boardsolver.geometry import measure_to_sixteenths
+    panels = derive.actual_panels(project, cut_spec, tool_limits)
+    assert panels, "committed cut-spec should declare at least one actual panel"
+    s = panels[0]
+    assert s.panel_id == "S"
+    assert s.sequence_ok is True
+    # derived length = longest piece (34"); trailing Md is the short 27 1/2"
+    assert s.length == measure_to_sixteenths([34, 0])
+    assert [p.component_id for p in s.pieces] == \
+        ["Me", "C2", "M1", "C2", "Md", "C2", "M1", "C2", "Md"]
+
+
+def test_actual_panel_bad_ref_raises(project, tool_limits, cut_spec):
+    import copy
+    from boardsolver import derive
+    bad = copy.deepcopy(cut_spec)
+    bad["panels"] = ["S:NOSUCH/0/0"]
+    with pytest.raises(ValueError):
+        derive.actual_panels(project, bad, tool_limits)
+
+
+def test_actual_panel_sequence_mismatch_flagged(project, tool_limits, cut_spec):
+    import copy
+    from boardsolver import derive
+    bad = copy.deepcopy(cut_spec)
+    # One cherry piece only — not the S sequence.
+    bad["panels"] = ["S:BC1A/1/0"]
+    panels = derive.actual_panels(project, bad, tool_limits)
+    assert panels[0].sequence_ok is False

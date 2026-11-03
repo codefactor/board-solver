@@ -93,6 +93,11 @@
                     "$ref": "#/definitions/id",
                     "description": "Unique identifier for this panel. A slice is addressed as {panel-id} for a single-profile panel, or {panel-id}-{profile-id} when the panel has profiles."
                 },
+                "count": {
+                    "type": "integer",
+                    "description": "How many of this ideal panel the finished design needs (per finished board; multiplied by batch). Omitted means 1. The ideal panel is the perfect-world glue-up whose length is derived from its slice demand; a cut-spec may realize it as several shorter actual panels.",
+                    "minimum": 1
+                },
                 "thickness": {
                     "description": "The thickness this panel is planed to before slicing. Each slice stands at this height. If sliceStrips is present, each slice is then ripped into equal strips whose width becomes the installed row height instead.",
                     "$ref": "#/definitions/measurement"
@@ -194,6 +199,14 @@
                     "type": "array",
                     "description": "Every board that is produced and used. Each board has exactly one origin: ripped from a project board (source), the width-remainder of another cut-spec board (sourceRemainder), or a bought board (buySpecies).",
                     "items": { "$ref": "#/definitions/board-cut-spec" }
+                },
+                "panels": {
+                    "type": "array",
+                    "description": "Optional. The ACTUAL panels this plan builds, each described by a panel code. A panel code is '{panelId}:{ref};{ref};...' where each ref is '{boardId}/{stripIndex}/{cutIndex}' addressing one produced component piece (board id from boards[], then the 0-based strip index within that board and cut index within that strip). The referenced pieces are glued side by side in order, aligned on the top edge; the panel's length and profile regions are derived from their lengths (a shorter trailing piece ends the fuller profile region). The resolved component sequence must match the ideal panel's sequence. One code = one physical panel; repeat the panel id across codes for multiple actual panels.",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z\\d]+:[A-Za-z\\d]+(-[A-Za-z\\d]+)?/\\d+/\\d+(;[A-Za-z\\d]+(-[A-Za-z\\d]+)?/\\d+/\\d+)*$"
+                    }
                 }
             }
         },
