@@ -296,7 +296,8 @@ def render_panel_faces(
         body_y = y0 + half_snipe
 
         ry = body_y
-        for resolved, count in m["regions"]:
+        region_boundaries = []  # y of each interior profile transition
+        for ri, (resolved, count) in enumerate(m["regions"]):
             region_h = px(count * slice_depth, scale)
             cx = x
             for c in resolved.components:
@@ -304,10 +305,23 @@ def render_panel_faces(
                 canvas.rect(cx, ry, cwpx, region_h, fill=colors[c.species], outline=_OUTLINE)
                 cx += cwpx
             ry += region_h
+            if ri < len(m["regions"]) - 1:
+                region_boundaries.append(ry)  # transition to the next profile
 
         for i in range(1, m["n"]):
             ly = body_y + px(i * slice_depth, scale)
             canvas.dashed_hline(x - overflow, x + full_w_px + overflow, ly, "#444444", width=1)
+
+        # Profile transitions: solid line across + a blue diamond off the right
+        # edge, vertically centered on the transition.
+        for by in region_boundaries:
+            canvas.line(x, by, x + full_w_px, by, "#222222", width=2)
+            d = 6  # diamond half-size
+            dx = x + full_w_px + overflow + d + 2  # center, just right of the panel
+            canvas.polygon(
+                [(dx, by - d), (dx + d, by), (dx, by + d), (dx - d, by)],
+                fill="#1f6fe0", outline="#0b3c86",
+            )
 
         kerf_px = px(m["kerf_len"], scale)
         kerf_y = body_y + px(m["body_len"], scale)
