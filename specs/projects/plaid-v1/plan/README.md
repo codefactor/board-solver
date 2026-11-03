@@ -66,6 +66,21 @@ Each panel drawn to scale with its length running top-to-bottom. Components are 
 
 ![Panel faces to scale](images/panel-faces-743b16327ac8.png)
 
+### Slice Fulfillment
+
+**Demand** is every slice the grid places across all 2 finished board(s). **Supplied** is the slices the panels above produce — snipe lost, ripped panels multiplied by their strip count. **Supply Offset** = supplied − demand: negative is a shortfall, positive is extra (ideally non-negative everywhere).
+
+| Slice | Demand | Supplied | Supply Offset |
+| --- | --- | --- | --- |
+| S-L | 10 × 2 = 20 | 22 | +2 |
+| S-R | 10 × 2 = 20 | 22 | +2 |
+| M-L | 10 × 2 = 20 | 22 | +2 |
+| M-R | 10 × 2 = 20 | 22 | +2 |
+| H-L | 4 × 2 = 8 | 8 | 0 |
+| H-R | 4 × 2 = 8 | 8 | 0 |
+
+_The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in this section. A panel type may have more than one instance; the ideal panels are always quantity 1._
+
 ### Ripped Slice Diagram
 
 Slices from panels that are ripped (sliceStrips). Identical slices across panels are merged into one diagram, labeled with how many to cut. The horizontal axis is the slice length (end-grain face); dashed lines are the rip cuts; the red band is rip kerf + planing / margin loss.
@@ -132,18 +147,3 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 The final step: arrange the slices into the finished face. The same grid keyed by slice id — each slice is framed in its legend color so you can see how to arrange the grid cell by cell. A corner triangle marks a slice placed horizontally flipped.
 
 ![Slice grid keyed by slice id](images/slice-map-b513ce4c791c.png)
-
-### Slice Fulfillment
-
-**Demand** is every slice the grid places across all 2 finished board(s). **Supplied** is the slices the panels (Panels overview) produce — snipe lost, ripped panels multiplied by their strip count. **Supply Offset** = supplied − demand: negative is a shortfall, positive is extra (ideally non-negative everywhere).
-
-| Slice | Demand | Supplied | Supply Offset |
-| --- | --- | --- | --- |
-| S-L | 10 × 2 = 20 | 22 | +2 |
-| S-R | 10 × 2 = 20 | 22 | +2 |
-| M-L | 10 × 2 = 20 | 22 | +2 |
-| M-R | 10 × 2 = 20 | 22 | +2 |
-| H-L | 4 × 2 = 8 | 8 | 0 |
-| H-R | 4 × 2 = 8 | 8 | 0 |
-
-_The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in the Panels overview section. A panel type may have more than one instance; the ideal panels are always quantity 1._
