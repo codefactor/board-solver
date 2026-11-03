@@ -121,15 +121,15 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 | Component | Species | Width | Length | Demand | Fulfilled | Shortfall | Total Overcut |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Me | maple | ¾″ | 66½″ | 80 | 0 | 80 | 0 |
+| C1 | cherry | 1½″ | 66½″ | 80 | 0 | 80 | 0 |
 | C2 | cherry | ¾″ | 66½″ | 160 | 0 | 160 | 0 |
 | M1 | maple | 1½″ | 66½″ | 80 | 0 | 80 | 0 |
 | Md | maple | ¼″ | 66½″ | 120 | 0 | 120 | 0 |
-| W2 | walnut | ¾″ | 66½″ | 160 | 0 | 160 | 0 |
-| C1 | cherry | 1½″ | 66½″ | 80 | 0 | 80 | 0 |
+| Md | maple | ¼″ | 27½″ | 24 | 5 | 19 | 26″ |
+| Me | maple | ¾″ | 66½″ | 80 | 0 | 80 | 0 |
 | Me | maple | ¾″ | 27½″ | 16 | 4 | 12 | 19½″ |
 | W1 | walnut | 3″ | 27½″ | 32 | 2 | 30 | 0 |
-| Md | maple | ¼″ | 27½″ | 24 | 5 | 19 | 26″ |
+| W2 | walnut | ¾″ | 66½″ | 160 | 0 | 160 | 0 |
 
 **Unused pieces** — produced by the cut list but not attributable to any demand (wrong length for every demand row that needed this component):
 

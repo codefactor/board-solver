@@ -293,7 +293,7 @@ def build_markdown(
         cols.append("Total Overcut")
     L.append("| " + " | ".join(cols) + " |")
     L.append("| " + " | ".join("---" for _ in cols) + " |")
-    for r in rows:
+    for r in sorted(rows, key=lambda r: (r.component_id, -r.length)):
         line = (
             f"| {r.component_id} | {_species_short(r.species)} | {frac_inches(r.width)} | "
             f"{frac_inches(r.length)} | {r.demand} | {r.fulfilled} | {r.shortfall} |"
