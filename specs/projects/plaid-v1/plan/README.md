@@ -28,13 +28,13 @@ The finished plaid face.
 
 ## 3. Volume Sanity Check
 
-A per-species feasibility check in board feet (1 BF = 144 cubic inches). **Required** is the surfaced volume of every installed slice across all 2 board(s) plus the volume that must be removed to produce them — flattening (sliceDepth − finishedThickness), planing all four edges (minPlaneLoss), and one miter kerf per slice. **Available** is the inventory stock volume. **Volume Offset** = available − required; a negative value means the project cannot be built from stock in hand.
+A per-species feasibility check in board feet (1 BF = 144 cubic inches). **Required** is the surfaced volume of every installed slice across all 2 board(s) plus the volume that must be removed to produce them — flattening (sliceDepth − finishedThickness), planing all four edges (minPlaneLoss), and one miter kerf per slice. **Available** is the inventory stock volume. **Volume Offset** = available − required, with available as a percentage of required in parentheses (100% means they are equal); a negative value means the project cannot be built from stock in hand.
 
 | Species | Available | Required | Volume Offset |
 | --- | --- | --- | --- |
-| maple | 6.9 BF | 1.4 BF + 1.0 BF loss = 2.4 BF | +4.5 BF |
-| cherry | 3.9 BF | 1.6 BF + 1.0 BF loss = 2.6 BF | +1.3 BF |
-| walnut | 3.8 BF | 1.0 BF + 0.7 BF loss = 1.7 BF | +2.0 BF |
+| maple | 6.9 BF | 1.4 BF + 1.0 BF loss = 2.4 BF | +4.5 BF (285%) |
+| cherry | 3.9 BF | 1.6 BF + 1.0 BF loss = 2.6 BF | +1.3 BF (149%) |
+| walnut | 3.8 BF | 1.0 BF + 0.7 BF loss = 1.7 BF | +2.0 BF (218%) |
 
 ## 4. Crosscut Blanks
 

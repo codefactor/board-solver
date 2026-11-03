@@ -113,8 +113,10 @@ def build_markdown(
         f"{batch} board(s) plus the volume that must be removed to produce them — "
         "flattening (sliceDepth − finishedThickness), planing all four edges "
         "(minPlaneLoss), and one miter kerf per slice. **Available** is the "
-        "inventory stock volume. **Volume Offset** = available − required; a "
-        "negative value means the project cannot be built from stock in hand."
+        "inventory stock volume. **Volume Offset** = available − required, with "
+        "available as a percentage of required in parentheses (100% means they "
+        "are equal); a negative value means the project cannot be built from "
+        "stock in hand."
     )
     L.append("")
     L.append("| Species | Available | Required | Volume Offset |")
@@ -126,9 +128,11 @@ def build_markdown(
         off = r.available - need
         off_bf = off / 4096 / 144
         off_s = f"+{off_bf:.1f}" if off_bf >= 0 else f"{off_bf:.1f}"
+        pct = (r.available / need * 100) if need else 0
         req = f"{_bf(r.finished)} BF + {_bf(r.required_loss)} BF loss = {_bf(need)} BF"
         L.append(
-            f"| {_species_short(r.species)} | {_bf(r.available)} BF | {req} | {off_s} BF |"
+            f"| {_species_short(r.species)} | {_bf(r.available)} BF | {req} | "
+            f"{off_s} BF ({pct:.0f}%) |"
         )
     L.append("")
 
