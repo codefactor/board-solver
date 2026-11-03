@@ -9,7 +9,6 @@ This is a generated plan: the finished design and the cut list that realizes it 
 | # | Lvl | Type | Message |
 | --- | --- | --- | --- |
 | 1 | 🟡 | ghost_boards | 1 board(s) must be bought (not in inventory): GHC0A. |
-| 2 | 🟡 | small_margin | Board GHC0A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 
 ## 2. Finished board pattern
 

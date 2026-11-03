@@ -792,8 +792,10 @@ def warnings(
         ))
 
     # --- YELLOW: small positive margin (under-supply risk) ---------------- #
+    # Skip bought (ghost) boards: a ghost board is bought to size, so a tight
+    # margin on it is expected, not a risk worth flagging.
     for r in rips:
-        if 0 <= r.margin < small_margin_threshold:
+        if not r.buy_required and 0 <= r.margin < small_margin_threshold:
             out.append(Warning(
                 "yellow", "small_margin",
                 f"Board {r.id} leaves only {frac_inches(r.margin)} margin "

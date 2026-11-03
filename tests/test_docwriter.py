@@ -383,3 +383,11 @@ def test_warning_panel_components_short(project, tool_limits, cut_spec):
     # Synthetic cut-spec doesn't supply every component the (ideal-defaulted)
     # panels need at panel length -> panel_components_short fires.
     assert "panel_components_short" in codes
+
+
+def test_no_small_margin_warning_on_ghost_boards(project, tool_limits, cut_spec):
+    # A bought (ghost) board is bought to size, so a tight margin on it must not
+    # raise a small_margin warning. The synthetic GHX ghost board is packed tight.
+    msgs = [w.message for w in derive.warnings(project, cut_spec, tool_limits)
+            if w.code == "small_margin"]
+    assert not any("GHX" in msg for msg in msgs)
