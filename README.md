@@ -38,6 +38,43 @@ src/                             Implementation (empty until Round 1 begins).
 
 All measurements are integer tuples `[whole_inches, sixteenths]`.
 
+## Bundles: design + inventory + solution (the new path)
+
+The old format packs pattern, boards and panel choices into one
+`project.yaml`. The bundle format splits them, so one combination
+never overwrites another:
+
+- `specs/designs/<name>.yaml` — pattern only (grid, components,
+  panels, batch, thickness, slice depth). No boards, no panel specs.
+- `specs/inventories/<name>.yaml` — a reusable pile of boards. The
+  same inventory feeds any design, with no copying.
+- `specs/solutions/<design>.<inventory>.<kind>.yaml` — a cut list
+  plus metadata naming its design, inventory, kind (`hand` or
+  `solver`) and date. A solver run writes a new solver solution; it
+  never overwrites a hand solution.
+
+Panels are derived, not hand-written, on this path: panel count and
+length come from grid demand, slice pitch, snipe, batch and a
+one-spare-slice-per-profile policy, capped so a panel still lets two
+sticks fit in one crosscut blank. The derived panels match the
+committed plaid-v1 and chess-v1 panel specs exactly.
+
+Deliver one run, exactly the output asked for:
+
+```
+./run.sh deliver plaid-v1 --inventory actual --solution hand --what cut-list
+./run.sh deliver chess-v1 --inventory hypothetical --what pdf
+./run.sh deliver plaid-v1 --inventory actual --what all
+```
+
+Outputs live under `specs/runs/<design>.<inventory>.<solution>/`
+by default (or `--out=DIR`), so a new pile or a new cut list gets
+its own folder. With no `--solution`, the solver runs and saves a
+new `<design>.<inventory>.solver.yaml` (unless `--no-save-solution`).
+
+The old path is unchanged: `./run.sh plan / solve / pdf <project>`
+still work on `specs/projects/<project>/` exactly as before.
+
 ## How the system is meant to run
 
 Two runnable processes share one library of drawing/geometry primitives:

@@ -12,3 +12,8 @@ specs/projects/*/archive/
 # Archive directories anywhere (keep history out of git for now).
 archive/
 **/archive/
+
+# Bundle runs are regenerable on demand via ./run.sh deliver, so they
+# are not tracked; the designs, inventories and solutions that
+# produce them are tracked.
+specs/runs/
