@@ -87,13 +87,16 @@ def test_board_rips_used_loss_margin(project, tool_limits, cut_spec):
 
 
 def test_component_demand_counts(project, tool_limits):
+    # Stick model: one stick per component position per physical panel. The
+    # synthetic project has no panelSpecs, so panel_specs falls back to one ideal
+    # panel per type. Panel R's sequence (M W D) has W once -> 1 W stick at R len.
     d = {(c.id, c.length): c.count for c in derive.component_demand(project, tool_limits)}
-    # batch = 2. W is used 2x per P... no: W is in panel R (R-L: M W D, R-R: M W).
-    # Grid row R places R-L + R-R once each per board. R-L has 1 W, R-R has 1 W
-    # => 2 W per board at R-length; x2 batch = 4.
     from boardsolver.derive import panel_summaries
     rlen = {p.id: p.length for p in panel_summaries(project, tool_limits)}["R"]
-    assert d[("W", rlen)] == 4
+    assert d[("W", rlen)] == 1
+    # Panel P's sequence (M A B A) uses A twice -> 2 A sticks for the one P panel.
+    plen = {p.id: p.length for p in panel_summaries(project, tool_limits)}["P"]
+    assert d[("A", plen)] == 2
 
 
 def test_diagnostics_surface_ghost(project, tool_limits, cut_spec):

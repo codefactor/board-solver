@@ -8,15 +8,8 @@ This is a generated plan: the finished design and the cut list that realizes it 
 
 | # | Lvl | Type | Message |
 | --- | --- | --- | --- |
-| 1 | 🔴 | crosscut_overflow | Board BW1 is over-cut by 7⁵⁄₁₆″: its blanks demand more length than the raw board has. |
-| 2 | 🔴 | crosscut_overflow | Board BW2 is over-cut by 13¹³⁄₁₆″: its blanks demand more length than the raw board has. |
-| 3 | 🔴 | over_rip | Cut list for board BC1A over-rips by ¹⁄₁₆″: the strips are wider than the board. |
-| 4 | 🔴 | over_rip | Cut list for board BW1A over-rips by ⅛″: the strips are wider than the board. |
-| 5 | 🟡 | ghost_boards | 1 board(s) must be bought (not in inventory): GHC. |
-| 6 | 🟡 | shortfall | The cut list under-supplies 707 component piece(s) across 9 demand row(s) — see the Components section. |
-| 7 | 🟡 | small_margin | Board BC2A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
-| 8 | 🟡 | small_margin | Board GHC leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
-| 9 | 🟡 | panel_components_short | The cut list cannot supply all components the speced panels need: Me (short 9), C2 (short 16), M1 (short 8), Md (short 14), W2 (short 16), C1 (short 8), W1 (short 2). |
+| 1 | 🟡 | ghost_boards | 1 board(s) must be bought (not in inventory): GHC0A. |
+| 2 | 🟡 | small_margin | Board GHC0A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 
 ## 2. Finished board pattern
 
@@ -42,18 +35,18 @@ The first operation: crosscut each raw inventory board along its length into the
 
 | Raw board | Species | Raw length | Blanks (id = length) | Leftover |
 | --- | --- | --- | --- | --- |
-| BC1 | cherry | 48⅛″ | BC1A = 47¾″ | ⅜″ |
-| BC2 | cherry | 48¹⁄₁₆″ | BC2A = 47¾″ | ⁵⁄₁₆″ |
-| BW1 | walnut | 54⁵⁄₁₆″ | BW1A = 27½″; BW1B = 34″ | -7⁵⁄₁₆″ (overflow!) |
-| BW2 | walnut | 54⁵⁄₁₆″ | BW2A = 34″; BW2B = 34″ | -13¹³⁄₁₆″ (overflow!) |
-| BM1 | maple | 98¹⁄₁₆″ | BM1A = 34″; BM1B = 34″ | 29¹⁵⁄₁₆″ |
+| BC1 | cherry | 48⅛″ | BC1A = 48″ | ⅛″ |
+| BC2 | cherry | 48¹⁄₁₆″ | BC2A = 48″ | ¹⁄₁₆″ |
+| BW1 | walnut | 54⁵⁄₁₆″ | BW1A = 48″ | 6⁵⁄₁₆″ |
+| BW2 | walnut | 54⁵⁄₁₆″ | BW2A = 48″ | 6⁵⁄₁₆″ |
+| BM1 | maple | 98¹⁄₁₆″ | BM1A = 48″; BM1B = 48″ | 1¹⁵⁄₁₆″ |
 | BM2 | maple | 47¹⁵⁄₁₆″ | — (untouched spare) | — |
 
 ### Crosscut Diagram
 
 Each bar is one raw board drawn to scale by length; segments are the blanks (labeled with id and length inside), reddish stripes are crosscut kerfs (sawdust), and the pale tail is leftover length. A red tail means the blanks overflow the raw board. An untouched spare is shown washed-out and uncut; a board used whole goes straight to the rip diagram.
 
-![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-512943d28810.png)
+![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-5f852af0dde9.png)
 
 ## 5. Panels overview
 
@@ -104,37 +97,35 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 
 | Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BC1A @ 7¼″ | BC1 | cherry | 47¾″ | 1½″ ×1 · ¾″ ×6 | 6″ | 1⁵⁄₁₆″ | -¹⁄₁₆″ |
-| BC2A @ 6¹⁵⁄₁₆″ | BC2 | cherry | 47¾″ | 1½″ ×3 · ¾″ ×2 | 6″ | ¹⁵⁄₁₆″ | 0″ |
-| BW1A @ 6¼″ | BW1 | walnut | 27½″ | 3″ ×2 | 6″ | ⅜″ | -⅛″ |
-| BW1B @ 6¼″ | BW1 | walnut | 34″ | ¾″ ×4 | 3″ | ¾″ | 2½″ |
-| BW2A @ 6¹⁄₁₆″ | BW2 | walnut | 34″ | ¾″ ×4 | 3″ | ¾″ | 2⁵⁄₁₆″ |
-| BW2B @ 6¹⁄₁₆″ | BW2 | walnut | 34″ | ¾″ ×4 | 3″ | ¾″ | 2⁵⁄₁₆″ |
-| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 34″ | 1½″ ×2 · ¾″ ×2 · ¼″ ×3 | 5¼″ | 1⁵⁄₁₆″ | 1⅞″ |
-| BM1B @ 8⁷⁄₁₆″ | BM1 | maple | 34″ | 1½″ ×2 · ¾″ ×2 · ¼″ ×2 | 5″ | 1⅛″ | 2⁵⁄₁₆″ |
-| GHC @ 7⅛″ | *None* | cherry | 34″ | 1½″ ×2 · ¾″ ×4 | 6″ | 1⅛″ | 0″ |
+| BC1A @ 7¼″ | BC1 | cherry | 48″ | 1½″ ×4 | 6″ | ¾″ | ½″ |
+| BC2A @ 6¹⁵⁄₁₆″ | BC2 | cherry | 48″ | ¾″ ×7 | 5¼″ | 1⁵⁄₁₆″ | ⅜″ |
+| GHC0A @ ¹⁵⁄₁₆″ | *None* | cherry | 48″ | ¾″ ×1 | ¾″ | ³⁄₁₆″ | 0″ |
+| BW1A @ 6¼″ | BW1 | walnut | 48″ | 3″ ×1 · ¾″ ×3 | 5¼″ | ¾″ | ¼″ |
+| BW2A @ 6¹⁄₁₆″ | BW2 | walnut | 48″ | ¾″ ×5 | 3¾″ | ¹⁵⁄₁₆″ | 1⅜″ |
+| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | 1½″ ×4 · ¾″ ×1 · ¼″ ×1 | 7″ | 1⅛″ | ⁵⁄₁₆″ |
+| BM1B @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | ¾″ ×4 · ¼″ ×6 | 4½″ | 1⅞″ | 2¹⁄₁₆″ |
 
 ### Board Rip Diagram
 
 Each labeled block below is one physical board. Horizontal bands are the strips ripped down the board's width; within a band, the colored cells are the crosscut pieces (with thin kerf gaps between them) and the lightened tail is the offcut. The pale band under the strips is the leftover margin; a gray title marks a board that must be bought.
 
-![Board Rip Diagram — how the cut list lands on each board](images/strip-map-0bdef5eca8ff.png)
+![Board Rip Diagram — how the cut list lands on each board](images/strip-map-e350cb2078bc.png)
 
 ## 7. Components
 
 **Demand** is what the finished pattern needs (counted from the slice grid; length is the panel the component belongs to). **Fulfilled** is how many the cut list supplies, matched longest-demand-first using exact-length pieces first, then longer pieces cut down (a piece shorter than the demand cannot be used). **Shortfall** is the unmet count. **Total Overcut** is the wasted length trimmed off — the sum of (piece length − demand length) across every longer piece that had to be cut down to fill this row (0 when exact-length pieces covered it).
 
-| Component | Species | Width | Length | Demand | Fulfilled | Shortfall | Total Overcut |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| C1 | cherry | 1½″ | 19⅜″ | 80 | 6 | 74 | 87¾″ |
-| C2 | cherry | ¾″ | 19⅜″ | 160 | 12 | 148 | 175½″ |
-| M1 | maple | 1½″ | 19⅜″ | 80 | 4 | 76 | 58½″ |
-| Md | maple | ¼″ | 19⅜″ | 120 | 5 | 115 | 66⅝″ |
-| Md | maple | ¼″ | 17¾″ | 24 | 0 | 24 | 0 |
-| Me | maple | ¾″ | 19⅜″ | 80 | 4 | 76 | 52″ |
-| Me | maple | ¾″ | 17¾″ | 16 | 0 | 16 | 0 |
-| W1 | walnut | 3″ | 17¾″ | 32 | 2 | 30 | 19½″ |
-| W2 | walnut | ¾″ | 19⅜″ | 160 | 12 | 148 | 175½″ |
+| Component | Species | Width | Length | Demand | Fulfilled | Shortfall |
+| --- | --- | --- | --- | --- | --- | --- |
+| C1 | cherry | 1½″ | 19⅜″ | 8 | 8 | 0 |
+| C2 | cherry | ¾″ | 19⅜″ | 16 | 16 | 0 |
+| M1 | maple | 1½″ | 19⅜″ | 8 | 8 | 0 |
+| Md | maple | ¼″ | 19⅜″ | 12 | 12 | 0 |
+| Md | maple | ¼″ | 17¾″ | 2 | 2 | 0 |
+| Me | maple | ¾″ | 19⅜″ | 8 | 8 | 0 |
+| Me | maple | ¾″ | 17¾″ | 1 | 1 | 0 |
+| W1 | walnut | 3″ | 17¾″ | 2 | 2 | 0 |
+| W2 | walnut | ¾″ | 19⅜″ | 16 | 16 | 0 |
 
 ## 8. Panels (profiles and sequence)
 

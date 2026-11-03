@@ -258,24 +258,27 @@ class ComponentDemand:
 def component_demand(
     project: Dict[str, Any], tool_limits: Dict[str, Any]
 ) -> List[ComponentDemand]:
-    """Count every component instance the finished board(s) require.
+    """Count every component STICK the plan's panels require.
 
-    Walks ``sliceGrid`` once per finished board (``batch``, default 1). Each
-    placed slice resolves to its component list; every component contributes one
-    instance at that slice's panel length. Keyed by (id, species, width, length).
+    Stick model: a panel is a glue-up of full-length sticks that is then sliced
+    crosswise, so one stick per component position yields all of that panel's
+    slices. Demand is therefore one stick per component in each physical panel's
+    sequence (panels come from panelSpecs expanded by count; see panel_specs),
+    at that panel's physical length. Keyed by (id, species, width, length).
+
+    (It is NOT one piece per installed slice — slicing multiplies a single stick
+    into many slices, so counting per slice over-states demand ~slices-fold.)
     """
-    lengths = {s.id: s.length for s in panel_summaries(project, tool_limits)}
-    batch = project.get("batch", 1)
+    panels_by_id = {p["id"]: p for p in project["panels"]}
+    comp_by_id = {c["id"]: c for c in project["components"]}
     tally: "OrderedDict[tuple, int]" = OrderedDict()
-    for row in project.get("sliceGrid", []):
-        for cell in row:
-            slice_id = cell["sliceId"]
-            panel_id = slice_id.split("-")[0]
-            plen = lengths[panel_id]
-            resolved = resolve_slice(project, slice_id)
-            for c in resolved.components:
-                key = (c.id, c.species, c.width, plen)
-                tally[key] = tally.get(key, 0) + batch
+    for spec in panel_specs(project, {}, tool_limits):
+        panel = panels_by_id[spec.panel_id]
+        plen = spec.length  # physical panel length (regions + snipe)
+        for pc in panel["components"]:
+            c = comp_by_id[pc["type"]]
+            key = (c["id"], c["species"], measure_to_sixteenths(c["width"]), plen)
+            tally[key] = tally.get(key, 0) + 1
     return [
         ComponentDemand(id=k[0], species=k[1], width=k[2], length=k[3], count=v)
         for k, v in tally.items()

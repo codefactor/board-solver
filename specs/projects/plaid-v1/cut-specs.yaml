@@ -1,179 +1,192 @@
 # yaml-language-server: $schema=../../../schema.json
-# Illustrative-but-grounded cut-specs for Plaid v1, hand-derived from project.yaml + tool-limits.
-# Slice pitch = sliceDepth(1 1/2) + miterKerf(1/8) = 1 5/8 per slice; snipeTail 1 1/2.
-# Panels are now split single-profile types (SL/SR/ML/MR) plus the ripped H panel;
-# each SL/SR/ML/MR is a short sub-panel so it fits under the 48" cut limit.
-# Long walnut (54") and maple (98") boards are crosscut to <=48" sections.
-# One bought cherry ghost board (GHC) covers the cherry shortfall.
+# Packed cut-specs for Plaid v1, derived from project.yaml panelSpecs (stick model:
+# one full-length stick per component position per panel, glued then sliced).
+# Boards ripped full-length into component-width strips; each strip crosscut into
+# panel-length sticks. Per-strip width budget reserves saw kerf + planing loss.
+# Panel codes address sticks as boardId/strip/cut. One ghost board covers the spill.
 boards:
 - id: BC1A
   source: BC1
-  length: [47, 12]
+  length: [48, 0]
   strips:
   - width: [1, 8]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
 - id: BC2A
   source: BC2
-  length: [47, 12]
+  length: [48, 0]
   strips:
-  - width: [1, 8]
-    cuts:
-    - [34, 0]
-  - width: [1, 8]
-    cuts:
-    - [34, 0]
-  - width: [1, 8]
-    cuts:
-    - [34, 0]
   - width: [0, 12]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+- id: GHC0A
+  buySpecies: Cherry
+  length: [48, 0]
+  strips:
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
 - id: BW1A
   source: BW1
-  length: [27, 8]
+  length: [48, 0]
   strips:
   - width: [3, 0]
     cuts:
-    - [27, 8]
-  - width: [3, 0]
-    cuts:
-    - [27, 8]
-- id: BW1B
-  source: BW1
-  length: [34, 0]
-  strips:
+    - [17, 12]
+    - [17, 12]
   - width: [0, 12]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
 - id: BW2A
   source: BW2
-  length: [34, 0]
+  length: [48, 0]
   strips:
   - width: [0, 12]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [34, 0]
-- id: BW2B
-  source: BW2
-  length: [34, 0]
-  strips:
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
 - id: BM1A
   source: BM1
-  length: [34, 0]
+  length: [48, 0]
   strips:
   - width: [1, 8]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [1, 8]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 4]
     cuts:
-    - [34, 0]
-  - width: [0, 4]
-    cuts:
-    - [34, 0]
-  - width: [0, 4]
-    cuts:
-    - [27, 8]
+    - [19, 6]
+    - [19, 6]
 - id: BM1B
   source: BM1
-  length: [34, 0]
+  length: [48, 0]
   strips:
-  - width: [1, 8]
-    cuts:
-    - [34, 0]
-  - width: [1, 8]
-    cuts:
-    - [34, 0]
   - width: [0, 12]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 12]
     cuts:
-    - [27, 8]
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [17, 12]
   - width: [0, 4]
     cuts:
-    - [34, 0]
+    - [19, 6]
+    - [19, 6]
   - width: [0, 4]
     cuts:
-    - [34, 0]
-- id: GHC
-  buySpecies: Cherry
-  length: [34, 0]
-  strips:
-  - width: [1, 8]
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
     cuts:
-    - [34, 0]
-  - width: [1, 8]
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
     cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
-  - width: [0, 12]
-    cuts:
-    - [34, 0]
+    - [17, 12]
+    - [17, 12]
+panels:
+- SL:BM1A/4/0;BC2A/0/0;BM1A/0/0;BC2A/0/1;BM1A/5/0;BC2A/1/0;BM1A/0/1;BC2A/1/1;BM1A/5/1
+- SL:BM1A/4/1;BC2A/2/0;BM1A/1/0;BC2A/2/1;BM1B/4/0;BC2A/3/0;BM1A/1/1;BC2A/3/1;BM1B/4/1
+- SR:BM1B/0/0;BC2A/4/0;BM1A/2/0;BC2A/4/1;BM1B/5/0;BC2A/5/0;BM1A/2/1;BC2A/5/1
+- SR:BM1B/0/1;BC2A/6/0;BM1A/3/0;BC2A/6/1;BM1B/5/1;GHC0A/0/0;BM1A/3/1;GHC0A/0/1
+- ML:BM1B/1/0;BW1A/1/0;BC1A/0/0;BW1A/1/1;BM1B/6/0;BW1A/2/0;BC1A/0/1;BW1A/2/1;BM1B/6/1
+- ML:BM1B/1/1;BW1A/3/0;BC1A/1/0;BW1A/3/1;BM1B/7/0;BW2A/0/0;BC1A/1/1;BW2A/0/1;BM1B/7/1
+- MR:BM1B/2/0;BW2A/1/0;BC1A/2/0;BW2A/1/1;BM1B/8/0;BW2A/2/0;BC1A/2/1;BW2A/2/1
+- MR:BM1B/2/1;BW2A/3/0;BC1A/3/0;BW2A/3/1;BM1B/8/1;BW2A/4/0;BC1A/3/1;BW2A/4/1
+- H:BM1B/3/0;BW1A/0/0;BM1B/9/0;BW1A/0/1;BM1B/9/1
