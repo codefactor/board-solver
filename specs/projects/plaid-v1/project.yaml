@@ -165,22 +165,22 @@ panels:
       - type: Md
         maxProfile: 1
 
-# Chosen panels to build (solver input): two identical panels of each type, each
-# producing half the ideal slice demand, so the pair covers the full grid.
-# profileLengths are per-profile region extents (fullest-first); region length =
-# slices x pitch, pitch = sliceDepth[1 1/2"] + miterKerf[1/8"] = 1 10/16".
-#   S,M: 10 L + 10 R slices each -> 10 x 26/16 = 16 1/4" per region.
-#   H:    4 L +  4 R slices each ->  4 x 26/16 =  6 1/2" per region.
+# Chosen panels to build (solver input). profileLengths are per-profile region
+# extents (fullest-first); region length = slices x pitch, pitch = sliceDepth
+# [1 1/2"] + miterKerf[1/8"] = 1 10/16".
+#   S,M: two panels x (11 L + 11 R) -> 22/22 supplied vs 20/20 demand = 1 spare
+#        slice per panel per profile; 11 x 26/16 = 17 14/16" per region.
+#   H:   one panel x (8 L + 8 R) -> exactly the 8/8 demand; 8 x 26/16 = 13" region.
 panelSpecs:
   - panel: S
-    profileLengths: [[16, 4], [16, 4]]
+    profileLengths: [[17, 14], [17, 14]]
     count: 2
   - panel: M
-    profileLengths: [[16, 4], [16, 4]]
+    profileLengths: [[17, 14], [17, 14]]
     count: 2
   - panel: H
-    profileLengths: [[6, 8], [6, 8]]
-    count: 2
+    profileLengths: [[13, 0], [13, 0]]
+    count: 1
 
 boards:
  - id: BC1
