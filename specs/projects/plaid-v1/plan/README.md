@@ -17,7 +17,7 @@ This is a generated plan: the finished design and the cut list that realizes it 
 | 7 | 🟡 | small_margin | Board BC2A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 8 | 🟡 | small_margin | Board GHC leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 9 | 🟡 | panel_components_short | The cut list cannot supply all components the speced panels need: Me (short 4), C2 (short 8), M1 (short 4), Md (short 9), W2 (short 8), C1 (short 4). |
-| 10 | ⚪ | no_spare_slices | No spare slices for: H-L, H-R (supply exactly meets demand). Consider slightly larger/more panels so a bad slice does not cause a shortfall. |
+| 10 | ⚪ | slice_oversupply | The panels produce far more slices than needed (> 5): H-L (+8), H-R (+8). The panels are likely too big — shorten them to use less material. |
 
 ## 2. Finished board pattern
 
@@ -76,8 +76,8 @@ Each panel drawn to scale with its length running top-to-bottom. Components are 
 | S-R | 10 × 2 = 20 | 22 | +2 |
 | M-L | 10 × 2 = 20 | 22 | +2 |
 | M-R | 10 × 2 = 20 | 22 | +2 |
-| H-L | 4 × 2 = 8 | 8 | 0 |
-| H-R | 4 × 2 = 8 | 8 | 0 |
+| H-L | 4 × 2 = 8 | 8 × 2 = 16 | +8 |
+| H-R | 4 × 2 = 8 | 8 × 2 = 16 | +8 |
 
 _The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in this section. A panel type may have more than one instance; the ideal panels are always quantity 1._
 

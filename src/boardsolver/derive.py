@@ -1227,8 +1227,10 @@ class SliceDemandRow:
     per_board: int      # grid placements in one finished board
     batch: int          # number of finished boards
     demand: int         # per_board * batch
-    supplied: int       # slices produced by panel specs
+    supplied: int       # INSTALLED slices supplied (pre_rip_supplied * rip_mult)
     shortfall: int
+    pre_rip_supplied: int = 0   # crosscut slices off the panels, before ripping
+    rip_mult: int = 1           # sliceStrips.count for this slice's panel (else 1)
 
 
 def slice_fulfillment(
@@ -1248,17 +1250,29 @@ def slice_fulfillment(
             sid = cell["sliceId"]
             per_board[sid] = per_board.get(sid, 0) + 1
 
-    # Supply: slices produced by panel specs, keyed as panel-profile.
-    supply: Dict[str, int] = {}
+    # Supply: crosscut slices produced by panel specs, keyed as panel-profile.
+    # A sliceStrips panel rips each crosscut slice into count installed slices,
+    # so the INSTALLED supply is the crosscut count times the rip multiplier.
+    panels_by_id = {p["id"]: p for p in project["panels"]}
+    rip_mult_by_panel: Dict[str, int] = {}
+    for p in project["panels"]:
+        ss = p.get("sliceStrips")
+        rip_mult_by_panel[p["id"]] = ss["count"] if ss else 1
+    pre_rip: Dict[str, int] = {}
     for spec in panel_specs(project, cut_spec, tool_limits):
         for prof_id, n in spec.profile_slices:
             sid = f"{spec.panel_id}-{prof_id}" if prof_id else spec.panel_id
-            supply[sid] = supply.get(sid, 0) + n
+            pre_rip[sid] = pre_rip.get(sid, 0) + n
 
     rows = []
     for sid, pb in per_board.items():
         d = pb * batch
-        s = supply.get(sid, 0)
-        rows.append(SliceDemandRow(slice_id=sid, per_board=pb, batch=batch,
-                                   demand=d, supplied=s, shortfall=max(d - s, 0)))
+        panel_id = sid.split("-")[0]
+        mult = rip_mult_by_panel.get(panel_id, 1)
+        pre = pre_rip.get(sid, 0)
+        s = pre * mult
+        rows.append(SliceDemandRow(
+            slice_id=sid, per_board=pb, batch=batch, demand=d, supplied=s,
+            shortfall=max(d - s, 0), pre_rip_supplied=pre, rip_mult=mult,
+        ))
     return rows

@@ -314,6 +314,12 @@ def test_slice_fulfillment_two_layer(project, tool_limits, cut_spec):
     # R-L placed in 1 row -> 1 x batch 2 = 2.
     assert by["R-L"].demand == 2
     assert all(r.shortfall >= 0 for r in rows)
+    # R is a sliceStrips panel (count 2): installed supply = crosscut slices x 2.
+    assert by["R-L"].rip_mult == 2
+    assert by["R-L"].supplied == by["R-L"].pre_rip_supplied * 2
+    # A non-ripped panel has rip_mult 1 and supplied == pre_rip.
+    assert by["P-L"].rip_mult == 1
+    assert by["P-L"].supplied == by["P-L"].pre_rip_supplied
 
 
 # --------------------------------------------------------------------------- #

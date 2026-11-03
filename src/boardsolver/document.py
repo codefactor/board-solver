@@ -202,7 +202,11 @@ def build_markdown(
         offset = r.supplied - r.demand
         off = f"+{offset}" if offset > 0 else str(offset)
         dem = f"{r.per_board} × {r.batch} = {r.demand}"
-        L.append(f"| {r.slice_id} | {dem} | {r.supplied} | {off} |")
+        if r.rip_mult > 1:
+            sup = f"{r.pre_rip_supplied} × {r.rip_mult} = {r.supplied}"
+        else:
+            sup = str(r.supplied)
+        L.append(f"| {r.slice_id} | {dem} | {sup} | {off} |")
     L.append("")
     L.append(
         "_The slice counts supplied are calculated assuming the panels and their "
