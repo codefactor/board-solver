@@ -5,15 +5,5 @@ out/
 tests/_artifacts/
 *.egg-info/
 
-# Generated document output: the CURRENT plan/ is tracked (it's the artifact a
-# human reviews). Only the archived history is ignored.
-specs/projects/*/archive/
-
-# Archive directories anywhere (keep history out of git for now).
-archive/
-**/archive/
-
-# Bundle runs are regenerable on demand via ./run.sh deliver, so they
-# are not tracked; the designs, inventories and solutions that
-# produce them are tracked.
-specs/runs/
+# Plans under plans/ are tracked: they are the artifact a human reviews,
+# and git history is how an old plan is recovered.

@@ -299,20 +299,20 @@
                 },
                 "design": {
                     "type": "string",
-                    "description": "Design this solution was made for (bundle metadata; absent on legacy cut-specs)."
+                    "description": "Design this cut-spec was made for (metadata; absent on legacy cut-specs)."
                 },
                 "inventory": {
                     "type": "string",
-                    "description": "Inventory this solution was made from (bundle metadata; absent on legacy cut-specs)."
+                    "description": "Inventory this cut-spec was made from (metadata; absent on legacy cut-specs)."
                 },
                 "kind": {
                     "type": "string",
                     "enum": ["hand", "solver"],
-                    "description": "How this solution was made: hand-crafted, or solver-generated."
+                    "description": "How this cut-spec was made: hand-crafted, or solver-generated."
                 },
                 "date": {
                     "type": "string",
-                    "description": "Date this solution was written, YYYY-MM-DD."
+                    "description": "Date this cut-spec was written, YYYY-MM-DD."
                 },
                 "panels": {
                     "type": "array",

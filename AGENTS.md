@@ -23,8 +23,9 @@ defines the code to be written in ordered rounds. `src/` is empty until Round 1.
   hyphens (`S-L`, at most two segments). Never put a hyphen inside an atomic id.
 - **Respect the round boundaries** in `docs/function-specs.md`. Implement the round you were
   asked to; do not build later rounds ahead of time.
-- **Generated artifacts are versioned, never clobbered.** The solver archives the previous
-  `cut-specs.yaml`; the document-writer writes a new versioned folder and archives the old.
+- **Generated plans are overwritten on rerun, not kept beside the current one.**
+  The project lives in git: an old plan is recovered by checking out an old
+  commit, using the design + inventory + cut-spec tuple as its identity.
   Images use content-hash filenames for cache-busting.
 
 ## Axis / term discipline (these words have fixed meanings — use them exactly)

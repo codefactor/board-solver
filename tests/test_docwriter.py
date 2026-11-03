@@ -2,7 +2,7 @@
 
 Driven by the synthetic fixtures in conftest.py (NOT the committed project
 files, which change over time). Covers: true-grid validation, derived tables,
-image hash stability, archive-on-rerun, and actual-panel parsing.
+image hash stability, overwrite-on-rerun, and actual-panel parsing.
 """
 
 from __future__ import annotations
@@ -212,7 +212,7 @@ def test_slice_palette_overflow_raises():
 
 
 # --------------------------------------------------------------------------- #
-# versioned output + archive-on-rerun
+# output folder: self-contained, overwritten on rerun (git is recovery)
 # --------------------------------------------------------------------------- #
 
 def test_write_document_creates_self_contained_folder(project, tool_limits, cut_spec, tmp_path):
@@ -222,22 +222,18 @@ def test_write_document_creates_self_contained_folder(project, tool_limits, cut_
     for relpath in res.images.values():
         assert relpath.startswith("images/")
         assert os.path.isfile(os.path.join(res.folder, relpath))
-    assert res.archived is None
     assert all("-" in f and f.endswith(".png") for f in res.images.values())
 
 
-def test_rerun_archives_previous_folder(project, tool_limits, cut_spec, tmp_path):
-    from datetime import datetime, timezone
-    first = write_document(project, tool_limits, cut_spec, str(tmp_path),
-                           now=datetime(2025, 1, 1, tzinfo=timezone.utc))
+def test_rerun_overwrites_previous_folder(project, tool_limits, cut_spec, tmp_path):
+    first = write_document(project, tool_limits, cut_spec, str(tmp_path))
     first_md = open(first.markdown_path).read()
-    second = write_document(project, tool_limits, cut_spec, str(tmp_path),
-                            now=datetime(2025, 1, 2, tzinfo=timezone.utc))
-    assert second.archived is not None
-    assert os.path.isdir(second.archived)
-    assert os.path.isfile(os.path.join(second.archived, "README.md"))
-    assert open(os.path.join(second.archived, "README.md")).read() == first_md
+    second = write_document(project, tool_limits, cut_spec, str(tmp_path))
+    assert second.markdown_path == first.markdown_path
+    assert open(second.markdown_path).read() == first_md
     assert os.path.isfile(second.markdown_path)
+    # No side copy is kept: git history is the recovery path.
+    assert not os.path.exists(os.path.join(str(tmp_path), "archive"))
 
 
 # --------------------------------------------------------------------------- #

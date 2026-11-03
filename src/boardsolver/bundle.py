@@ -1,10 +1,10 @@
-"""Design / inventory / solution bundles: the new, split format.
+"""Design / inventory / cut-spec bundles: the new, split format.
 
-The old format packs everything into one project.yaml: the pattern, the
-boards in hand, and the chosen physical panels (panelSpecs). That single
-slot means a new pile of boards, or a new cut list, overwrites the old
-one, and the same pattern cannot be reused with a different inventory
-without copying boards into it.
+The format splits what used to be packed into one file: the pattern, the
+boards in hand, and the chosen physical panels (panelSpecs). A new pile
+of boards, or a new cut list, gets its own named file, and the same
+pattern can be reused with a different inventory without copying boards
+into it.
 
 A bundle splits the three things, and names a run by all three:
 
@@ -12,18 +12,15 @@ A bundle splits the three things, and names a run by all three:
   sliceDepth, sliceGrid, components, panels. No boards, no panelSpecs.
 * inventory -- a reusable board list, referenced by name. The same
   inventory file is usable by more than one design, with no copying.
-* solution -- a cut-spec (boards + strips + cuts) plus metadata naming
+* cut-spec -- a cut-spec (boards + strips + cuts) plus metadata naming
   its design, its inventory, its kind (``hand`` or ``solver``) and its
-  date. A hand solution and a solver solution for the same design and
+  date. A hand cut-spec and a solver cut-spec for the same design and
   inventory are different files and never overwrite each other.
 
-``resolve_bundle`` turns a design + inventory back into the old
-project shape the rest of the code already understands: it attaches
-the inventory boards and a *derived* set of panelSpecs (see
-:func:`derive_panel_specs`), so solver, document-writer, PDF and all
-their math run unchanged on a bundle. The old project.yaml path is
-untouched: a project that already carries its own panelSpecs keeps
-using them.
+``resolve_bundle`` turns a design + inventory into the project shape
+the rest of the code already understands: it attaches the inventory
+boards and a *derived* set of panelSpecs (see :func:`derive_panel_specs`),
+so solver, document-writer, PDF and all their math run on a bundle.
 
 Derived panel specs
 -------------------
@@ -174,48 +171,74 @@ def resolve_bundle(
     return project
 
 
-def solution_metadata(solution: Dict[str, Any]) -> Dict[str, Any]:
+def cut_spec_metadata(cut_spec: Dict[str, Any]) -> Dict[str, Any]:
     return {
-        "design": solution.get("design"),
-        "inventory": solution.get("inventory"),
-        "kind": solution.get("kind"),
-        "date": solution.get("date"),
+        "design": cut_spec.get("design"),
+        "inventory": cut_spec.get("inventory"),
+        "kind": cut_spec.get("kind"),
+        "date": cut_spec.get("date"),
     }
 
 
-def check_solution_matches(
-    solution: Dict[str, Any], design_name: str, inventory_name: str,
+def check_cut_spec_matches(
+    cut_spec: Dict[str, Any], design_name: str, inventory_name: str,
 ) -> None:
-    """Refuse to render a solution against the wrong design/inventory.
+    """Refuse to render a cut-spec against the wrong design/inventory.
 
-    A solution without metadata (the old hand/solved cut-spec shape)
-    is accepted as-is: it predates metadata and its caller already
-    knows which project it belongs to.
+    A cut-spec without metadata is accepted as-is: it predates
+    metadata and its caller already knows which design and inventory
+    it belongs to. A cut-spec whose metadata names another design, or
+    another inventory than the folder it was found in, is refused.
     """
-    if solution.get("design") is None and solution.get("inventory") is None:
+    if cut_spec.get("design") is None and cut_spec.get("inventory") is None:
         return
-    if solution.get("design") not in (None, design_name):
+    if cut_spec.get("design") not in (None, design_name):
         raise ValueError(
-            f"solution is for design {solution.get('design')!r}, "
+            f"cut-spec is for design {cut_spec.get('design')!r}, "
             f"not {design_name!r}")
-    if solution.get("inventory") not in (None, inventory_name):
+    if cut_spec.get("inventory") not in (None, inventory_name):
         raise ValueError(
-            f"solution is for inventory {solution.get('inventory')!r}, "
+            f"cut-spec is for inventory {cut_spec.get('inventory')!r}, "
             f"not {inventory_name!r}")
 
 
-def bundle_name(design_name: str, inventory_name: str, solution_name: str) -> str:
-    return f"{design_name}.{inventory_name}.{solution_name}"
+def cut_spec_stem(design_name: str, variant: str) -> str:
+    """File stem of a cut-spec inside an inventory: <design>.<variant>."""
+    return f"{design_name}.{variant}"
 
 
-def find_file(root: str, kind: str, name: str) -> str:
-    """Locate a design/inventory/solution file by name, or raise clearly."""
-    candidates = [
-        os.path.join(root, "specs", kind, f"{name}.yaml"),
-        os.path.join(root, "specs", kind, name),
-    ]
-    for path in candidates:
-        if os.path.exists(path):
-            return path
+def find_design(root: str, name: str) -> str:
+    """Locate a design file by name, or raise clearly."""
+    path = os.path.join(root, "specs", "designs", f"{name}.yaml")
+    if os.path.exists(path):
+        return path
+    raise FileNotFoundError(f"no design named {name!r} under specs/designs/")
+
+
+def find_inventory_boards(root: str, name: str) -> str:
+    """Locate an inventory's boards file by name, or raise clearly."""
+    path = os.path.join(root, "specs", "inventories", name, "boards.yaml")
+    if os.path.exists(path):
+        return path
     raise FileNotFoundError(
-        f"no {kind} named {name!r} under specs/{kind}/")
+        f"no inventory named {name!r} under specs/inventories/")
+
+
+def find_cut_spec(root: str, inventory_name: str, design_name: str,
+                  variant: str) -> str:
+    """Locate a cut-spec inside its inventory's folder only.
+
+    A cut-spec is only meaningful in the context of the inventory it
+    was cut from, so the lookup never searches another inventory's
+    folder: pairing a cut-spec with a different inventory is refused
+    here, with a clear file-not-found error, not silently rendered.
+    """
+    if variant.startswith(f"{design_name}."):
+        variant = variant[len(design_name) + 1:]
+    path = os.path.join(root, "specs", "inventories", inventory_name,
+                        "cut-specs", f"{design_name}.{variant}.yaml")
+    if os.path.exists(path):
+        return path
+    raise FileNotFoundError(
+        f"no cut-spec {design_name}.{variant} under "
+        f"specs/inventories/{inventory_name}/cut-specs/")
