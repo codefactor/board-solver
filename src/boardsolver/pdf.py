@@ -11,8 +11,9 @@ into the fork's .venv (``.venv/bin/pip install reportlab``) before
 running ``./run.sh pdf <project>``. DejaVuSans / DejaVuSans-Bold from
 the system font directory are registered so Unicode fractions
 (1/4, 1/2, 3/4, superscript fractions), prime marks, and dashes render
-correctly; the colour-emoji level markers in the warnings table are
-replaced with coloured bullets, which DejaVu does cover.
+correctly. Warning levels and types arrive from the MD already as
+words (ERROR/WARNING/NOTE, "Ghost Boards", etc.); this module renders
+them faithfully and does not transform their content.
 """
 
 import argparse
@@ -44,30 +45,15 @@ def _xml_escape(text):
     )
 
 
-# Machine warning codes (as they appear in the MD warnings table) ->
-# human-readable labels for the printed PDF. The MD itself keeps the
-# codes, so tests and tooling that match on them are unaffected.
-WARNING_LABELS = {
-    "crosscut_overflow": "Crosscut Overflow",
-    "over_rip": "Over Rip",
-    "rip_too_long": "Rip Too Long",
-    "crosscut_too_long": "Crosscut Too Long",
-    "slice_rip_too_deep": "Slice Rip Too Deep",
-    "ghost_boards": "Ghost Boards",
-    "small_margin": "Small Margin",
-}
-
-
 def md_inline_to_xml(text):
-    """Convert a small Markdown subset to ReportLab paragraph markup."""
-    if text.strip() in WARNING_LABELS:
-        return WARNING_LABELS[text.strip()]
+    """Convert a small Markdown subset to ReportLab paragraph markup.
+
+    No content transformation: the MD is the visual representation, so
+    levels and types already arrive as words (ERROR/WARNING/NOTE,
+    "Ghost Boards", etc.) from document.py. This function only handles
+    bold/italic/code markup.
+    """
     text = _xml_escape(text)
-    # Colour-emoji level markers -> semantic words (DejaVu has no emoji,
-    # and a colour alone is not a meaningful label). The coloured bullet
-    # is kept only as a secondary visual cue; the word carries the meaning.
-    text = text.replace("\U0001f534", '<font color="#c00000">\u25cf</font> ERROR')
-    text = text.replace("\U0001f7e1", '<font color="#b88600">\u25cf</font> WARNING')
     # Bold first, then italic, then inline code.
     text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
     text = re.sub(r"`([^`]+)`", r'<font face="DejaVuSansMono">\1</font>', text)

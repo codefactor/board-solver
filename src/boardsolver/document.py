@@ -82,14 +82,21 @@ def build_markdown(
     warns = warnings(project, cut_spec, tool_limits)
     if warns:
         order = {"red": 0, "yellow": 1, "gray": 2}
-        emoji = {"red": "\U0001F534", "yellow": "\U0001F7E1", "gray": "\u26AA"}
+        # The MD is the visual representation, so levels and types are
+        # written as human words here, not as internal codes or colours.
+        # derive.py keeps the machine values ("red"/"yellow"/"gray" and
+        # snake_case codes); this rendering layer is where they become
+        # ERROR/WARNING/NOTE and "Ghost Boards" etc. The PDF then renders
+        # the MD faithfully, with no content transformation of its own.
+        level_label = {"red": "ERROR", "yellow": "WARNING", "gray": "NOTE"}
         warns_sorted = sorted(warns, key=lambda w: order.get(w.level, 9))
         L.append(sec("Warnings"))
         L.append("")
         L.append("| # | Lvl | Type | Message |")
         L.append("| --- | --- | --- | --- |")
         for i, w in enumerate(warns_sorted, 1):
-            L.append(f"| {i} | {emoji.get(w.level, '')} | {w.code} | {w.message} |")
+            type_label = w.code.replace("_", " ").title()
+            L.append(f"| {i} | {level_label.get(w.level, w.level)} | {type_label} | {w.message} |")
         L.append("")
 
     # --- Section: finished board ----------------------------------------- #
