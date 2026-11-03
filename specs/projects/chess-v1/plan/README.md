@@ -1,6 +1,6 @@
 # Chess v1 — Cut Plan
 
-*Two end-grain chess-pattern boards, walnut and brown maple 0.5 in cells, wrapping cherry border 0.75 in.*
+*Two end-grain chess-pattern boards, walnut and brown maple 0.5 in cells, cherry border 0.25 in all sides, built from thin strips only (no component wider than 0.5 in).*
 
 This is a generated plan: the finished design and the cut list that realizes it on the boards in hand. Where the cut list cannot be met from inventory it calls for **bought boards** — buy those and re-run before cutting. The sections follow the build order, from the first crosscut to the final slice-grid assembly.
 
@@ -10,7 +10,7 @@ This is a generated plan: the finished design and the cut list that realizes it 
 
 The finished plaid face.
 
-![Finished plaid face](images/finished-board-5f6f71dbee97.png)
+![Finished plaid face](images/finished-board-8daaa9a0a698.png)
 
 ## 2. Volume Sanity Check
 
@@ -18,9 +18,9 @@ A per-species feasibility check in board feet (1 BF = 144 cubic inches). **Requi
 
 | Species | Available | Required | Volume Offset |
 | --- | --- | --- | --- |
-| maple | 1.1 BF | 0.1 BF + 0.1 BF loss = 0.3 BF | +0.8 BF (411%) |
-| cherry | 2.2 BF | 0.2 BF + 0.2 BF loss = 0.4 BF | +1.8 BF (533%) |
-| walnut | 1.1 BF | 0.1 BF + 0.1 BF loss = 0.3 BF | +0.8 BF (411%) |
+| maple | 6.9 BF | 0.1 BF + 0.1 BF loss = 0.3 BF | +6.6 BF (2615%) |
+| cherry | 3.9 BF | 0.1 BF + 0.1 BF loss = 0.2 BF | +3.7 BF (2372%) |
+| walnut | 3.8 BF | 0.1 BF + 0.1 BF loss = 0.3 BF | +3.5 BF (1430%) |
 
 ## 3. Crosscut Blanks
 
@@ -28,15 +28,18 @@ The first operation: crosscut each raw inventory board along its length into the
 
 | Raw board | Species | Raw length | Blanks (id = length) | Leftover |
 | --- | --- | --- | --- | --- |
-| BM1 | maple | 48″ | BM1A = 48″ (used whole) | 0″ |
-| BC1 | cherry | 48″ | BC1A = 48″ (used whole) | 0″ |
-| BW1 | walnut | 48″ | BW1A = 48″ (used whole) | 0″ |
+| BM1 | maple | 98¹⁄₁₆″ | BM1A = 48″ | 50¹⁄₁₆″ |
+| BC1 | cherry | 48⅛″ | BC1A = 48″ | ⅛″ |
+| BW1 | walnut | 54⁵⁄₁₆″ | BW1A = 48″ | 6⁵⁄₁₆″ |
+| BC2 | cherry | 48¹⁄₁₆″ | — (untouched spare) | — |
+| BW2 | walnut | 54⁵⁄₁₆″ | — (untouched spare) | — |
+| BM2 | maple | 47¹⁵⁄₁₆″ | — (untouched spare) | — |
 
 ### Crosscut Diagram
 
 Each bar is one raw board drawn to scale by length; segments are the blanks (labeled with id and length inside), reddish stripes are crosscut kerfs (sawdust), and the pale tail is leftover length. A red tail means the blanks overflow the raw board. An untouched spare is shown washed-out and uncut; a board used whole goes straight to the rip diagram.
 
-![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-154976061641.png)
+![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-d86920307fcf.png)
 
 ## 4. Panels overview
 
@@ -44,19 +47,19 @@ Each bar is one raw board drawn to scale by length; segments are the blanks (lab
 | --- | --- | --- | --- | --- | --- | --- |
 | A | 1 | 16⅛″ | 9 | ½″ | — | CB · W · M · W · M · W · M · W · M · CB |
 | B | 1 | 16⅛″ | 9 | ½″ | — | CB · M · W · M · W · M · W · M · W · CB |
-| C | 1 | 16⅛″ | 9 | ¾″ | — | CW |
+| C | 1 | 16⅛″ | 9 | ¼″ | — | CT · CT · CT · CT · CT · CT · CT · CT · CT |
 
 ### Panel End Grain Diagram
 
 Each panel's end-grain cross-section (the glue-up of component stripes).
 
-![Panel end-grain cross-sections](images/panels-2f2cfaef11ac.png)
+![Panel end-grain cross-sections](images/panels-91027eeed544.png)
 
 ### Panel Face Diagram
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-e85038e9cd34.png)
+![Panel faces to scale](images/panel-faces-e382959d79e9.png)
 
 ### Slice Fulfillment
 
@@ -82,15 +85,15 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 
 | Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BM1A @ 4″ | BM1 | maple | 48″ | ½″ ×4 | 2″ | ¾″ | 1¼″ |
-| BC1A @ 8″ | BC1 | cherry | 48″ | 5½″ ×1 · ¾″ ×2 | 7″ | ⁹⁄₁₆″ | ⁷⁄₁₆″ |
-| BW1A @ 4″ | BW1 | walnut | 48″ | ½″ ×4 | 2″ | ¾″ | 1¼″ |
+| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | ½″ ×4 | 2″ | ¾″ | 5¹¹⁄₁₆″ |
+| BC1A @ 7¼″ | BC1 | cherry | 48″ | ½″ ×5 · ¼″ ×2 | 3″ | 1⁵⁄₁₆″ | 2¹⁵⁄₁₆″ |
+| BW1A @ 6¼″ | BW1 | walnut | 48″ | ½″ ×4 | 2″ | ¾″ | 3½″ |
 
 ### Board Rip Diagram
 
 Each labeled block below is one physical board. Horizontal bands are the strips ripped down the board's width; within a band, the colored cells are the crosscut pieces (with thin kerf gaps between them) and the lightened tail is the offcut. The pale band under the strips is the leftover margin; a gray title marks a board that must be bought.
 
-![Board Rip Diagram — how the cut list lands on each board](images/strip-map-866ccbeeb0cc.png)
+![Board Rip Diagram — how the cut list lands on each board](images/strip-map-e5c9eacfda45.png)
 
 ## 6. Components
 
@@ -98,8 +101,8 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 | Component | Species | Width | Length | Demand | Fulfilled | Shortfall |
 | --- | --- | --- | --- | --- | --- | --- |
-| CB | cherry | ¾″ | 16⅛″ | 4 | 4 | 0 |
-| CW | cherry | 5½″ | 16⅛″ | 1 | 1 | 0 |
+| CB | cherry | ¼″ | 16⅛″ | 4 | 4 | 0 |
+| CT | cherry | ½″ | 16⅛″ | 9 | 9 | 0 |
 | M | maple | ½″ | 16⅛″ | 8 | 8 | 0 |
 | W | walnut | ½″ | 16⅛″ | 8 | 8 | 0 |
 
@@ -111,10 +114,10 @@ The physical panels this plan builds (from the project's panel specs), grouped b
 | --- | --- | --- | --- | --- |
 | A | 1 | 16⅛″ | single: 9 | CB · W · M · W · M · W · M · W · M · CB |
 | B | 1 | 16⅛″ | single: 9 | CB · M · W · M · W · M · W · M · W · CB |
-| C | 1 | 16⅛″ | single: 9 | CW |
+| C | 1 | 16⅛″ | single: 9 | CT · CT · CT · CT · CT · CT · CT · CT · CT |
 
 ## 8. Slice Grid
 
 The final step: arrange the slices into the finished face. The same grid keyed by slice id — each slice is framed in its legend color so you can see how to arrange the grid cell by cell. A corner triangle marks a slice placed horizontally flipped.
 
-![Slice grid keyed by slice id](images/slice-map-241fad7da895.png)
+![Slice grid keyed by slice id](images/slice-map-d91dfcef0f65.png)

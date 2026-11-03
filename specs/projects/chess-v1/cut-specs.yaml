@@ -26,14 +26,30 @@ boards:
   source: BC1
   length: [48, 0]
   strips:
-  - width: [5, 8]
-    cuts:
-    - [16, 2]
-  - width: [0, 12]
+  - width: [0, 8]
     cuts:
     - [16, 2]
     - [16, 2]
-  - width: [0, 12]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 8]
+    cuts:
+    - [16, 2]
+  - width: [0, 4]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [0, 4]
     cuts:
     - [16, 2]
     - [16, 2]
