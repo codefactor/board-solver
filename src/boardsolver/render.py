@@ -278,8 +278,9 @@ def render_panel_faces(
         sum(cell_w(m) for m in row) + gap * (len(row) - 1) for row in rows
     ]
     row_heights = [max(cell_h(m) for m in row) for row in rows]
-    total_w = max(row_widths) + 2 * pad
-    H = int(sum(row_heights) + row_gap * (len(rows) - 1) + 2 * pad)
+    legend_h = 4 * 20 + 16  # four entries + heading padding
+    total_w = max(max(row_widths), 360) + 2 * pad
+    H = int(sum(row_heights) + row_gap * (len(rows) - 1) + 2 * pad + legend_h)
     canvas = PILCanvas(int(total_w), H, _BG)
 
     def draw_one(m, cell_x, cell_y):
@@ -340,6 +341,34 @@ def render_panel_faces(
             draw_one(m, x, y)
             x += cell_w(m) + gap
         y += rh + row_gap
+
+    # Legend.
+    lx = pad
+    ly = y
+    sample_w = 34
+    tx = lx + sample_w + 10
+    line_h = 20
+    # dashed line = crosscut
+    cy = ly + line_h // 2
+    canvas.dashed_hline(lx, lx + sample_w, cy, "#444444", width=1)
+    canvas.text(tx, ly + 3, "dashed line = crosscut", 12, "#333333")
+    ly += line_h
+    # solid line + diamond = crosscut AND profile change
+    cy = ly + line_h // 2
+    canvas.line(lx, cy, lx + sample_w, cy, "#222222", width=2)
+    d = 5
+    dcx = lx + sample_w + 2
+    canvas.polygon([(dcx, cy - d), (dcx + d, cy), (dcx, cy + d), (dcx - d, cy)],
+                   fill="#1f6fe0", outline="#0b3c86")
+    canvas.text(tx + 6, ly + 3, "solid line + diamond = crosscut and profile change", 12, "#333333")
+    ly += line_h
+    # red = kerf loss
+    canvas.rect(lx, ly + 3, sample_w, line_h - 8, fill=_LOSS_COLOR, outline=_OUTLINE)
+    canvas.text(tx, ly + 3, "red = kerf loss (sawdust)", 12, "#333333")
+    ly += line_h
+    # cross-hatch = potential snipe loss
+    canvas.hatch_rect(lx, ly + 3, sample_w, line_h - 8, _SNIPE_BASE, _SNIPE_HATCH, outline=_OUTLINE)
+    canvas.text(tx, ly + 3, "cross-hatch = potential loss from planer snipe", 12, "#333333")
 
     return _to_png_bytes(canvas)
 
