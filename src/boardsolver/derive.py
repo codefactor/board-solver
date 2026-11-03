@@ -822,12 +822,21 @@ def _resolve_piece_ref(ref: str, cut_spec: Dict[str, Any], project: Dict[str, An
                        width=width, length=length)
 
 
-def _ideal_sequence(project: Dict[str, Any], panel_id: str) -> List[str]:
-    """Ideal panel's fullest-profile component id sequence."""
+def _ideal_sequences(project: Dict[str, Any], panel_id: str) -> List[List[str]]:
+    """Each ideal-panel profile's component id sequence (fullest first).
+
+    Returns a list of sequences: one per profile for a profiled panel, or a
+    single sequence for a single-profile panel. An actual panel is valid if its
+    resolved sequence matches ANY of these (it may realize any profile).
+    """
     for panel in project["panels"]:
         if panel["id"] == panel_id:
-            fid = f"{panel_id}-{panel['profiles'][0]['id']}" if "profiles" in panel else panel_id
-            return [c.id for c in resolve_slice(project, fid).components]
+            if "profiles" in panel:
+                return [
+                    [c.id for c in resolve_slice(project, f"{panel_id}-{p['id']}").components]
+                    for p in panel["profiles"]
+                ]
+            return [[c.id for c in resolve_slice(project, panel_id).components]]
     raise KeyError(f"no ideal panel {panel_id!r}")
 
 
@@ -859,8 +868,8 @@ def actual_panels(
         ]
         length = max((p.length for p in pieces), default=0)
         got = [p.component_id for p in pieces]
-        ideal = _ideal_sequence(project, panel_id)
-        sequence_ok = got == ideal
+        ideal = _ideal_sequences(project, panel_id)
+        sequence_ok = got in ideal
         out.append(ActualPanel(panel_id=panel_id, code=code, pieces=pieces,
                                length=length, sequence_ok=sequence_ok))
     return out
