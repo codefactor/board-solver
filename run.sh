@@ -16,6 +16,13 @@
 #   pdf <project> [--out=PATH]   Render the project's plan/ README.md plus
 #                                diagrams to PDF (default: plan/<project>-
 #                                cut-plan.pdf, or --out=PATH).
+#   deliver <design> --inventory <inv> [--solution <kind|stem>]
+#                                [--what cut-list|strip-map|finished|plan|pdf|all]
+#                                [--out=DIR] [--no-save-solution]
+#                                New bundle path: design + inventory (+ solution)
+#                                -> exactly the requested output, under
+#                                specs/runs/<design>.<inv>.<solution>/ by
+#                                default. Old plan/solve/pdf above unchanged.
 #   test [pytest args...]        Run the test suite.
 #   help | --help | -h           Show this help.
 #
@@ -43,7 +50,7 @@ if [[ ! -x "$PY" ]]; then
 fi
 
 usage() {
-  sed -n '2,27p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,35p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 project_dir() {
@@ -116,6 +123,17 @@ case "$action" in
     exec "$PY" -m boardsolver.pdf \
       --project "$dir" \
       --out "$out"
+    ;;
+
+  deliver)
+    design="${1:-}"
+    if [[ -z "$design" ]]; then
+      echo "error: 'deliver' needs a design, e.g. ./run.sh deliver plaid-v1 --inventory actual" >&2
+      exit 1
+    fi
+    shift
+    cd "$ROOT"
+    exec "$PY" -m boardsolver.deliver "$design" --root "$ROOT" "$@"
     ;;
 
   solve)
