@@ -577,6 +577,7 @@ def _maybe(v):
 def warnings(
     project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
     small_margin_threshold: Sixteenths = 4,  # 1/4" = 4 sixteenths
+    slice_oversupply_threshold: int = 5,     # extra slices beyond which panels are too big
 ) -> List["Warning"]:
     """All detected problems, grouped by severity.
 
@@ -702,7 +703,78 @@ def warnings(
             f"no component in this project — cut but unusable here.",
         ))
 
+    # --- Slice-layer checks: panel slice output vs. grid x batch demand ---- #
+    sf = slice_fulfillment(project, cut_spec, tool_limits)
+    slice_short = [r for r in sf if r.supplied < r.demand]
+    if slice_short:
+        names = ", ".join(
+            f"{r.slice_id} (short {r.demand - r.supplied})" for r in slice_short
+        )
+        out.append(Warning(
+            "yellow", "slice_shortfall",
+            f"The panels produce fewer slices than the finished boards need: "
+            f"{names}. Build more (or larger) panels of these types.",
+        ))
+    # No spare slices: demand met exactly (offset 0) with no cushion.
+    exact = [r for r in sf if r.supplied == r.demand and r.demand > 0]
+    if exact and not slice_short:
+        names = ", ".join(r.slice_id for r in exact)
+        out.append(Warning(
+            "gray", "no_spare_slices",
+            f"No spare slices for: {names} (supply exactly meets demand). Consider "
+            f"slightly larger/more panels so a bad slice does not cause a shortfall.",
+        ))
+    # Large over-supply: panels produce far more slices than needed (too big).
+    oversupply = [r for r in sf if r.supplied - r.demand > slice_oversupply_threshold]
+    if oversupply:
+        names = ", ".join(
+            f"{r.slice_id} (+{r.supplied - r.demand})" for r in oversupply
+        )
+        out.append(Warning(
+            "gray", "slice_oversupply",
+            f"The panels produce far more slices than needed (> "
+            f"{slice_oversupply_threshold}): {names}. The panels are likely too "
+            f"big — shorten them to use less material.",
+        ))
+
+    # --- Components cannot fulfill the speced panels ---------------------- #
+    # Every component the panel specs require vs. what the cut list supplies.
+    panel_need = _panel_component_demand(project, cut_spec, tool_limits)
+    supply = component_supply(project, cut_spec, tool_limits)
+    from collections import Counter as _C
+    have = _C((p.component_id, p.length) for p in supply if p.component_id)
+    unmet = {}
+    for (cid, length), need in panel_need.items():
+        deficit = need - have.get((cid, length), 0)
+        if deficit > 0:
+            unmet[cid] = unmet.get(cid, 0) + deficit
+    if unmet:
+        names = ", ".join(f"{cid} (short {n})" for cid, n in unmet.items())
+        out.append(Warning(
+            "yellow", "panel_components_short",
+            f"The cut list cannot supply all components the speced panels need: "
+            f"{names}.",
+        ))
+
     return out
+
+
+def _panel_component_demand(project, cut_spec, tool_limits):
+    """Components (id, length) required to build the panel specs, with counts.
+
+    For each panel spec, its recipe components are needed at the panel's length
+    (main list) / prescribed smaller-component lengths. Simplified: each spec
+    needs one of every component in its matched sequence at the spec length.
+    """
+    from collections import Counter
+    need: "Counter" = Counter()
+    for spec in panel_specs(project, cut_spec, tool_limits):
+        panel = next(p for p in project["panels"] if p["id"] == spec.panel_id)
+        # Use the fullest-profile sequence as the component requirement.
+        fid = f"{spec.panel_id}-{panel['profiles'][0]['id']}" if "profiles" in panel else spec.panel_id
+        for c in resolve_slice(project, fid).components:
+            need[(c.id, spec.length)] += 1
+    return need
 
 
 def slice_length_of_fullest(project: Dict[str, Any], panel_id: str) -> Sixteenths:

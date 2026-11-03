@@ -16,6 +16,9 @@ This is a generated plan: the finished design (sections 1, 2, 4, 5) and the cut 
 | 6 | 🟡 | shortfall | The cut list under-supplies 741 component piece(s) across 9 demand row(s) — see the Components section. |
 | 7 | 🟡 | small_margin | Board BC2A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 8 | 🟡 | small_margin | Board GHC leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
+| 9 | 🟡 | slice_shortfall | The panels produce fewer slices than the finished boards need: S-R (short 20), H-L (short 8). Build more (or larger) panels of these types. |
+| 10 | 🟡 | panel_components_short | The cut list cannot supply all components the speced panels need: Md (short 4), Me (short 1), W2 (short 4), C1 (short 2), W1 (short 2). |
+| 11 | ⚪ | slice_oversupply | The panels produce far more slices than needed (> 5): S-L (+20), H-R (+32). The panels are likely too big — shorten them to use less material. |
 
 ## 2. Finished board pattern
 
