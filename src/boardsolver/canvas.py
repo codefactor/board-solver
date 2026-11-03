@@ -121,6 +121,41 @@ class PILCanvas:
         """Draw a filled polygon. ``points`` is a list of (x, y) tuples."""
         self._draw.polygon(list(points), fill=fill, outline=outline)
 
+    def line(self, x0, y0, x1, y1, color, width=1):
+        self._draw.line([x0, y0, x1, y1], fill=color, width=int(width))
+
+    def dashed_hline(self, x0, x1, y, color, width=1, dash=6, gap=4):
+        """Horizontal dashed line from x0 to x1 at height y."""
+        x = x0
+        while x < x1:
+            seg = min(dash, x1 - x)
+            self._draw.line([x, y, x + seg, y], fill=color, width=int(width))
+            x += dash + gap
+
+    def hatch_rect(self, x, y, w, h, base_fill, hatch_color, outline=None,
+                   spacing=7, width=1):
+        """Fill a rect with ``base_fill`` then overlay diagonal hatch lines."""
+        self._draw.rectangle([x, y, x + w, y + h], fill=base_fill, outline=outline, width=1)
+        # Diagonal lines (top-left to bottom-right) clipped to the rect.
+        x0, y0, x1, y1 = int(x), int(y), int(x + w), int(y + h)
+        # Start offsets so lines sweep across the whole box.
+        start = x0 - (y1 - y0)
+        c = start
+        while c <= x1:
+            # line from (c, y0) going down-right; clip to box
+            ax, ay = c, y0
+            bx, by = c + (y1 - y0), y1
+            # Clip endpoints to [x0,x1] horizontally
+            if ax < x0:
+                ay += (x0 - ax)
+                ax = x0
+            if bx > x1:
+                by -= (bx - x1)
+                bx = x1
+            if ax <= x1 and bx >= x0:
+                self._draw.line([ax, ay, bx, by], fill=hatch_color, width=int(width))
+            c += spacing
+
     def text(self, x, y, s, size, color):
         self._draw.text((x, y), s, fill=color, font=self._font(size))
 

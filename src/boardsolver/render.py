@@ -206,6 +206,117 @@ def render_slice_map(
 
 
 # --------------------------------------------------------------------------- #
+# panel faces: each panel drawn to-scale with length vertical
+# --------------------------------------------------------------------------- #
+
+_SNIPE_BASE = "#d98b7a"   # possible loss (snipe) base
+_SNIPE_HATCH = "#7a2d20"  # darker-red hatch over snipe
+
+
+def render_panel_faces(
+    project: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 7.0, colors: ColorMap = DEFAULT_COLORS,
+) -> bytes:
+    """Each panel drawn to-scale, length running top-to-bottom.
+
+    Components are glued aligned on one squared edge (the left/width origin) and
+    run as vertical columns. Profiles are length regions stacked top-to-bottom:
+    the fullest profile (all components) is the top region; later profiles drop
+    trailing components, so the panel silhouette steps narrower down its length.
+    A dashed crosscut line (overflowing the width) marks each slice boundary; a
+    solid reddish band is the total kerf loss above the bottom snipe tail; both
+    snipe half-tails (top and bottom) are reddish cross-hatch (possible loss).
+    """
+    lim = tool_limits["limits"] if "limits" in tool_limits else tool_limits
+    slice_depth = measure_to_sixteenths(project["sliceDepth"])
+    miter_kerf = measure_to_sixteenths(lim["miterKerf"])
+    snipe = measure_to_sixteenths(lim.get("snipeTail", [0, 0]))
+    pitch = slice_depth + miter_kerf
+
+    panels = project["panels"]
+    pad = 20
+    gap = 90
+    title_px = 13
+    overflow = 10
+    label_h = 2 * title_px + 10  # two lines: name, then length
+
+    def profile_regions(panel):
+        """[(resolved, slice_count)] per profile, fullest first; one for single."""
+        pid = panel["id"]
+        if "profiles" in panel:
+            return [
+                (resolve_slice(project, f"{pid}-{p['id']}"), p["slices"])
+                for p in panel["profiles"]
+            ]
+        return [(resolve_slice(project, pid), panel["slices"])]
+
+    # Pre-measure.
+    metas = []
+    max_h = 0.0
+    max_w = 0.0
+    for panel in panels:
+        regions = profile_regions(panel)
+        n = sum(c for _, c in regions)
+        full_w = slice_length(regions[0][0])  # fullest profile width
+        body_len = n * slice_depth
+        kerf_len = n * miter_kerf
+        total_len = body_len + kerf_len + snipe
+        metas.append(dict(panel=panel, regions=regions, n=n, full_w=full_w,
+                          body_len=body_len, kerf_len=kerf_len, total_len=total_len))
+        max_h = max(max_h, px(total_len, scale))
+        max_w = max(max_w, px(full_w, scale))
+
+    total_w = sum(px(m["full_w"], scale) for m in metas) + gap * (len(metas) - 1) + 2 * pad + 2 * overflow
+    H = int(label_h + max_h + 2 * pad)
+    canvas = PILCanvas(int(total_w), H, _BG)
+
+    x = pad + overflow
+    for m in metas:
+        panel = m["panel"]
+        full_w_px = px(m["full_w"], scale)
+        y0 = pad + label_h
+        canvas.text(x, pad, f"Panel {panel['id']}", title_px, "#222222")
+        canvas.text(x, pad + title_px + 2,
+                    f"{frac_inches(m['total_len'], ascii=True)} long", title_px - 1, "#555555")
+
+        half_snipe = px(snipe / 2, scale)
+        body_y = y0 + half_snipe
+
+        # Draw each profile region stacked down the length.
+        ry = body_y
+        for resolved, count in m["regions"]:
+            region_h = px(count * slice_depth, scale)
+            # Component columns present in THIS profile (aligned on left edge).
+            cx = x
+            for c in resolved.components:
+                cwpx = px(c.width, scale)
+                canvas.rect(cx, ry, cwpx, region_h, fill=colors[c.species], outline=_OUTLINE)
+                cx += cwpx
+            ry += region_h
+
+        # Dashed crosscut lines at every slice boundary across the whole body.
+        for i in range(1, m["n"]):
+            ly = body_y + px(i * slice_depth, scale)
+            canvas.dashed_hline(x - overflow, x + full_w_px + overflow, ly, "#444444", width=1)
+
+        # Kerf-loss band (definite sawdust), full width, above the bottom snipe.
+        kerf_px = px(m["kerf_len"], scale)
+        kerf_y = body_y + px(m["body_len"], scale)
+        if kerf_px > 0:
+            canvas.rect(x, kerf_y, full_w_px, kerf_px, fill=_LOSS_COLOR, outline=None)
+
+        # Snipe half-tails: reddish cross-hatch (possible loss), full width.
+        bot_snipe_y = kerf_y + kerf_px
+        if half_snipe > 0:
+            canvas.hatch_rect(x, y0, full_w_px, half_snipe, _SNIPE_BASE, _SNIPE_HATCH)
+            canvas.hatch_rect(x, bot_snipe_y, full_w_px, half_snipe, _SNIPE_BASE, _SNIPE_HATCH)
+
+        x += full_w_px + gap
+
+    return _to_png_bytes(canvas)
+
+
+# --------------------------------------------------------------------------- #
 # crosscut blanks diagram (to-scale by length; modest fixed bar height)
 # --------------------------------------------------------------------------- #
 

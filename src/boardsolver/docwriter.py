@@ -27,6 +27,7 @@ from .document import build_markdown
 from .render import (
     render_crosscut_blanks,
     render_finished_board,
+    render_panel_faces,
     render_panels,
     render_slice_map,
     render_strip_map,
@@ -96,6 +97,7 @@ def write_document(
     finished = render_finished_board(project)
     slice_map = render_slice_map(project)
     panels = render_panels(project, tool_limits)
+    panel_faces = render_panel_faces(project, tool_limits)
     crosscut = render_crosscut_blanks(project, cut_spec, tool_limits)
     strip_map = render_strip_map(project, cut_spec, tool_limits)
 
@@ -104,6 +106,7 @@ def write_document(
         ("finished", "finished-board", finished),
         ("slice_map", "slice-map", slice_map),
         ("panels", "panels", panels),
+        ("panel_faces", "panel-faces", panel_faces),
         ("crosscut", "crosscut-blanks", crosscut),
         ("strip_map", "strip-map", strip_map),
     ):

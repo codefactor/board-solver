@@ -135,7 +135,22 @@ def build_markdown(
         )
     L.append("")
 
-    # --- Section 4: crosscut blanks -------------------------------------- #
+    # --- Section: panel faces (to-scale) --------------------------------- #
+    L.append(sec("Panel Faces"))
+    L.append("")
+    L.append(
+        "Each panel drawn to scale with its length running top-to-bottom. "
+        "Components are vertical stripes aligned on the squared edge; profile "
+        "regions stack down the length, so the silhouette steps narrower where "
+        "trailing components drop out. Dashed lines are the slice crosscuts; the "
+        "solid red band is total kerf loss, and the cross-hatched ends are the "
+        "snipe tails (possible loss, depending on the planer)."
+    )
+    L.append("")
+    L.append(f"![Panel faces to scale]({images['panel_faces']})")
+    L.append("")
+
+    # --- Section: crosscut blanks ---------------------------------------- #
     L.append(sec("Crosscut Blanks"))
     L.append("")
     L.append(
