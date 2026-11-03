@@ -6,77 +6,77 @@ finishedThickness: [1, 4]
 sliceDepth: [1, 8]
 
 sliceGrid:
-  - - sliceId: S-L
-    - sliceId: S-R
+  - - sliceId: SL
+    - sliceId: SR
       flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
+  - - sliceId: ML
+    - sliceId: MR
       flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
+  - - sliceId: ML
+    - sliceId: MR
       flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
-      flip: H
-  - - sliceId: H-L
-    - sliceId: H-R
-      flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
-      flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
-      flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
-      flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
+  - - sliceId: SL
+    - sliceId: SR
       flip: H
   - - sliceId: H-L
     - sliceId: H-R
       flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
+  - - sliceId: SL
+    - sliceId: SR
       flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
+  - - sliceId: ML
+    - sliceId: MR
       flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
+  - - sliceId: ML
+    - sliceId: MR
       flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
-      flip: H
-  - - sliceId: H-L
-    - sliceId: H-R
-      flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
-      flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
-      flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
-      flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
+  - - sliceId: SL
+    - sliceId: SR
       flip: H
   - - sliceId: H-L
     - sliceId: H-R
       flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
+  - - sliceId: SL
+    - sliceId: SR
       flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
+  - - sliceId: ML
+    - sliceId: MR
       flip: H
-  - - sliceId: M-L
-    - sliceId: M-R
+  - - sliceId: ML
+    - sliceId: MR
       flip: H
-  - - sliceId: S-L
-    - sliceId: S-R
+  - - sliceId: SL
+    - sliceId: SR
+      flip: H
+  - - sliceId: H-L
+    - sliceId: H-R
+      flip: H
+  - - sliceId: SL
+    - sliceId: SR
+      flip: H
+  - - sliceId: ML
+    - sliceId: MR
+      flip: H
+  - - sliceId: ML
+    - sliceId: MR
+      flip: H
+  - - sliceId: SL
+    - sliceId: SR
+      flip: H
+  - - sliceId: H-L
+    - sliceId: H-R
+      flip: H
+  - - sliceId: SL
+    - sliceId: SR
+      flip: H
+  - - sliceId: ML
+    - sliceId: MR
+      flip: H
+  - - sliceId: ML
+    - sliceId: MR
+      flip: H
+  - - sliceId: SL
+    - sliceId: SR
       flip: H
 
 
@@ -111,13 +111,9 @@ components:
     thickness: [0, 12]
 
 panels:
-  - id: S
+  - id: SL
     thickness: [0, 12]
-    profiles:
-      - id: L
-        slices: 20
-      - id: R
-        slices: 20
+    slices: 20
     components:
       - type: Me
       - type: C2
@@ -128,14 +124,21 @@ panels:
       - type: M1
       - type: C2
       - type: Md
-        maxProfile: 1
-  - id: M
+  - id: SR
     thickness: [0, 12]
-    profiles:
-      - id: L
-        slices: 20
-      - id: R
-        slices: 20
+    slices: 20
+    components:
+      - type: Me
+      - type: C2
+      - type: M1
+      - type: C2
+      - type: Md
+      - type: C2
+      - type: M1
+      - type: C2
+  - id: ML
+    thickness: [0, 12]
+    slices: 20
     components:
       - type: Me
       - type: W2
@@ -146,7 +149,18 @@ panels:
       - type: C1
       - type: W2
       - type: Md
-        maxProfile: 1
+  - id: MR
+    thickness: [0, 12]
+    slices: 20
+    components:
+      - type: Me
+      - type: W2
+      - type: C1
+      - type: W2
+      - type: Md
+      - type: W2
+      - type: C1
+      - type: W2
   - id: H
     thickness: [0, 13]
     sliceStrips:
@@ -168,16 +182,22 @@ panels:
 # Chosen panels to build (solver input). profileLengths are per-profile region
 # extents (fullest-first); region length = slices x pitch, pitch = sliceDepth
 # [1 1/2"] + miterKerf[1/8"] = 1 10/16".
-#   S,M: two panels x (11 L + 11 R) -> 22/22 supplied vs 20/20 demand = 1 spare
-#        slice per panel per profile; 11 x 26/16 = 17 14/16" per region.
+#   SL,SR,ML,MR (single profile): two panels x 11 slices each -> 22 supplied vs
+#        20 demand = 1 spare slice per panel; 11 x 26/16 = 17 14/16" per panel.
 #   H:   one panel x (5 L + 5 R) crosscut slices, ripped x2 = 10/10 installed vs
 #        8/8 demand = 1 spare slice per profile; 5 x 26/16 = 8 2/16" per region.
 panelSpecs:
-  - panel: S
-    profileLengths: [[17, 14], [17, 14]]
+  - panel: SL
+    profileLengths: [[17, 14]]
     count: 2
-  - panel: M
-    profileLengths: [[17, 14], [17, 14]]
+  - panel: SR
+    profileLengths: [[17, 14]]
+    count: 2
+  - panel: ML
+    profileLengths: [[17, 14]]
+    count: 2
+  - panel: MR
+    profileLengths: [[17, 14]]
     count: 2
   - panel: H
     profileLengths: [[8, 2], [8, 2]]

@@ -13,10 +13,10 @@ This is a generated plan: the finished design and the cut list that realizes it 
 | 3 | 🔴 | over_rip | Cut list for board BC1A over-rips by ¹⁄₁₆″: the strips are wider than the board. |
 | 4 | 🔴 | over_rip | Cut list for board BW1A over-rips by ⅛″: the strips are wider than the board. |
 | 5 | 🟡 | ghost_boards | 1 board(s) must be bought (not in inventory): GHC. |
-| 6 | 🟡 | shortfall | The cut list under-supplies 741 component piece(s) across 9 demand row(s) — see the Components section. |
+| 6 | 🟡 | shortfall | The cut list under-supplies 707 component piece(s) across 9 demand row(s) — see the Components section. |
 | 7 | 🟡 | small_margin | Board BC2A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 8 | 🟡 | small_margin | Board GHC leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
-| 9 | 🟡 | panel_components_short | The cut list cannot supply all components the speced panels need: Me (short 5), C2 (short 8), M1 (short 4), Md (short 10), W2 (short 8), C1 (short 4), W1 (short 2). |
+| 9 | 🟡 | panel_components_short | The cut list cannot supply all components the speced panels need: Me (short 9), C2 (short 16), M1 (short 8), Md (short 14), W2 (short 16), C1 (short 8), W1 (short 2). |
 
 ## 2. Finished board pattern
 
@@ -49,21 +49,23 @@ Each bar is one raw board drawn to scale by length; segments are the blanks (lab
 
 | Panel | Qty | Length | Slices | Height | Ripped | Sequence (outer → in) |
 | --- | --- | --- | --- | --- | --- | --- |
-| S | 2 | 37¼″ | 22 (L:11 + R:11) | ¾″ | — | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
-| M | 2 | 37¼″ | 22 (L:11 + R:11) | ¾″ | — | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
+| SL | 2 | 19⅜″ | 11 | ¾″ | — | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
+| SR | 2 | 19⅜″ | 11 | ¾″ | — | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 |
+| ML | 2 | 19⅜″ | 11 | ¾″ | — | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
+| MR | 2 | 19⅜″ | 11 | ¾″ | — | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 |
 | H | 1 | 17¾″ | 10 (L:5 + R:5) | ¼″ | 2× (¼″) | Me · W1 · Md · W1 · Md |
 
 ### Panel End Grain Diagram
 
 Each panel's end-grain cross-section (the glue-up of component stripes).
 
-![Panel end-grain cross-sections](images/panels-109a0558aeaa.png)
+![Panel end-grain cross-sections](images/panels-b3fe70930354.png)
 
 ### Panel Face Diagram
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-baefbc3996c1.png)
+![Panel faces to scale](images/panel-faces-fb509367dd30.png)
 
 ### Slice Fulfillment
 
@@ -71,10 +73,10 @@ Each panel drawn to scale with its length running top-to-bottom. Components are 
 
 | Slice | Demand | Supplied | Supply Offset |
 | --- | --- | --- | --- |
-| S-L | 10 × 2 = 20 | 22 | +2 |
-| S-R | 10 × 2 = 20 | 22 | +2 |
-| M-L | 10 × 2 = 20 | 22 | +2 |
-| M-R | 10 × 2 = 20 | 22 | +2 |
+| SL | 10 × 2 = 20 | 22 | +2 |
+| SR | 10 × 2 = 20 | 22 | +2 |
+| ML | 10 × 2 = 20 | 22 | +2 |
+| MR | 10 × 2 = 20 | 22 | +2 |
 | H-L | 4 × 2 = 8 | 5 × 2 = 10 | +2 |
 | H-R | 4 × 2 = 8 | 5 × 2 = 10 | +2 |
 
@@ -114,24 +116,15 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 | Component | Species | Width | Length | Demand | Fulfilled | Shortfall | Total Overcut |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C1 | cherry | 1½″ | 37¼″ | 80 | 0 | 80 | 0 |
-| C2 | cherry | ¾″ | 37¼″ | 160 | 0 | 160 | 0 |
-| M1 | maple | 1½″ | 37¼″ | 80 | 0 | 80 | 0 |
-| Md | maple | ¼″ | 37¼″ | 120 | 0 | 120 | 0 |
-| Md | maple | ¼″ | 17¾″ | 24 | 5 | 19 | 74¾″ |
-| Me | maple | ¾″ | 37¼″ | 80 | 0 | 80 | 0 |
-| Me | maple | ¾″ | 17¾″ | 16 | 4 | 12 | 58½″ |
+| C1 | cherry | 1½″ | 19⅜″ | 80 | 6 | 74 | 87¾″ |
+| C2 | cherry | ¾″ | 19⅜″ | 160 | 12 | 148 | 175½″ |
+| M1 | maple | 1½″ | 19⅜″ | 80 | 4 | 76 | 58½″ |
+| Md | maple | ¼″ | 19⅜″ | 120 | 5 | 115 | 66⅝″ |
+| Md | maple | ¼″ | 17¾″ | 24 | 0 | 24 | 0 |
+| Me | maple | ¾″ | 19⅜″ | 80 | 4 | 76 | 52″ |
+| Me | maple | ¾″ | 17¾″ | 16 | 0 | 16 | 0 |
 | W1 | walnut | 3″ | 17¾″ | 32 | 2 | 30 | 19½″ |
-| W2 | walnut | ¾″ | 37¼″ | 160 | 0 | 160 | 0 |
-
-**Unused pieces** — produced by the cut list but not attributable to any demand (wrong length for every demand row that needed this component):
-
-| Component | Species | Width | Length | Count |
-| --- | --- | --- | --- | --- |
-| C1 | cherry | 1½″ | 34″ | 6 |
-| C2 | cherry | ¾″ | 34″ | 12 |
-| W2 | walnut | ¾″ | 34″ | 12 |
-| M1 | maple | 1½″ | 34″ | 4 |
+| W2 | walnut | ¾″ | 19⅜″ | 160 | 12 | 148 | 175½″ |
 
 ## 7. Panels (profiles and sequence)
 
@@ -139,12 +132,14 @@ The physical panels this plan builds (from the project's panel specs), grouped b
 
 | Panel | Qty | Length | Profiles (slices) | Component sequence |
 | --- | --- | --- | --- | --- |
-| S | 2 | 37¼″ | L: 11, R: 11 | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
-| M | 2 | 37¼″ | L: 11, R: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
+| SL | 2 | 19⅜″ | single: 11 | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
+| SR | 2 | 19⅜″ | single: 11 | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 |
+| ML | 2 | 19⅜″ | single: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
+| MR | 2 | 19⅜″ | single: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 |
 | H | 1 | 17¾″ | L: 5, R: 5 | Me · W1 · Md · W1 · Md |
 
 ## 8. Slice Grid
 
 The final step: arrange the slices into the finished face. The same grid keyed by slice id — each slice is framed in its legend color so you can see how to arrange the grid cell by cell. A corner triangle marks a slice placed horizontally flipped.
 
-![Slice grid keyed by slice id](images/slice-map-b513ce4c791c.png)
+![Slice grid keyed by slice id](images/slice-map-7ee19e7ee8aa.png)

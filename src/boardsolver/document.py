@@ -156,11 +156,15 @@ def build_markdown(
     L.append("| Panel | Qty | Length | Slices | Height | Ripped | Sequence (outer → in) |")
     L.append("| --- | --- | --- | --- | --- | --- | --- |")
     for s in summaries:
-        slices = " + ".join(f"{pid or '—'}:{n}" for pid, n in s.profiles)
+        if len(s.profiles) == 1 and not s.profiles[0][0]:
+            slices = str(s.total_slices)          # single-profile: just the count
+        else:
+            inner = " + ".join(f"{pid}:{n}" for pid, n in s.profiles)
+            slices = f"{s.total_slices} ({inner})"
         ripped = f"2× ({frac_inches(s.height)})" if s.ripped else "—"
         qty = qty_by_panel.get(s.id, 0)
         L.append(
-            f"| {s.id} | {qty} | {frac_inches(s.length)} | {s.total_slices} ({slices}) | "
+            f"| {s.id} | {qty} | {frac_inches(s.length)} | {slices} | "
             f"{frac_inches(s.height)} | {ripped} | {s.sequence} |"
         )
     L.append("")

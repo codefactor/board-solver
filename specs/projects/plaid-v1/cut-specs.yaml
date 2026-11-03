@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=../../../schema.json
 # Illustrative-but-grounded cut-specs for Plaid v1, hand-derived from project.yaml + tool-limits.
 # Slice pitch = sliceDepth(1 1/2) + miterKerf(1/8) = 1 5/8 per slice; snipeTail 1 1/2.
-# 20-slice sub-panel = 34"; H 16-slice panel = 27 1/2"; max ~28 slices under the 48" cut limit.
-# S and M panels (40 slices) exceed 48" as one panel, so each is built as two 20-slice sub-panels.
+# Panels are now split single-profile types (SL/SR/ML/MR) plus the ripped H panel;
+# each SL/SR/ML/MR is a short sub-panel so it fits under the 48" cut limit.
 # Long walnut (54") and maple (98") boards are crosscut to <=48" sections.
 # One bought cherry ghost board (GHC) covers the cherry shortfall.
 boards:
