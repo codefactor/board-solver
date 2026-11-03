@@ -62,8 +62,8 @@ def test_draw_panel_S_bbox(project):
     assert all(r.h == cell_h for r in rc.rects)
     # bbox height includes the slice-count annotation line beneath the cells.
     assert bb.h > cell_h
-    # annotation reports both profiles' slice counts.
-    assert rc.texts and rc.texts[0].s == "L: 20 · R: 20"
+    # annotation reports total slice count + region breakdown.
+    assert rc.texts and rc.texts[0].s == "Slice Count: 40 - Regions [L=20, R=20]"
 
 
 def test_draw_panel_no_annotation_bbox_is_cell_height(project):

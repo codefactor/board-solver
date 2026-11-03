@@ -41,7 +41,7 @@ The same grid keyed by slice id: each slice is framed in its legend color so you
 
 Each panel's end-grain cross-section (the glue-up of component stripes).
 
-![Panel end-grain cross-sections](images/panels-b9a40d7c0fb8.png)
+![Panel end-grain cross-sections](images/panels-2356d457e5b6.png)
 
 ### Panel Face Diagram
 

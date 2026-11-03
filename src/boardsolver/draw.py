@@ -122,11 +122,11 @@ def draw_panel(
 
     if annotate:
         if "profiles" in panel:
-            label = " · ".join(
-                f"{p['id']}: {p['slices']}" for p in panel["profiles"]
-            )
+            total = sum(p["slices"] for p in panel["profiles"])
+            regions = ", ".join(f"{p['id']}={p['slices']}" for p in panel["profiles"])
+            label = f"Slice Count: {total} - Regions [{regions}]"
         else:
-            label = f"{panel['slices']} slices"
+            label = f"Slice Count: {panel['slices']}"
         canvas.text(ox, oy + h_px + 2, label, _ANNOT_PX, _TITLE_COLOR)
         total_h = h_px + 2 + _ANNOT_PX
 
