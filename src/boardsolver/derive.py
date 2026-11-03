@@ -715,6 +715,7 @@ def warnings(
     lim = _limits(tool_limits)
     max_cut = _maybe(lim.get("maxCutLength"))
     max_plane_w = _maybe(lim.get("maxPlaneWidth"))
+    min_plane_l = _maybe(lim.get("minPlaneLength"))
     max_depth = _maybe(lim.get("maxCutDepth"))
 
     out: List[Warning] = []
@@ -773,6 +774,20 @@ def warnings(
                     "red", "panel_too_wide",
                     f"Panel {s.id} glue-up is {frac_inches(glue_w)} wide, beyond the "
                     f"planer's {frac_inches(max_plane_w)} width.",
+                ))
+
+    # --- RED: panel too short to feed through the planer ------------------ #
+    # Previously missing entirely: minPlaneLength was in tool-limits and
+    # schema but never read, so a 9 5/8 in panel sailed through with no
+    # warning even though the DW733 needs 12 in of feed length.
+    if min_plane_l is not None:
+        for s in panel_summaries(project, tool_limits):
+            if s.length < min_plane_l:
+                out.append(Warning(
+                    "red", "panel_too_short",
+                    f"Panel {s.id} is {frac_inches(s.length)} long, below the "
+                    f"planer's {frac_inches(min_plane_l)} minimum feed length — "
+                    f"too short to feed through the planer.",
                 ))
 
     # --- RED: slice-rip depth beyond the saw's cut depth ------------------ #

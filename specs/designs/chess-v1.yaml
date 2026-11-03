@@ -52,7 +52,7 @@ components:
 panels:
 - id: AL
   thickness: [2, 4]
-  slices: 5
+  slices: 7
   components:
   - type: CB
   - type: W
@@ -61,7 +61,7 @@ panels:
   - type: M
 - id: AR
   thickness: [2, 4]
-  slices: 5
+  slices: 7
   components:
   - type: W
   - type: M
@@ -70,7 +70,7 @@ panels:
   - type: CB
 - id: BL
   thickness: [2, 4]
-  slices: 5
+  slices: 7
   components:
   - type: CB
   - type: M
@@ -79,7 +79,7 @@ panels:
   - type: W
 - id: BR
   thickness: [2, 4]
-  slices: 5
+  slices: 7
   components:
   - type: M
   - type: W
@@ -88,7 +88,7 @@ panels:
   - type: CB
 - id: CL
   thickness: [1, 2]
-  slices: 5
+  slices: 7
   components:
   - type: CT
   - type: CT
@@ -97,7 +97,7 @@ panels:
   - type: CTH
 - id: CR
   thickness: [1, 2]
-  slices: 5
+  slices: 7
   components:
   - type: CTH
   - type: CT

@@ -28,6 +28,7 @@ from boardsolver.derive import (
     board_rips,
     match_supply_to_demand,
     slice_fulfillment,
+    warnings,
 )
 from boardsolver.docwriter import write_document
 
@@ -488,3 +489,19 @@ def test_shared_shape_supply_splits_across_components(tool_limits):
     assert all(p.sequence_ok for p in panels)
     assert [p.component_id for p in panels[0].pieces] == ["X", "W"]
     assert [p.component_id for p in panels[1].pieces] == ["Y", "W"]
+
+
+def test_panel_too_short_for_planer_is_flagged(tool_limits):
+    """A panel below the planer's minimum feed length is a red warning,
+    not a silent plan. The synthetic dup panels are 9 5/8 in against a
+    12 in minimum, so both must be flagged."""
+    project = bundle.resolve_bundle(
+        DUP_DESIGN, {"boards": DUP_INVENTORY}, tool_limits)
+    # Repo tool-limits carry minPlaneLength 12 in; the synthetic
+    # conftest limits do not, so set it here.
+    limits = dict(tool_limits)
+    limits["limits"] = dict(tool_limits["limits"], minPlaneLength=[12, 0])
+    short = [w for w in warnings(project, DUP_CUT_SPEC, limits)
+             if w.code == "panel_too_short"]
+    assert sorted(w.message.split()[1] for w in short) == ["A", "B"]
+    assert all(w.level == "red" for w in short)

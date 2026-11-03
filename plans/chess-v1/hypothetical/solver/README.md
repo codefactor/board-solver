@@ -8,7 +8,8 @@ This is a generated plan: the finished design and the cut list that realizes it 
 
 | # | Lvl | Type | Message |
 | --- | --- | --- | --- |
-| 1 | WARNING | Small Margin | Board BW1A leaves only ⅛″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
+| 1 | WARNING | Ghost Boards | 1 board(s) must be bought (not in inventory): GH-C. |
+| 2 | WARNING | Small Margin | Board BW1A leaves only ⅛″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 
 ## 2. Finished board pattern
 
@@ -31,40 +32,40 @@ The first operation: crosscut each raw inventory board along its length into the
 | Raw board | Species | Raw length | Blanks (id = length) | Leftover |
 | --- | --- | --- | --- | --- |
 | BM1 | maple | 60″ | BM1A = 48″ | 12″ |
+| BM2 | maple | 60″ | BM2A = 48″ | 12″ |
 | BC1 | cherry | 40″ | BC1A = 40″ (used whole) | 0″ |
 | BC2 | cherry | 40″ | BC2A = 40″ (used whole) | 0″ |
 | BW1 | walnut | 48″ | BW1A = 48″ (used whole) | 0″ |
-| BW2 | walnut | 48″ | — (untouched spare) | — |
-| BM2 | maple | 60″ | — (untouched spare) | — |
+| BW2 | walnut | 48″ | BW2A = 48″ (used whole) | 0″ |
 
 ### Crosscut Diagram
 
 Each bar is one raw board drawn to scale by length; segments are the blanks (labeled with id and length inside), reddish stripes are crosscut kerfs (sawdust), and the pale tail is leftover length. A red tail means the blanks overflow the raw board. An untouched spare is shown washed-out and uncut; a board used whole goes straight to the rip diagram.
 
-![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-f4d2c893942f.png)
+![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-0cb0a36c7317.png)
 
 ## 5. Panels overview
 
 | Panel | Qty | Length | Slices | Height | Ripped | Sequence (outer → in) |
 | --- | --- | --- | --- | --- | --- | --- |
-| AL | 1 | 9⅝″ | 5 | 2¼″ | — | CB · W · M · W · M |
-| AR | 1 | 9⅝″ | 5 | 2¼″ | — | W · M · W · M · CB |
-| BL | 1 | 9⅝″ | 5 | 2¼″ | — | CB · M · W · M · W |
-| BR | 1 | 9⅝″ | 5 | 2¼″ | — | M · W · M · W · CB |
-| CL | 1 | 9⅝″ | 5 | 1⅛″ | — | CT · CT · CT · CT · CTH |
-| CR | 1 | 9⅝″ | 5 | 1⅛″ | — | CTH · CT · CT · CT · CT |
+| AL | 1 | 12⅞″ | 7 | 2¼″ | — | CB · W · M · W · M |
+| AR | 1 | 12⅞″ | 7 | 2¼″ | — | W · M · W · M · CB |
+| BL | 1 | 12⅞″ | 7 | 2¼″ | — | CB · M · W · M · W |
+| BR | 1 | 12⅞″ | 7 | 2¼″ | — | M · W · M · W · CB |
+| CL | 1 | 12⅞″ | 7 | 1⅛″ | — | CT · CT · CT · CT · CTH |
+| CR | 1 | 12⅞″ | 7 | 1⅛″ | — | CTH · CT · CT · CT · CT |
 
 ### Panel End Grain Diagram
 
 Each panel's end-grain cross-section (the glue-up of component stripes).
 
-![Panel end-grain cross-sections](images/panels-39be4adc9cfe.png)
+![Panel end-grain cross-sections](images/panels-cbf88b94acbc.png)
 
 ### Panel Face Diagram
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-2d4efbcfb150.png)
+![Panel faces to scale](images/panel-faces-88531693e19e.png)
 
 ### Slice Fulfillment
 
@@ -72,12 +73,12 @@ Each panel drawn to scale with its length running top-to-bottom. Components are 
 
 | Slice | Demand | Supplied | Supply Offset |
 | --- | --- | --- | --- |
-| CL | 2 × 1 = 2 | 5 | +3 |
-| CR | 2 × 1 = 2 | 5 | +3 |
-| AL | 4 × 1 = 4 | 5 | +1 |
-| AR | 4 × 1 = 4 | 5 | +1 |
-| BL | 4 × 1 = 4 | 5 | +1 |
-| BR | 4 × 1 = 4 | 5 | +1 |
+| CL | 2 × 1 = 2 | 7 | +5 |
+| CR | 2 × 1 = 2 | 7 | +5 |
+| AL | 4 × 1 = 4 | 7 | +3 |
+| AR | 4 × 1 = 4 | 7 | +3 |
+| BL | 4 × 1 = 4 | 7 | +3 |
+| BR | 4 × 1 = 4 | 7 | +3 |
 
 _The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in this section. A panel type may have more than one instance; the ideal panels are always quantity 1._
 
@@ -88,15 +89,18 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 | Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | BM1A @ 7″ | BM1 | maple | 48″ | 2¼″ ×2 | 4½″ | ⅜″ | 2⅛″ |
+| BM2A @ 7″ | BM2 | maple | 48″ | 2¼″ ×1 | 2¼″ | ³⁄₁₆″ | 4⁹⁄₁₆″ |
 | BC1A @ 6″ | BC1 | cherry | 40″ | 2¼″ ×2 | 4½″ | ⅜″ | 1⅛″ |
-| BC2A @ 5½″ | BC2 | cherry | 40″ | 1⅛″ ×2 | 2¼″ | ⅜″ | 2⅞″ |
+| BC2A @ 5½″ | BC2 | cherry | 40″ | 2¼″ ×1 · 1⅛″ ×2 | 4½″ | ⁹⁄₁₆″ | ⁷⁄₁₆″ |
+| GH-C @ 1⁵⁄₁₆″ | *None* | cherry | 48″ | 1⅛″ ×1 | 1⅛″ | ³⁄₁₆″ | 0″ |
 | BW1A @ 5″ | BW1 | walnut | 48″ | 2¼″ ×2 | 4½″ | ⅜″ | ⅛″ |
+| BW2A @ 5″ | BW2 | walnut | 48″ | 2¼″ ×1 | 2¼″ | ³⁄₁₆″ | 2⁹⁄₁₆″ |
 
 ### Board Rip Diagram
 
 Each labeled block below is one physical board. Horizontal bands are the strips ripped down the board's width; within a band, the colored cells are the crosscut pieces (with thin kerf gaps between them) and the lightened tail is the offcut. The pale band under the strips is the leftover margin; a gray title marks a board that must be bought.
 
-![Board Rip Diagram — how the cut list lands on each board](images/strip-map-a7297299943b.png)
+![Board Rip Diagram — how the cut list lands on each board](images/strip-map-8b39911a150f.png)
 
 ## 7. Components
 
@@ -104,11 +108,11 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 | Component | Species | Width | Length | Demand | Fulfilled | Shortfall |
 | --- | --- | --- | --- | --- | --- | --- |
-| CB | cherry | 1⅛″ | 9⅝″ | 4 | 4 | 0 |
-| CT | cherry | 2¼″ | 9⅝″ | 8 | 8 | 0 |
-| CTH | cherry | 1⅛″ | 9⅝″ | 2 | 2 | 0 |
-| M | maple | 2¼″ | 9⅝″ | 8 | 8 | 0 |
-| W | walnut | 2¼″ | 9⅝″ | 8 | 8 | 0 |
+| CB | cherry | 1⅛″ | 12⅞″ | 4 | 4 | 0 |
+| CT | cherry | 2¼″ | 12⅞″ | 8 | 8 | 0 |
+| CTH | cherry | 1⅛″ | 12⅞″ | 2 | 2 | 0 |
+| M | maple | 2¼″ | 12⅞″ | 8 | 8 | 0 |
+| W | walnut | 2¼″ | 12⅞″ | 8 | 8 | 0 |
 
 ## 8. Panels (profiles and sequence)
 
@@ -116,12 +120,12 @@ The physical panels this plan builds (from the project's panel specs), grouped b
 
 | Panel | Qty | Length | Profiles (slices) | Component sequence |
 | --- | --- | --- | --- | --- |
-| AL | 1 | 9⅝″ | single: 5 | CB · W · M · W · M |
-| AR | 1 | 9⅝″ | single: 5 | W · M · W · M · CB |
-| BL | 1 | 9⅝″ | single: 5 | CB · M · W · M · W |
-| BR | 1 | 9⅝″ | single: 5 | M · W · M · W · CB |
-| CL | 1 | 9⅝″ | single: 5 | CT · CT · CT · CT · CTH |
-| CR | 1 | 9⅝″ | single: 5 | CTH · CT · CT · CT · CT |
+| AL | 1 | 12⅞″ | single: 7 | CB · W · M · W · M |
+| AR | 1 | 12⅞″ | single: 7 | W · M · W · M · CB |
+| BL | 1 | 12⅞″ | single: 7 | CB · M · W · M · W |
+| BR | 1 | 12⅞″ | single: 7 | M · W · M · W · CB |
+| CL | 1 | 12⅞″ | single: 7 | CT · CT · CT · CT · CTH |
+| CR | 1 | 12⅞″ | single: 7 | CTH · CT · CT · CT · CT |
 
 ## 9. Slice Grid
 
