@@ -44,8 +44,24 @@ def _xml_escape(text):
     )
 
 
+# Machine warning codes (as they appear in the MD warnings table) ->
+# human-readable labels for the printed PDF. The MD itself keeps the
+# codes, so tests and tooling that match on them are unaffected.
+WARNING_LABELS = {
+    "crosscut_overflow": "Crosscut Overflow",
+    "over_rip": "Over Rip",
+    "rip_too_long": "Rip Too Long",
+    "crosscut_too_long": "Crosscut Too Long",
+    "slice_rip_too_deep": "Slice Rip Too Deep",
+    "ghost_boards": "Ghost Boards",
+    "small_margin": "Small Margin",
+}
+
+
 def md_inline_to_xml(text):
     """Convert a small Markdown subset to ReportLab paragraph markup."""
+    if text.strip() in WARNING_LABELS:
+        return WARNING_LABELS[text.strip()]
     text = _xml_escape(text)
     # Colour-emoji level markers -> semantic words (DejaVu has no emoji,
     # and a colour alone is not a meaningful label). The coloured bullet
