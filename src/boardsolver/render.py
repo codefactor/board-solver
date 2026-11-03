@@ -10,7 +10,7 @@ Includes the Round 2 true-grid validation for the finished-board layout.
 from __future__ import annotations
 
 import io
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .canvas import PILCanvas
 from .colors import DEFAULT_COLORS, ColorMap, slice_color_map, text_on, lighten
@@ -216,6 +216,7 @@ _SNIPE_HATCH = "#7a2d20"  # darker-red hatch over snipe
 def render_panel_faces(
     project: Dict[str, Any], tool_limits: Dict[str, Any],
     scale: float = 16.0, colors: ColorMap = DEFAULT_COLORS,
+    quantities: Optional[Dict[str, int]] = None,
 ) -> bytes:
     """Each panel drawn to-scale, length running top-to-bottom.
 
@@ -289,7 +290,8 @@ def render_panel_faces(
         panel = m["panel"]
         x = cell_x + overflow
         full_w_px = px(m["full_w"], scale)
-        canvas.text(x, cell_y, f"Panel {panel['id']}", title_px, "#222222")
+        qty = (quantities or {}).get(panel["id"], 1)
+        canvas.text(x, cell_y, f"Panel {panel['id']}  ×{qty}", title_px, "#222222")
         canvas.text(x, cell_y + title_px + 2,
                     f"{frac_inches(m['total_len'], ascii=True)} long", title_px - 1, "#555555")
         y0 = cell_y + label_h

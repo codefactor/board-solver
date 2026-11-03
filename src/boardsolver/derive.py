@@ -1114,53 +1114,6 @@ class PanelSpec:
     code: Optional[str]         # the actual panel code, if source == "actual"
 
 
-def _actual_profile_slices(project, panel, ap, snipe, pitch, rip_mult):
-    """Derive [(profile_id, slice_count)] for an actual panel from its pieces.
-
-    A single physical panel produces slices of MULTIPLE profiles: components are
-    glued aligned on the squared edge, and a component that is shorter ends its
-    region early. The slices cut from the length where a trailing component is
-    still present belong to the fuller profile; past its end, the next profile.
-
-    Per profile index j (0 = fullest): the region reaches as far as the SHORTEST
-    piece whose component is present in profile j. Slices in region j = that
-    usable extent / pitch, minus the slices already attributed to fuller regions.
-    sliceStrips multiplies each region's slice count by rip_mult.
-    """
-    if "profiles" not in panel:
-        usable = ap.length - snipe
-        return [(None, max(usable // pitch, 0) * rip_mult)]
-
-    profs = panel["profiles"]
-    nprof = len(profs)
-    # Pair each actual piece with its panel-component entry (same order) to know
-    # each component's maxProfile (how many leading profiles it appears in).
-    pcs = panel["components"]
-    # ap.pieces are in sequence order matching the matched profile's components,
-    # which may be shorter than the full component list (dropped trailing ones).
-    # Align from the left; a piece at position i corresponds to panel component i.
-    out = []
-    prev_slices = 0
-    for j, prof in enumerate(profs):
-        # Components present in profile j: maxProfile is None or > j.
-        present_idx = [
-            i for i, pc in enumerate(pcs)
-            if pc.get("maxProfile") is None or pc.get("maxProfile") > j
-        ]
-        # The panel can only make profile j if it HAS a piece for every component
-        # present in j. A panel built as a shorter profile lacks the trailing
-        # pieces, so it cannot produce the fuller profiles at all.
-        if any(i >= len(ap.pieces) for i in present_idx):
-            out.append((prof["id"], 0))
-            continue
-        extent = min(ap.pieces[i].length for i in present_idx) - snipe
-        slices_to_here = max(extent // pitch, 0)
-        n = max(slices_to_here - prev_slices, 0)
-        out.append((prof["id"], n * rip_mult))
-        prev_slices = slices_to_here
-    return out
-
-
 def panel_specs(
     project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any]
 ) -> List[PanelSpec]:
@@ -1185,21 +1138,21 @@ def panel_specs(
     specs: List[PanelSpec] = []
     for panel in project["panels"]:
         pid = panel["id"]
-        ss = panel.get("sliceStrips")
-        rip_mult = ss["count"] if ss else 1
+        # A panel's slice output is its DECLARED profile slice counts. These are
+        # the installed slice counts the design calls for (the Panel Face Diagram
+        # draws exactly these); sliceStrips describes how a wide panel is ripped,
+        # not a count multiplier, and length/pitch is not re-derived here.
+        if "profiles" in panel:
+            prof_slices = [(p["id"], p["slices"]) for p in panel["profiles"]]
+        else:
+            prof_slices = [(None, panel["slices"])]
         if pid in by_type:
             for ap in by_type[pid]:
-                prof_slices = _actual_profile_slices(project, panel, ap, snipe, pitch, rip_mult)
                 specs.append(PanelSpec(
                     panel_id=pid, source="actual", length=ap.length,
                     usable=ap.length - snipe, profile_slices=prof_slices, code=ap.code,
                 ))
         else:
-            # Ideal default: ideal profile slice counts, length derived.
-            if "profiles" in panel:
-                prof_slices = [(p["id"], p["slices"] * rip_mult) for p in panel["profiles"]]
-            else:
-                prof_slices = [(None, panel["slices"])]
             length = panel_length(panel, project, tool_limits)
             specs.append(PanelSpec(
                 panel_id=pid, source="ideal", length=length, usable=length - snipe,

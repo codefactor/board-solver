@@ -16,9 +16,9 @@ This is a generated plan: the finished design (sections 1, 2, 4, 5) and the cut 
 | 6 | 🟡 | shortfall | The cut list under-supplies 741 component piece(s) across 9 demand row(s) — see the Components section. |
 | 7 | 🟡 | small_margin | Board BC2A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 8 | 🟡 | small_margin | Board GHC leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
-| 9 | 🟡 | slice_shortfall | The panels produce fewer slices than the finished boards need: S-R (short 16), H-L (short 8). Build more (or larger) panels of these types. |
-| 10 | 🟡 | panel_components_short | The cut list cannot supply all components the speced panels need: Md (short 4), Me (short 1), W2 (short 4), C1 (short 2), W1 (short 2). |
-| 11 | ⚪ | slice_oversupply | The panels produce far more slices than needed (> 5): S-L (+16), H-R (+24). The panels are likely too big — shorten them to use less material. |
+| 9 | 🟡 | panel_components_short | The cut list cannot supply all components the speced panels need: Md (short 4), Me (short 1), W2 (short 4), C1 (short 2), W1 (short 2). |
+| 10 | ⚪ | no_spare_slices | No spare slices for: M-L, M-R, H-L, H-R (supply exactly meets demand). Consider slightly larger/more panels so a bad slice does not cause a shortfall. |
+| 11 | ⚪ | slice_oversupply | The panels produce far more slices than needed (> 5): S-L (+20), S-R (+20). The panels are likely too big — shorten them to use less material. |
 
 ## 2. Finished board pattern
 
@@ -40,12 +40,12 @@ The same grid keyed by slice id: each slice is framed in its legend color so you
 
 | Slice | Demand | Supplied | Supply Offset |
 | --- | --- | --- | --- |
-| S-L | 10 × 2 = 20 | 36 | +16 |
-| S-R | 10 × 2 = 20 | 4 | -16 |
+| S-L | 10 × 2 = 20 | 40 | +20 |
+| S-R | 10 × 2 = 20 | 40 | +20 |
 | M-L | 10 × 2 = 20 | 20 | 0 |
 | M-R | 10 × 2 = 20 | 20 | 0 |
-| H-L | 4 × 2 = 8 | 0 | -8 |
-| H-R | 4 × 2 = 8 | 32 | +24 |
+| H-L | 4 × 2 = 8 | 8 | 0 |
+| H-R | 4 × 2 = 8 | 8 | 0 |
 
 _The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in the Panels overview section. A panel type may have more than one instance; the ideal panels are always quantity 1._
 
@@ -67,7 +67,7 @@ Each panel's end-grain cross-section (the glue-up of component stripes).
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-4bee84a516b7.png)
+![Panel faces to scale](images/panel-faces-55083a9f88ba.png)
 
 ### Ripped Slice Diagram
 

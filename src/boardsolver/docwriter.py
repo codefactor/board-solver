@@ -98,7 +98,10 @@ def write_document(
     finished = render_finished_board(project)
     slice_map = render_slice_map(project)
     panels = render_panels(project, tool_limits)
-    panel_faces = render_panel_faces(project, tool_limits)
+    from .derive import panel_specs as _panel_specs
+    from collections import Counter as _Counter
+    _qty = _Counter(s.panel_id for s in _panel_specs(project, cut_spec, tool_limits))
+    panel_faces = render_panel_faces(project, tool_limits, quantities=dict(_qty))
     ripped_slices = render_ripped_slices(project, tool_limits)
     crosscut = render_crosscut_blanks(project, cut_spec, tool_limits)
     strip_map = render_strip_map(project, cut_spec, tool_limits)
