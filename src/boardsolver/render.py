@@ -235,6 +235,10 @@ def render_panel_faces(
     pitch = slice_depth + miter_kerf
 
     panels = project["panels"]
+    # panelSpecs (when declared) set each type's actual region slice counts.
+    _spec_by_type = {}
+    for _e in project.get("panelSpecs", []) or []:
+        _spec_by_type.setdefault(_e["panel"], _e)
     pad = 20
     gap = 90
     title_px = 13
@@ -242,14 +246,22 @@ def render_panel_faces(
     label_h = 2 * title_px + 10  # two lines: name, then length
 
     def profile_regions(panel):
-        """[(resolved, slice_count)] per profile, fullest first; one for single."""
+        """[(resolved, slice_count)] per profile, fullest first; one for single.
+        When a panelSpec exists for this type, its region lengths set the slice
+        counts (region length / pitch); otherwise the ideal declared slices."""
         pid = panel["id"]
+        spec = _spec_by_type.get(pid)
+        spec_slices = None
+        if spec:
+            spec_slices = [measure_to_sixteenths(m) // pitch for m in spec["profileLengths"]]
         if "profiles" in panel:
             return [
-                (resolve_slice(project, f"{pid}-{p['id']}"), p["slices"])
-                for p in panel["profiles"]
+                (resolve_slice(project, f"{pid}-{p['id']}"),
+                 spec_slices[i] if spec_slices else p["slices"])
+                for i, p in enumerate(panel["profiles"])
             ]
-        return [(resolve_slice(project, pid), panel["slices"])]
+        return [(resolve_slice(project, pid),
+                 spec_slices[0] if spec_slices else panel["slices"])]
 
     # Pre-measure.
     metas = []

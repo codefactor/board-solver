@@ -267,19 +267,33 @@ def test_actual_panel_sequence_mismatch_flagged(project, tool_limits, cut_spec):
     assert panels[0].sequence_ok is False
 
 
-def test_actual_panel_supplies_declared_profile_counts(project, tool_limits, cut_spec):
-    # A panel's slice output is its DECLARED profile slice counts, not derived
-    # from piece length. One actual P panel supplies both L and R at the counts
-    # the project declares (P: L and R), regardless of the matched sequence.
-    spec = copy.deepcopy(cut_spec)
-    spec["panels"] = [_p_code(project, spec, tool_limits)]
-    p = next(s for s in derive.panel_specs(project, spec, tool_limits)
-             if s.panel_id == "P" and s.source == "actual")
-    panel = next(pn for pn in project["panels"] if pn["id"] == "P")
-    declared = {pr["id"]: pr["slices"] for pr in panel["profiles"]}
-    prof = dict(p.profile_slices)
-    assert prof == declared
-    assert prof.get("L", 0) > 0 and prof.get("R", 0) > 0
+def test_panel_specs_from_panel_specs_input(project, tool_limits, cut_spec):
+    # panelSpecs drive supply: region length / pitch = slices per profile, each
+    # entry expanded by count. pitch = sliceDepth(24) + miterKerf(2) = 26.
+    p = copy.deepcopy(project)
+    p["panelSpecs"] = [
+        {"panel": "P", "profileLengths": [[9, 12], [9, 12]], "count": 2},  # 6+6 slices
+    ]
+    specs = [s for s in derive.panel_specs(p, cut_spec, tool_limits) if s.panel_id == "P"]
+    assert len(specs) == 2                      # expanded by count
+    assert all(s.source == "spec" for s in specs)
+    prof = dict(specs[0].profile_slices)
+    assert prof == {"L": 6, "R": 6}             # 156 / 26 = 6
+
+
+def test_panel_specs_profilelengths_count_mismatch_raises(project, tool_limits, cut_spec):
+    p = copy.deepcopy(project)
+    p["panelSpecs"] = [{"panel": "P", "profileLengths": [[9, 12]]}]  # P has 2 profiles
+    with pytest.raises(ValueError):
+        derive.panel_specs(p, cut_spec, tool_limits)
+
+
+def test_panel_specs_fallback_ideal_without_panel_specs(project, tool_limits, cut_spec):
+    # No panelSpecs -> one ideal panel per type with declared profile counts.
+    assert "panelSpecs" not in project
+    specs = {s.panel_id: s for s in derive.panel_specs(project, cut_spec, tool_limits)}
+    assert specs["P"].source == "ideal"
+    assert dict(specs["P"].profile_slices) == {"L": 10, "R": 10}
 
 
 def test_panel_recipe_main_and_smaller(project):

@@ -106,14 +106,35 @@ class PanelSummary:
 def panel_summaries(
     project: Dict[str, Any], tool_limits: Dict[str, Any]
 ) -> List[PanelSummary]:
+    # When panelSpecs are declared, the overview reflects the actual chosen
+    # panels: length = sum of region lengths (+ snipe) and per-profile slice
+    # counts = region length / pitch, instead of the ideal design values.
+    lim = _limits(tool_limits)
+    snipe = measure_to_sixteenths(lim.get("snipeTail", [0, 0]))
+    pitch = measure_to_sixteenths(project["sliceDepth"]) + measure_to_sixteenths(lim["miterKerf"])
+    spec_by_type: Dict[str, Any] = {}
+    for entry in project.get("panelSpecs", []) or []:
+        # First spec per type drives the overview row (plaid-style uniform specs).
+        spec_by_type.setdefault(entry["panel"], entry)
+
     out = []
     for panel in project["panels"]:
         pid = panel["id"]
+        spec = spec_by_type.get(pid)
         if "profiles" in panel:
-            profiles = [(p["id"], p["slices"]) for p in panel["profiles"]]
+            prof_ids = [p["id"] for p in panel["profiles"]]
+            if spec:
+                region_lens = [measure_to_sixteenths(m) for m in spec["profileLengths"]]
+                profiles = [(prof_ids[i], region_lens[i] // pitch) for i in range(len(prof_ids))]
+            else:
+                profiles = [(p["id"], p["slices"]) for p in panel["profiles"]]
             fullest_id = f"{pid}-{panel['profiles'][0]['id']}"
         else:
-            profiles = [("", panel["slices"])]
+            if spec:
+                region_lens = [measure_to_sixteenths(m) for m in spec["profileLengths"]]
+                profiles = [("", region_lens[0] // pitch)]
+            else:
+                profiles = [("", panel["slices"])]
             fullest_id = pid
         resolved = resolve_slice(project, fullest_id)
         if "sliceStrips" in panel:
@@ -123,11 +144,16 @@ def panel_summaries(
             ripped = None
             height = measure_to_sixteenths(panel["thickness"])
         comps = [(c.id, c.species, c.width) for c in resolved.components]
+        if spec:
+            length = sum(measure_to_sixteenths(m) for m in spec["profileLengths"]) + snipe
+        else:
+            length = panel_length(panel, project, tool_limits)
+        total_slices = sum(n for _, n in profiles)
         out.append(
             PanelSummary(
                 id=pid,
-                length=panel_length(panel, project, tool_limits),
-                total_slices=panel_total_slices(panel),
+                length=length,
+                total_slices=total_slices,
                 profiles=profiles,
                 height=height,
                 ripped=ripped,
@@ -812,6 +838,15 @@ def ripped_slice_profiles(
     the same end-grain sequence + panel thickness + rip spec are the SAME profile
     and merge into one entry (counts summed, slice ids collected).\n    """
     groups: "OrderedDict[tuple, dict]" = OrderedDict()
+    lim = _limits(tool_limits)
+    pitch = measure_to_sixteenths(project["sliceDepth"]) + measure_to_sixteenths(lim["miterKerf"])
+    # panelSpecs (when declared) set region slice counts and panel multiplicity.
+    spec_regions: Dict[str, List[int]] = {}
+    spec_count: Dict[str, int] = {}
+    for e in project.get("panelSpecs", []) or []:
+        if e["panel"] not in spec_regions:
+            spec_regions[e["panel"]] = [measure_to_sixteenths(m) // pitch for m in e["profileLengths"]]
+        spec_count[e["panel"]] = spec_count.get(e["panel"], 0) + e.get("count", 1)
     for panel in project["panels"]:
         ss = panel.get("sliceStrips")
         if not ss:
@@ -819,11 +854,18 @@ def ripped_slice_profiles(
         thickness = measure_to_sixteenths(panel["thickness"])
         strip_count = ss["count"]
         strip_width = measure_to_sixteenths(ss["width"])
-        # Enumerate (profile_id, slice_count) just like panel_summaries.
+        # Enumerate (profile_id, slice_count) just like panel_summaries. When a
+        # panelSpec exists, use its region slice counts x panel multiplicity.
+        pid = panel["id"]
+        regs = spec_regions.get(pid)
+        mult = spec_count.get(pid, 1)
         if "profiles" in panel:
-            regions = [(p["id"], p["slices"]) for p in panel["profiles"]]
+            regions = [
+                (p["id"], (regs[i] if regs else p["slices"]) * mult)
+                for i, p in enumerate(panel["profiles"])
+            ]
         else:
-            regions = [(None, panel["slices"])]
+            regions = [(None, (regs[0] if regs else panel["slices"]) * mult)]
         for prof_id, n in regions:
             slice_id = f"{panel['id']}-{prof_id}" if prof_id else panel["id"]
             resolved = resolve_slice(project, slice_id)
@@ -1117,12 +1159,14 @@ class PanelSpec:
 def panel_specs(
     project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any]
 ) -> List[PanelSpec]:
-    """The fixed panels the plan builds.
+    """The fixed physical panels the plan builds, one PanelSpec per panel.
 
-    For each ideal panel type: if actual panels of that type exist (authored or
-    auto-generated), use exactly those (slices derived from each actual panel's
-    usable length and profile ratios). Otherwise default one spec from the ideal
-    (ideal profile slice counts). Panel specs fix the slices each panel produces.
+    Source of truth is ``project['panelSpecs']`` when present: each entry names a
+    panel type and its per-profile region lengths, and is expanded by ``count``
+    into that many identical PanelSpec objects. A profile region's slice count is
+    its length divided by the slice pitch (sliceDepth + miterKerf). When no
+    panelSpecs are declared, fall back to one ideal panel per type (declared
+    profile slice counts).
     """
     lim = _limits(tool_limits)
     snipe = measure_to_sixteenths(lim.get("snipeTail", [0, 0]))
@@ -1130,34 +1174,50 @@ def panel_specs(
     miter_kerf = measure_to_sixteenths(lim["miterKerf"])
     pitch = slice_depth + miter_kerf
 
-    actuals = actual_panels(project, cut_spec, tool_limits)
-    by_type: Dict[str, List[ActualPanel]] = {}
-    for ap in actuals:
-        by_type.setdefault(ap.panel_id, []).append(ap)
-
+    panels_by_id = {p["id"]: p for p in project["panels"]}
+    declared = project.get("panelSpecs")
     specs: List[PanelSpec] = []
+
+    if declared:
+        for entry in declared:
+            pid = entry["panel"]
+            panel = panels_by_id.get(pid)
+            if panel is None:
+                raise ValueError(f"panelSpecs references unknown panel '{pid}'")
+            region_lens = [measure_to_sixteenths(m) for m in entry["profileLengths"]]
+            if "profiles" in panel:
+                prof_ids = [p["id"] for p in panel["profiles"]]
+            else:
+                prof_ids = [None]
+            if len(region_lens) != len(prof_ids):
+                raise ValueError(
+                    f"panelSpecs for '{pid}' has {len(region_lens)} profileLengths "
+                    f"but the panel has {len(prof_ids)} profile(s)"
+                )
+            prof_slices = [
+                (prof_ids[i], region_lens[i] // pitch) for i in range(len(prof_ids))
+            ]
+            body = sum(region_lens)
+            length = body + snipe
+            for _ in range(entry.get("count", 1)):
+                specs.append(PanelSpec(
+                    panel_id=pid, source="spec", length=length, usable=body,
+                    profile_slices=prof_slices, code=None,
+                ))
+        return specs
+
+    # Fallback: no panelSpecs declared -> one ideal panel per type.
     for panel in project["panels"]:
         pid = panel["id"]
-        # A panel's slice output is its DECLARED profile slice counts. These are
-        # the installed slice counts the design calls for (the Panel Face Diagram
-        # draws exactly these); sliceStrips describes how a wide panel is ripped,
-        # not a count multiplier, and length/pitch is not re-derived here.
         if "profiles" in panel:
             prof_slices = [(p["id"], p["slices"]) for p in panel["profiles"]]
         else:
             prof_slices = [(None, panel["slices"])]
-        if pid in by_type:
-            for ap in by_type[pid]:
-                specs.append(PanelSpec(
-                    panel_id=pid, source="actual", length=ap.length,
-                    usable=ap.length - snipe, profile_slices=prof_slices, code=ap.code,
-                ))
-        else:
-            length = panel_length(panel, project, tool_limits)
-            specs.append(PanelSpec(
-                panel_id=pid, source="ideal", length=length, usable=length - snipe,
-                profile_slices=prof_slices, code=None,
-            ))
+        length = panel_length(panel, project, tool_limits)
+        specs.append(PanelSpec(
+            panel_id=pid, source="ideal", length=length, usable=length - snipe,
+            profile_slices=prof_slices, code=None,
+        ))
     return specs
 
 
