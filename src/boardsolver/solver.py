@@ -10,6 +10,36 @@ It does not promise a locally optimal packing. A human can tweak the
 output afterwards; that is the intended workflow for a project that is
 only built every few months.
 
+Second pass (always run)
+------------------------
+After the greedy pass, ``solve`` always runs an improvement pass, and
+repeats it until it stops improving -- a second, third, and further
+pass as needed. A trial packing is only ever committed if it is
+strictly better than the packing it replaces, under this comparator:
+
+* ghost board volume decreases, OR
+* ghost board volume stays the same AND the leftover margins on real
+  boards increase.
+
+If both quantities stay the same, the two packings are considered
+equal, and the original is kept -- no churn, no sideways moves are
+committed on their own. Intermediate steps inside one trial (for
+example a swap chain that makes room for a ghost strip) are only
+committed as a whole, and only if the final packing is strictly
+better, so the output is guaranteed to be the same or better than
+the greedy output, never worse.
+
+Ghost volume is the summed strip material on ghost boards
+(width x cut length, in sixteenths). Leftover margin is the summed
+docwriter margin over real boards of that species. The pass works
+per species, in three ways, in order: direct placement of a ghost
+strip on a real board; ejection (remove one or two strips from a
+real board to make room for a ghost strip, and place the removed
+strips elsewhere); and a max-margin swap chain (repeatedly swap
+strips between real boards in a way that raises the largest real
+margin, until a ghost strip fits). If none of those produces a
+strictly better packing, the greedy packing is returned unchanged.
+
 Method
 ------
 1. Demand comes from ``derive.component_demand`` (one stick per component
@@ -79,6 +109,231 @@ class _Blank:
     def strip_fits_length(self, cuts: List[int], miter_kerf: int) -> bool:
         total = sum(cuts) + max(len(cuts) - 1, 0) * miter_kerf
         return total <= self.length
+
+
+def _margin(blank: "_Blank", loss_per_strip: int) -> int:
+    return blank.width - blank.used - len(blank.strips) * loss_per_strip
+
+
+def _can_place(blank: "_Blank", strip: Dict[str, Any],
+               loss_per_strip: int, miter_kerf: int) -> bool:
+    if not blank.strip_fits_length(strip["cuts"], miter_kerf):
+        return False
+    return blank.margin_after(strip["width"], loss_per_strip) >= 0
+
+
+def _species_score(blanks: List["_Blank"], loss_per_strip: int):
+    """(ghost volume, -leftover margin) for one species; lower is better."""
+    ghost_volume = 0
+    leftover = 0
+    for blank in blanks:
+        if blank.buy_species is not None:
+            for strip in blank.strips:
+                ghost_volume += strip["width"] * sum(strip["cuts"])
+        else:
+            leftover += _margin(blank, loss_per_strip)
+    return (ghost_volume, -leftover)
+
+
+def _is_better(new_blanks, old_blanks, loss_per_strip: int) -> bool:
+    new_score = _species_score(new_blanks, loss_per_strip)
+    old_score = _species_score(old_blanks, loss_per_strip)
+    return new_score < old_score
+
+
+def _best_fit_board(blanks, strip, loss_per_strip, miter_kerf,
+                    exclude_ids=()):
+    """Real board with the smallest margin-after still >= 0, or None."""
+    best = None
+    best_margin = None
+    for blank in blanks:
+        if blank.buy_species is not None or blank.id in exclude_ids:
+            continue
+        if not _can_place(blank, strip, loss_per_strip, miter_kerf):
+            continue
+        margin = blank.margin_after(strip["width"], loss_per_strip)
+        if best_margin is None or margin < best_margin:
+            best, best_margin = blank, margin
+    return best
+
+
+def _try_direct_ghost(blanks, loss_per_strip, miter_kerf):
+    """Move one ghost strip onto a real board. Returns new blanks or None."""
+    import copy
+    trial = copy.deepcopy(blanks)
+    for ghost in trial:
+        if ghost.buy_species is None:
+            continue
+        for strip in list(ghost.strips):
+            target = _best_fit_board(trial, strip, loss_per_strip, miter_kerf)
+            if target is None:
+                continue
+            ghost.strips.remove(strip)
+            target.strips.append(strip)
+            if _is_better(trial, blanks, loss_per_strip):
+                return trial
+            # This ghost strip did not improve things on its own; undo
+            # this one move and keep looking at other ghost strips.
+            target.strips.remove(strip)
+            ghost.strips.append(strip)
+    return None
+
+
+def _try_ejection(blanks, loss_per_strip, miter_kerf):
+    """Make room for a ghost strip by removing 1-2 strips from a real
+    board and placing them elsewhere. Returns new blanks or None."""
+    import copy
+    from itertools import combinations
+    trial_base = copy.deepcopy(blanks)
+    for ghost in trial_base:
+        if ghost.buy_species is None:
+            continue
+        for ghost_strip in list(ghost.strips):
+            for board in trial_base:
+                if board.buy_species is not None or board.id == ghost.id:
+                    continue
+                strips = board.strips
+                for size in (1, 2):
+                    for subset_idx in combinations(range(len(strips)), size):
+                        subset = [strips[i] for i in subset_idx]
+                        trial = copy.deepcopy(trial_base)
+                        t_ghost = next(b for b in trial if b.id == ghost.id)
+                        t_board = next(b for b in trial if b.id == board.id)
+                        t_strip = next(s for s in t_ghost.strips
+                                       if s["width"] == ghost_strip["width"]
+                                       and s["cuts"] == ghost_strip["cuts"])
+                        # Remove the subset, then place the ghost strip.
+                        for s in subset:
+                            t_board.strips.remove(
+                                next(x for x in t_board.strips
+                                     if x["width"] == s["width"]
+                                     and x["cuts"] == s["cuts"]))
+                        if not _can_place(t_board, t_strip,
+                                          loss_per_strip, miter_kerf):
+                            continue
+                        t_ghost.strips.remove(t_strip)
+                        t_board.strips.append(t_strip)
+                        # Place every removed strip elsewhere, best fit.
+                        placed = True
+                        for s in subset:
+                            target = None
+                            best_margin = None
+                            for cand in trial:
+                                if cand.id == t_board.id:
+                                    continue
+                                if not _can_place(cand, s,
+                                                  loss_per_strip, miter_kerf):
+                                    continue
+                                margin = cand.margin_after(
+                                    s["width"], loss_per_strip)
+                                if best_margin is None or margin < best_margin:
+                                    target, best_margin = cand, margin
+                            if target is None:
+                                placed = False
+                                break
+                            target.strips.append(s)
+                        if placed and _is_better(trial, blanks, loss_per_strip):
+                            return trial
+    return None
+
+
+def _swap_candidates(board_a, board_b, loss_per_strip, miter_kerf):
+    """All (a_subset, b_subset) swaps of size (1,1), (1,2) or (2,1)
+    that leave both boards fitting, as (a_strips, b_strips) lists."""
+    from itertools import combinations
+    out = []
+    a_strips, b_strips = board_a.strips, board_b.strips
+    for a_size, b_size in ((1, 1), (1, 2), (2, 1)):
+        for a_idx in combinations(range(len(a_strips)), a_size):
+            for b_idx in combinations(range(len(b_strips)), b_size):
+                a_sub = [a_strips[i] for i in a_idx]
+                b_sub = [b_strips[i] for i in b_idx]
+                new_a = [s for i, s in enumerate(a_strips) if i not in a_idx] + b_sub
+                new_b = [s for i, s in enumerate(b_strips) if i not in b_idx] + a_sub
+                # Margin and length checks on both boards.
+                def _ok(strips_list, width, length):
+                    used = sum(s["width"] for s in strips_list)
+                    if width - used - len(strips_list) * loss_per_strip < 0:
+                        return False
+                    return all(
+                        sum(s["cuts"]) + max(len(s["cuts"]) - 1, 0) * miter_kerf <= length
+                        for s in strips_list)
+                if _ok(new_a, board_a.width, board_a.length) and \
+                        _ok(new_b, board_b.width, board_b.length):
+                    out.append((a_sub, b_sub, new_a, new_b))
+    return out
+
+
+def _try_swap_chain(blanks, loss_per_strip, miter_kerf):
+    """Repeatedly swap strips to raise the margin on one target
+    real board, until a ghost strip fits on it. Only the whole
+    chain is committed, and only if it is strictly better.
+    Returns new blanks or None.
+
+    The target board's margin is the thing that has to grow: in
+    the cherry case the receiving board's margin grows 6 -> 9 ->
+    12 -> 15 sixteenths across three 1-big-for-2-small swaps,
+    while the other board's margin shrinks, so a largest-margin
+    criterion would stop at the first swap (the largest margin
+    stays at 9). Targeting one board at a time is what lets the
+    chain walk to the fit."""
+    import copy
+    ghost_strips = [s for b in blanks if b.buy_species is not None
+                    for s in b.strips]
+    if not ghost_strips:
+        return None
+    need = max(s["width"] + loss_per_strip for s in ghost_strips)
+    real = [b for b in blanks if b.buy_species is None]
+    # Try target boards in order of smallest deficit first.
+    targets = sorted(real, key=lambda b: need - _margin(b, loss_per_strip))
+    for target_id in [b.id for b in targets]:
+        trial = copy.deepcopy(blanks)
+        t_real = [b for b in trial if b.buy_species is None]
+        target = next(b for b in t_real if b.id == target_id)
+        for _step in range(10):
+            direct = _try_direct_ghost(trial, loss_per_strip, miter_kerf)
+            if direct is not None and _is_better(direct, blanks, loss_per_strip):
+                return direct
+            current = _margin(target, loss_per_strip)
+            best_swap = None
+            best_target_margin = current
+            for other in t_real:
+                if other.id == target.id:
+                    continue
+                for a_sub, b_sub, new_a, new_b in _swap_candidates(
+                        target, other, loss_per_strip, miter_kerf):
+                    saved_t, saved_o = target.strips, other.strips
+                    target.strips, other.strips = new_a, new_b
+                    new_margin = _margin(target, loss_per_strip)
+                    target.strips, other.strips = saved_t, saved_o
+                    if new_margin > best_target_margin:
+                        best_target_margin = new_margin
+                        best_swap = (other, new_a, new_b)
+            if best_swap is None:
+                break
+            other, new_a, new_b = best_swap
+            target.strips, other.strips = new_a, new_b
+        direct = _try_direct_ghost(trial, loss_per_strip, miter_kerf)
+        if direct is not None and _is_better(direct, blanks, loss_per_strip):
+            return direct
+    return None
+
+
+def _improve_species(blanks, loss_per_strip, miter_kerf):
+    """Second/third/... passes for one species. Only strictly
+    better packings are ever kept, so this cannot make the greedy
+    result worse."""
+    current = blanks
+    for _pass in range(50):
+        improved = None
+        for attempt in (_try_direct_ghost, _try_ejection, _try_swap_chain):
+            improved = attempt(current, loss_per_strip, miter_kerf)
+            if improved is not None:
+                break
+        if improved is None:
+            break
+        current = improved
+    return current
 
 
 def solve(project: Dict[str, Any], tool_limits: Dict[str, Any]) -> Dict[str, Any]:
@@ -218,6 +473,27 @@ def solve(project: Dict[str, Any], tool_limits: Dict[str, Any]) -> Dict[str, Any
         ghost = _new_ghost(strip)
         ghost.strips.append({"width": strip["width"], "cuts": strip["cuts"]})
         blanks.append(ghost)
+
+    # --- second/third/... passes: always run, only strictly better -----
+    # Group by species, improve each species independently, then put
+    # the boards back in their original order. Boards left empty by
+    # improvement are dropped at emit time.
+    species_order = []
+    for blank in blanks:
+        if blank.species not in species_order:
+            species_order.append(blank.species)
+    improved_by_species = {}
+    for species in species_order:
+        species_blanks = [b for b in blanks if b.species == species]
+        improved_by_species[species] = _improve_species(
+            species_blanks, loss_per_strip, miter_kerf)
+    # Rebuild in the original board order, taking the improved
+    # version of each board id; boards left empty are dropped.
+    by_id = {}
+    for species in species_order:
+        for improved in improved_by_species[species]:
+            by_id[improved.id] = improved
+    blanks = [by_id[b.id] for b in blanks if by_id[b.id].strips]
 
     # --- emit YAML in the existing cut-specs style ------------------------
     out_boards = []
