@@ -112,17 +112,27 @@ def test_markdown_has_sections(project, tool_limits, cut_spec):
                          "panels": "p.png", "panel_faces": "pf.png",
                          "ripped_slices": "rs.png",
                          "crosscut": "cc.png", "strip_map": "s.png"})
-    for heading in [
-        "## 1. Warnings",
-        "## 2. Finished board pattern",
-        "## 3. Slice Grid",
-        "## 4. Panels overview",
-        "## 5. Crosscut Blanks",
-        "## 6. Initial board rips",
-        "## 7. Components",
-        "## 8. Panels",
+    # Section titles are present (checked by name, not hard-coded numbers, so
+    # reordering sections does not break this test).
+    import re
+    titles = re.findall(r"^## \d+\. (.+)$", md, re.MULTILINE)
+    for title in [
+        "Warnings",
+        "Finished board pattern",
+        "Crosscut Blanks",
+        "Panels overview",
+        "Initial board rips (the cut list)",
+        "Components",
+        "Panels (profiles and sequence)",
+        "Slice Grid",
     ]:
-        assert heading in md
+        assert title in titles
+    # Build order: Crosscut comes before the board rips; Slice Grid is last.
+    assert titles.index("Crosscut Blanks") < titles.index("Initial board rips (the cut list)")
+    assert titles[-1] == "Slice Grid"
+    # Numbers are sequential from 1 with no gaps.
+    nums = [int(n) for n in re.findall(r"^## (\d+)\.", md, re.MULTILINE)]
+    assert nums == list(range(1, len(nums) + 1))
     assert "Plane, slice, and flatten" not in md
     assert "### Panel End Grain Diagram" in md
     assert "### Panel Face Diagram" in md

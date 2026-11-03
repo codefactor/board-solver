@@ -66,11 +66,11 @@ def build_markdown(
         L.append(f"*{project['description']}*")
         L.append("")
     L.append(
-        "This is a generated plan: the finished design (sections 1, 2, 4, 5) and the "
-        "cut list that realizes it on the boards in hand (the Initial board rips "
-        "section). Where the cut "
+        "This is a generated plan: the finished design and the "
+        "cut list that realizes it on the boards in hand. Where the cut "
         "list cannot be met from inventory it calls for **bought boards** — buy those "
-        "and re-run before cutting."
+        "and re-run before cutting. The sections follow the build order, from the "
+        "first crosscut to the final slice-grid assembly."
     )
     L.append("")
 
@@ -103,42 +103,46 @@ def build_markdown(
     L.append(f"![Finished plaid face]({images['finished']})")
     L.append("")
 
-    # --- Section 2: slice grid ------------------------------------------- #
-    L.append(sec("Slice Grid"))
+    # --- Section: crosscut blanks (the first physical step) -------------- #
+    L.append(sec("Crosscut Blanks"))
     L.append("")
     L.append(
-        "The same grid keyed by slice id: each slice is framed in its legend color "
-        "so you can see how to arrange the grid cell by cell. A corner triangle "
-        "marks a slice placed horizontally flipped."
+        "The first operation: crosscut each raw inventory board along its length "
+        "into the labeled board blanks that get ripped later (the Initial board rips "
+        "section). Boards "
+        "that start from another board's leftover margin are not raw-stock "
+        "crosscuts — they appear as the labeled offcuts in the Board Rip Diagram."
     )
     L.append("")
-    L.append(f"![Slice grid keyed by slice id]({images['slice_map']})")
+    blanks = crosscut_blanks(project, cut_spec, tool_limits)
+    L.append("| Raw board | Species | Raw length | Blanks (id = length) | Leftover |")
+    L.append("| --- | --- | --- | --- | --- |")
+    for cb in blanks:
+        if cb.state == "spare":
+            blist = "— (untouched spare)"
+            leftover = "—"
+        elif cb.state == "whole":
+            blist = "; ".join(f"{b.blank_id} = {frac_inches(b.length)} (used whole)" for b in cb.blanks)
+            leftover = _m(cb.leftover)
+        else:
+            blist = "; ".join(f"{b.blank_id} = {frac_inches(b.length)}" for b in cb.blanks)
+            leftover = _m(cb.leftover) + (" (overflow!)" if cb.leftover < 0 else "")
+        L.append(
+            f"| {cb.source_id} | {_species_short(cb.species)} | "
+            f"{frac_inches(cb.length)} | {blist} | {leftover} |"
+        )
     L.append("")
-
-    L.append("### Slice Fulfillment")
+    L.append("### Crosscut Diagram")
     L.append("")
     L.append(
-        f"**Demand** is every slice the grid places across all {batch} finished "
-        f"board(s). **Supplied** is the slices the panels (Panels overview) produce "
-        f"— snipe lost, ripped panels multiplied by their strip count. **Supply "
-        f"Offset** = supplied − demand: negative is a shortfall, positive is extra "
-        f"(ideally non-negative everywhere)."
+        "Each bar is one raw board drawn to scale by length; segments are the "
+        "blanks (labeled with id and length inside), reddish stripes are crosscut "
+        "kerfs (sawdust), and the pale tail is leftover length. A red tail means "
+        "the blanks overflow the raw board. An untouched spare is shown washed-out "
+        "and uncut; a board used whole goes straight to the rip diagram."
     )
     L.append("")
-    L.append("| Slice | Demand | Supplied | Supply Offset |")
-    L.append("| --- | --- | --- | --- |")
-    for r in slice_fulfillment(project, cut_spec, tool_limits):
-        offset = r.supplied - r.demand
-        off = f"+{offset}" if offset > 0 else str(offset)
-        dem = f"{r.per_board} × {r.batch} = {r.demand}"
-        L.append(f"| {r.slice_id} | {dem} | {r.supplied} | {off} |")
-    L.append("")
-    L.append(
-        "_The slice counts supplied are calculated assuming the panels and their "
-        "quantities are delivered perfectly according to the specs in the Panels "
-        "overview section. A panel type may have more than one instance; the ideal "
-        "panels are always quantity 1._"
-    )
+    L.append(f"![Crosscut Diagram — raw boards cut into length blanks]({images['crosscut']})")
     L.append("")
 
     # --- Section: panels overview (table + two diagram sub-sections) ----- #
@@ -192,48 +196,6 @@ def build_markdown(
     )
     L.append("")
     L.append(f"![Ripped slice diagrams]({images['ripped_slices']})")
-    L.append("")
-
-    # --- Section: crosscut blanks ---------------------------------------- #
-    L.append(sec("Crosscut Blanks"))
-    L.append("")
-    L.append(
-        "The first operation: crosscut each raw inventory board along its length "
-        "into the labeled board blanks that get ripped later (the Initial board rips "
-        "section). Boards "
-        "that start from another board's leftover margin are not raw-stock "
-        "crosscuts — they appear as the labeled offcuts in the Board Rip Diagram."
-    )
-    L.append("")
-    blanks = crosscut_blanks(project, cut_spec, tool_limits)
-    L.append("| Raw board | Species | Raw length | Blanks (id = length) | Leftover |")
-    L.append("| --- | --- | --- | --- | --- |")
-    for cb in blanks:
-        if cb.state == "spare":
-            blist = "— (untouched spare)"
-            leftover = "—"
-        elif cb.state == "whole":
-            blist = "; ".join(f"{b.blank_id} = {frac_inches(b.length)} (used whole)" for b in cb.blanks)
-            leftover = _m(cb.leftover)
-        else:
-            blist = "; ".join(f"{b.blank_id} = {frac_inches(b.length)}" for b in cb.blanks)
-            leftover = _m(cb.leftover) + (" (overflow!)" if cb.leftover < 0 else "")
-        L.append(
-            f"| {cb.source_id} | {_species_short(cb.species)} | "
-            f"{frac_inches(cb.length)} | {blist} | {leftover} |"
-        )
-    L.append("")
-    L.append("### Crosscut Diagram")
-    L.append("")
-    L.append(
-        "Each bar is one raw board drawn to scale by length; segments are the "
-        "blanks (labeled with id and length inside), reddish stripes are crosscut "
-        "kerfs (sawdust), and the pale tail is leftover length. A red tail means "
-        "the blanks overflow the raw board. An untouched spare is shown washed-out "
-        "and uncut; a board used whole goes straight to the rip diagram."
-    )
-    L.append("")
-    L.append(f"![Crosscut Diagram — raw boards cut into length blanks]({images['crosscut']})")
     L.append("")
 
     # --- Section 5: initial board rips (the actual cut list) ------------- #
@@ -340,6 +302,45 @@ def build_markdown(
     for s in summaries:
         profs = ", ".join(f"{pid or 'single'}: {n}" for pid, n in s.profiles)
         L.append(f"| {s.id} | {frac_inches(s.length)} | {profs} | {s.sequence} |")
+    L.append("")
+
+    # --- Section: slice grid (the final assembly step) ------------------- #
+    L.append(sec("Slice Grid"))
+    L.append("")
+    L.append(
+        "The final step: arrange the slices into the finished face. The same grid "
+        "keyed by slice id — each slice is framed in its legend color so you can see "
+        "how to arrange the grid cell by cell. A corner triangle marks a slice "
+        "placed horizontally flipped."
+    )
+    L.append("")
+    L.append(f"![Slice grid keyed by slice id]({images['slice_map']})")
+    L.append("")
+
+    L.append("### Slice Fulfillment")
+    L.append("")
+    L.append(
+        f"**Demand** is every slice the grid places across all {batch} finished "
+        f"board(s). **Supplied** is the slices the panels (Panels overview) produce "
+        f"— snipe lost, ripped panels multiplied by their strip count. **Supply "
+        f"Offset** = supplied − demand: negative is a shortfall, positive is extra "
+        f"(ideally non-negative everywhere)."
+    )
+    L.append("")
+    L.append("| Slice | Demand | Supplied | Supply Offset |")
+    L.append("| --- | --- | --- | --- |")
+    for r in slice_fulfillment(project, cut_spec, tool_limits):
+        offset = r.supplied - r.demand
+        off = f"+{offset}" if offset > 0 else str(offset)
+        dem = f"{r.per_board} × {r.batch} = {r.demand}"
+        L.append(f"| {r.slice_id} | {dem} | {r.supplied} | {off} |")
+    L.append("")
+    L.append(
+        "_The slice counts supplied are calculated assuming the panels and their "
+        "quantities are delivered perfectly according to the specs in the Panels "
+        "overview section. A panel type may have more than one instance; the ideal "
+        "panels are always quantity 1._"
+    )
     L.append("")
 
     return "\n".join(L)
