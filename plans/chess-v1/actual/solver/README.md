@@ -24,10 +24,10 @@ The first operation: crosscut each raw inventory board along its length into the
 
 | Raw board | Species | Raw length | Blanks (id = length) | Leftover |
 | --- | --- | --- | --- | --- |
-| BM1 | maple | 98¹⁄₁₆″ | BM1A = 48″ | 50¹⁄₁₆″ |
-| BC1 | cherry | 48⅛″ | BC1A = 48″ | ⅛″ |
-| BC2 | cherry | 48¹⁄₁₆″ | BC2A = 48″ | ¹⁄₁₆″ |
-| BW1 | walnut | 54⁵⁄₁₆″ | BW1A = 48″ | 6⁵⁄₁₆″ |
+| BM1 | maple | 98¹⁄₁₆″ | BM1A = 32⅜″ | 65¹¹⁄₁₆″ |
+| BC1 | cherry | 48⅛″ | BC1A = 38⅞″ | 9¼″ |
+| BC2 | cherry | 48¹⁄₁₆″ | BC2A = 12⅞″ | 35³⁄₁₆″ |
+| BW1 | walnut | 54⁵⁄₁₆″ | BW1A = 32⅜″ | 21¹⁵⁄₁₆″ |
 | BW2 | walnut | 54⁵⁄₁₆″ | — (untouched spare) | — |
 | BM2 | maple | 47¹⁵⁄₁₆″ | — (untouched spare) | — |
 
@@ -35,7 +35,7 @@ The first operation: crosscut each raw inventory board along its length into the
 
 Each bar is one raw board drawn to scale by length; segments are the blanks (labeled with id and length inside), reddish stripes are crosscut kerfs (sawdust), and the pale tail is leftover length. A red tail means the blanks overflow the raw board. An untouched spare is shown washed-out and uncut; a board used whole goes straight to the rip diagram.
 
-![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-6219f038c7cc.png)
+![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-8355e5a0c1d5.png)
 
 ## 4. Panels overview
 
@@ -75,16 +75,16 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 
 | Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | 2¼″ ×2 | 4½″ | ⅜″ | 3⁹⁄₁₆″ |
-| BC1A @ 7¼″ | BC1 | cherry | 48″ | 2¼″ ×2 · 1⅛″ ×1 | 5⅝″ | ⁹⁄₁₆″ | 1¹⁄₁₆″ |
-| BC2A @ 6¹⁵⁄₁₆″ | BC2 | cherry | 48″ | 1⅛″ ×1 | 1⅛″ | ³⁄₁₆″ | 5⅝″ |
-| BW1A @ 6¼″ | BW1 | walnut | 48″ | 2¼″ ×2 | 4½″ | ⅜″ | 1⅜″ |
+| BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 32⅜″ | 2¼″ ×2 | 4½″ | ⅜″ | 3⁹⁄₁₆″ |
+| BC1A @ 7¼″ | BC1 | cherry | 38⅞″ | 2¼″ ×2 · 1⅛″ ×1 | 5⅝″ | ⁹⁄₁₆″ | 1¹⁄₁₆″ |
+| BC2A @ 6¹⁵⁄₁₆″ | BC2 | cherry | 12⅞″ | 1⅛″ ×1 | 1⅛″ | ³⁄₁₆″ | 5⅝″ |
+| BW1A @ 6¼″ | BW1 | walnut | 32⅜″ | 2¼″ ×2 | 4½″ | ⅜″ | 1⅜″ |
 
 ### Board Rip Diagram
 
 Each labeled block below is one physical board. Horizontal bands are the strips ripped down the board's width; within a band, the colored cells are the crosscut pieces (with thin kerf gaps between them) and the lightened tail is the offcut. The pale band under the strips is the leftover margin; a gray title marks a board that must be bought.
 
-![Board Rip Diagram — how the cut list lands on each board](images/strip-map-adc061cb95db.png)
+![Board Rip Diagram — how the cut list lands on each board](images/strip-map-d30b1e08d236.png)
 
 ## 6. Components
 

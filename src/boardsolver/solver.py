@@ -59,6 +59,17 @@ Method
 5. If no inventory blank can take the strip, a ghost (bought) board is
    created for that species, capped at the widest inventory width for
    the species so a ghost still looks like a real board.
+6. After packing (and after the improvement passes), each blank is
+   trimmed to the longest strip it carries: blank length = max over
+   its strips of (sum of cuts + miter kerfs between cuts). This is
+   the crosscut-before-rip step. Without it, every blank kept the
+   full 48 in nominal length, so the unused length fragmented into
+   a narrow tail at the end of every strip. Trimmed, that unused
+   length instead stays on the source board as a full-width leftover
+   (see crosscut_blanks), usable for later builds. Shorter strips
+   on the same blank still have tails — a shared blank is one
+   rectangle — but those tails are now bounded by the longest strip,
+   not by the full nominal length.
 
 Blank ids follow the existing convention: source id + a letter
 (BC1A, BC1B, ...). Ghost ids are GH-<initial><n> (GH-C, GH-C2, ...).
@@ -494,6 +505,17 @@ def solve(project: Dict[str, Any], tool_limits: Dict[str, Any]) -> Dict[str, Any
         for improved in improved_by_species[species]:
             by_id[improved.id] = improved
     blanks = [by_id[b.id] for b in blanks if by_id[b.id].strips]
+
+    # --- trim each blank to its longest strip ----------------------------
+    # Crosscut before rip: the blank is only as long as the longest
+    # strip it carries, so unused source length remains a full-width
+    # leftover instead of fragmenting into a tail on every strip.
+    for blank in blanks:
+        if blank.strips:
+            blank.length = max(
+                sum(s["cuts"]) + max(len(s["cuts"]) - 1, 0) * miter_kerf
+                for s in blank.strips
+            )
 
     # --- emit YAML in the existing cut-specs style ------------------------
     # Cut list order is always alphabetical by species, then board id,

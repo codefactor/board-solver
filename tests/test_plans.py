@@ -21,7 +21,7 @@ import pytest
 import yaml
 from PIL import Image
 
-from boardsolver import bundle, deliver
+from boardsolver import bundle, deliver, solver
 from boardsolver.derive import (
     actual_panels,
     auto_panels,
@@ -505,3 +505,26 @@ def test_panel_too_short_for_planer_is_flagged(tool_limits):
              if w.code == "panel_too_short"]
     assert sorted(w.message.split()[1] for w in short) == ["A", "B"]
     assert all(w.level == "red" for w in short)
+
+
+def test_solver_trims_blank_to_longest_strip(tool_limits):
+    """Crosscut before rip: a solver blank is only as long as its
+    longest strip, so unused source length stays a full-width leftover
+    instead of fragmenting into a tail on every strip. On the dup
+    design the cherry blank carries two single 9 5/8 in cuts and the
+    walnut blank one strip of two 9 5/8 in cuts with one kerf between
+    them — neither blank may keep the 48 in nominal length."""
+    project = bundle.resolve_bundle(
+        DUP_DESIGN, {"boards": DUP_INVENTORY}, tool_limits)
+    spec = solver.solve(project, tool_limits)
+    by_id = {b["id"]: b for b in spec["boards"]}
+    # Cherry: two strips, one 9 5/8 in cut each -> blank 154 sixteenths.
+    # Walnut: one strip, two 9 5/8 in cuts + one 1/8 in kerf -> 310.
+    # Solver cut-spec lengths are sixteenths, as are strip cuts.
+    assert by_id["C1A"]["length"] == 154
+    assert by_id["W1A"]["length"] == 310
+    for board in spec["boards"]:
+        longest = max(
+            sum(s["cuts"]) + max(len(s["cuts"]) - 1, 0) * 2
+            for s in board["strips"])
+        assert board["length"] == longest

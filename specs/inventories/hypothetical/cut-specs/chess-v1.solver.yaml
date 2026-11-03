@@ -7,7 +7,7 @@ date: '2026-11-03'
 boards:
 - id: BM1A
   source: BM1
-  length: [48, 0]
+  length: [32, 6]
   strips:
   - width: [2, 4]
     cuts:
@@ -19,7 +19,7 @@ boards:
     - [16, 2]
 - id: BC1A
   source: BC1
-  length: [40, 0]
+  length: [38, 14]
   strips:
   - width: [2, 4]
     cuts:
@@ -31,7 +31,7 @@ boards:
     - [12, 14]
 - id: BC2A
   source: BC2
-  length: [40, 0]
+  length: [32, 6]
   strips:
   - width: [1, 2]
     cuts:
@@ -42,7 +42,7 @@ boards:
     - [12, 14]
 - id: BW1A
   source: BW1
-  length: [48, 0]
+  length: [32, 6]
   strips:
   - width: [2, 4]
     cuts:
