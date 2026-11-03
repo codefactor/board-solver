@@ -13,6 +13,7 @@ from .derive import (
     board_rips,
     crosscut_blanks,
     match_supply_to_demand,
+    panel_specs,
     panel_summaries,
     slice_fulfillment,
     validate_components_unique,
@@ -132,17 +133,29 @@ def build_markdown(
         dem = f"{r.per_board} × {r.batch} = {r.demand}"
         L.append(f"| {r.slice_id} | {dem} | {r.supplied} | {off} |")
     L.append("")
+    L.append(
+        "_Supplied is based on the panels built in the Panels overview section "
+        "(see its Qty column). A panel type may have more than one instance; the "
+        "ideal panels are always quantity 1._"
+    )
+    L.append("")
 
     # --- Section: panels overview (table + two diagram sub-sections) ----- #
     L.append(sec("Panels overview"))
     L.append("")
-    L.append("| Panel | Length | Slices | Height | Ripped | Sequence (outer → in) |")
-    L.append("| --- | --- | --- | --- | --- | --- |")
+    # Quantity of each panel type the plan actually builds (from panel specs:
+    # actual panels if any, else one ideal-defaulted spec).
+    from collections import Counter as _Counter
+    _specs = panel_specs(project, cut_spec, tool_limits)
+    qty_by_panel = _Counter(s.panel_id for s in _specs)
+    L.append("| Panel | Qty | Length | Slices | Height | Ripped | Sequence (outer → in) |")
+    L.append("| --- | --- | --- | --- | --- | --- | --- |")
     for s in summaries:
         slices = " + ".join(f"{pid or '—'}:{n}" for pid, n in s.profiles)
         ripped = f"2× ({frac_inches(s.height)})" if s.ripped else "—"
+        qty = qty_by_panel.get(s.id, 0)
         L.append(
-            f"| {s.id} | {frac_inches(s.length)} | {s.total_slices} ({slices}) | "
+            f"| {s.id} | {qty} | {frac_inches(s.length)} | {s.total_slices} ({slices}) | "
             f"{frac_inches(s.height)} | {ripped} | {s.sequence} |"
         )
     L.append("")

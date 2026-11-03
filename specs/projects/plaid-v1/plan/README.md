@@ -44,13 +44,15 @@ The same grid keyed by slice id: each slice is framed in its legend color so you
 | H-L | 4 × 2 = 8 | 0 | -8 |
 | H-R | 4 × 2 = 8 | 40 | +32 |
 
+_Supplied is based on the panels built in the Panels overview section (see its Qty column). A panel type may have more than one instance; the ideal panels are always quantity 1._
+
 ## 4. Panels overview
 
-| Panel | Length | Slices | Height | Ripped | Sequence (outer → in) |
-| --- | --- | --- | --- | --- | --- |
-| S | 66½″ | 40 (L:20 + R:20) | ¾″ | — | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
-| M | 66½″ | 40 (L:20 + R:20) | ¾″ | — | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
-| H | 27½″ | 16 (L:8 + R:8) | ¼″ | 2× (¼″) | Me · W1 · Md · W1 · Md |
+| Panel | Qty | Length | Slices | Height | Ripped | Sequence (outer → in) |
+| --- | --- | --- | --- | --- | --- | --- |
+| S | 2 | 66½″ | 40 (L:20 + R:20) | ¾″ | — | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
+| M | 1 | 66½″ | 40 (L:20 + R:20) | ¾″ | — | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
+| H | 1 | 27½″ | 16 (L:8 + R:8) | ¼″ | 2× (¼″) | Me · W1 · Md · W1 · Md |
 
 ### Panel End Grain Diagram
 
