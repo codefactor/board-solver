@@ -88,12 +88,6 @@ def build_markdown(
         for i, w in enumerate(warns_sorted, 1):
             L.append(f"| {i} | {emoji.get(w.level, '')} | {w.code} | {w.message} |")
         L.append("")
-        L.append("Legend:")
-        L.append("")
-        L.append("- \U0001F534 invalid / impossible as written")
-        L.append("- \U0001F7E1 at risk or needs more material")
-        L.append("- \u26AA produces unusable output")
-        L.append("")
 
     # --- Section: finished board ----------------------------------------- #
     L.append(sec("Finished board pattern"))

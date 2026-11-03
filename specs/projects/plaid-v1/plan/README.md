@@ -17,12 +17,6 @@ This is a generated plan: the finished design (sections 1, 2, 4, 5) and the cut 
 | 7 | 🟡 | small_margin | Board BC2A leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 | 8 | 🟡 | small_margin | Board GHC leaves only 0″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 
-Legend:
-
-- 🔴 invalid / impossible as written
-- 🟡 at risk or needs more material
-- ⚪ produces unusable output
-
 ## 2. Finished board pattern
 
 The finished plaid face.
