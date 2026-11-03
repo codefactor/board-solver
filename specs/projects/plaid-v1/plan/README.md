@@ -26,7 +26,17 @@ The finished plaid face.
 
 ![Finished plaid face](images/finished-board-cadaa3163bff.png)
 
-## 3. Crosscut Blanks
+## 3. Volume Sanity Check
+
+A per-species feasibility check in cubic inches. **Finished** is the surfaced volume of every installed slice across all 2 board(s). **Available** is the inventory stock volume. **Required Loss** is the volume that must be removed to produce the finished pieces — flattening (sliceDepth − finishedThickness), planing all four edges (minPlaneLoss), and one miter kerf per slice. If Finished + Required Loss exceeds Available for a species, the project cannot be built from stock in hand.
+
+| Species | Finished | Available | Required Loss | Finished + Loss | Headroom |
+| --- | --- | --- | --- | --- | --- |
+| maple | 203.1 | 993.6 | 145.7 | 348.8 | 644.8 |
+| cherry | 225.0 | 554.4 | 146.2 | 371.2 | 183.2 |
+| walnut | 142.5 | 543.3 | 107.2 | 249.8 | 293.6 |
+
+## 4. Crosscut Blanks
 
 The first operation: crosscut each raw inventory board along its length into the labeled board blanks that get ripped later (the Initial board rips section). Boards that start from another board's leftover margin are not raw-stock crosscuts — they appear as the labeled offcuts in the Board Rip Diagram.
 
@@ -45,7 +55,7 @@ Each bar is one raw board drawn to scale by length; segments are the blanks (lab
 
 ![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-512943d28810.png)
 
-## 4. Panels overview
+## 5. Panels overview
 
 | Panel | Qty | Length | Slices | Height | Ripped | Sequence (outer → in) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -88,7 +98,7 @@ Slices from panels that are ripped (sliceStrips). Identical slices across panels
 
 ![Ripped slice diagrams](images/ripped-slices-b6e00be46ac1.png)
 
-## 5. Initial board rips (the cut list)
+## 6. Initial board rips (the cut list)
 
 Each row is one physical board at the saw: rip the strips down its width, then crosscut each strip to the piece lengths. The **Board** column shows `id @ width` — the board's width when ripping begins. **Used** is the summed strip width, **Loss** is rip kerf + planer cleanup per strip, **Margin** is the leftover width (negative = the strips do not fit; large = the board is oversized for what it yields).
 
@@ -110,7 +120,7 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 ![Board Rip Diagram — how the cut list lands on each board](images/strip-map-0bdef5eca8ff.png)
 
-## 6. Components
+## 7. Components
 
 **Demand** is what the finished pattern needs (counted from the slice grid; length is the panel the component belongs to). **Fulfilled** is how many the cut list supplies, matched longest-demand-first using exact-length pieces first, then longer pieces cut down (a piece shorter than the demand cannot be used). **Shortfall** is the unmet count. **Total Overcut** is the wasted length trimmed off — the sum of (piece length − demand length) across every longer piece that had to be cut down to fill this row (0 when exact-length pieces covered it).
 
@@ -126,7 +136,7 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 | W1 | walnut | 3″ | 17¾″ | 32 | 2 | 30 | 19½″ |
 | W2 | walnut | ¾″ | 19⅜″ | 160 | 12 | 148 | 175½″ |
 
-## 7. Panels (profiles and sequence)
+## 8. Panels (profiles and sequence)
 
 The physical panels this plan builds (from the project's panel specs), grouped by identical shape. Qty is how many of each to glue up.
 
@@ -138,7 +148,7 @@ The physical panels this plan builds (from the project's panel specs), grouped b
 | MR | 2 | 19⅜″ | single: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 |
 | H | 1 | 17¾″ | L: 5, R: 5 | Me · W1 · Md · W1 · Md |
 
-## 8. Slice Grid
+## 9. Slice Grid
 
 The final step: arrange the slices into the finished face. The same grid keyed by slice id — each slice is framed in its legend color so you can see how to arrange the grid cell by cell. A corner triangle marks a slice placed horizontally flipped.
 

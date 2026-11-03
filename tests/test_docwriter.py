@@ -119,6 +119,7 @@ def test_markdown_has_sections(project, tool_limits, cut_spec):
     for title in [
         "Warnings",
         "Finished board pattern",
+        "Volume Sanity Check",
         "Crosscut Blanks",
         "Panels overview",
         "Initial board rips (the cut list)",
@@ -302,6 +303,22 @@ def test_panel_recipe_main_and_smaller(project):
     assert [p.component_id for p in rec.main] == ["M", "A", "B", "A"]
     assert [p.component_id for p in rec.smaller] == ["D"]
     assert rec.smaller[0].ratio == 0.5  # D present in L (10 of 20 slices)
+
+
+def test_volume_sanity_math(project, tool_limits, cut_spec):
+    rows = {r.species: r for r in derive.volume_sanity(project, tool_limits)}
+    # Non-empty, per species, and all volumes positive.
+    assert rows and all(r.finished > 0 and r.available > 0 and r.required_loss >= 0
+                        for r in rows.values())
+    # Finished scales with batch: doubling batch doubles finished + loss, leaves
+    # available (inventory) unchanged.
+    import copy
+    p2 = copy.deepcopy(project); p2["batch"] = project.get("batch", 1) * 2
+    rows2 = {r.species: r for r in derive.volume_sanity(p2, tool_limits)}
+    sp = next(iter(rows))
+    assert rows2[sp].finished == rows[sp].finished * 2
+    assert rows2[sp].required_loss == rows[sp].required_loss * 2
+    assert rows2[sp].available == rows[sp].available
 
 
 def test_slice_fulfillment_two_layer(project, tool_limits, cut_spec):

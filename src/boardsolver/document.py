@@ -17,6 +17,7 @@ from .derive import (
     panel_summaries,
     slice_fulfillment,
     validate_components_unique,
+    volume_sanity,
     warnings,
 )
 from .format import frac_inches
@@ -101,6 +102,33 @@ def build_markdown(
     L.append("The finished plaid face.")
     L.append("")
     L.append(f"![Finished plaid face]({images['finished']})")
+    L.append("")
+
+    # --- Section: volume sanity check ------------------------------------ #
+    L.append(sec("Volume Sanity Check"))
+    L.append("")
+    L.append(
+        "A per-species feasibility check in cubic inches. **Finished** is the "
+        f"surfaced volume of every installed slice across all {batch} board(s). "
+        "**Available** is the inventory stock volume. **Required Loss** is the "
+        "volume that must be removed to produce the finished pieces — flattening "
+        "(sliceDepth − finishedThickness), planing all four edges (minPlaneLoss), "
+        "and one miter kerf per slice. If Finished + Required Loss exceeds "
+        "Available for a species, the project cannot be built from stock in hand."
+    )
+    L.append("")
+    L.append("| Species | Finished | Available | Required Loss | Finished + Loss | Headroom |")
+    L.append("| --- | --- | --- | --- | --- | --- |")
+    def _ci(v):  # cubic sixteenths -> cubic inches string
+        return f"{v / 4096:.1f}"
+    for r in volume_sanity(project, tool_limits):
+        need = r.finished + r.required_loss
+        head = r.available - need
+        flag = "" if head >= 0 else " ⚠\ufe0f"
+        L.append(
+            f"| {_species_short(r.species)} | {_ci(r.finished)} | {_ci(r.available)} | "
+            f"{_ci(r.required_loss)} | {_ci(need)} | {_ci(head)}{flag} |"
+        )
     L.append("")
 
     # --- Section: crosscut blanks (the first physical step) -------------- #

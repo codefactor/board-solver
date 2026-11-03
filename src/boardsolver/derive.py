@@ -165,6 +165,84 @@ def panel_summaries(
 
 
 # --------------------------------------------------------------------------- #
+# volume sanity check (per species): finished vs available vs required loss
+# --------------------------------------------------------------------------- #
+
+@dataclass(frozen=True)
+class VolumeRow:
+    species: str
+    finished: Sixteenths   # cubic sixteenths of surfaced product
+    available: Sixteenths  # cubic sixteenths of inventory stock
+    required_loss: Sixteenths  # cubic sixteenths that MUST be lost producing it
+
+
+def volume_sanity(
+    project: Dict[str, Any], tool_limits: Dict[str, Any]
+) -> List[VolumeRow]:
+    """Per-species volume sanity check, in cubic sixteenths.
+
+    - Finished: every installed component piece (one per component per slice
+      placement in the grid, times batch) at width x finishedThickness x row
+      height (panel thickness, or sliceStrips width for a ripped panel).
+    - Available: sum of inventory board volumes (length x width x thickness).
+    - Required loss: volume that MUST be lost to produce each finished piece:
+        * flatten/router-sled: width x (sliceDepth - finishedThickness) x height,
+        * 4-edge planing: minPlaneLoss x sliceDepth x 2 x (width + height),
+        * one miter kerf on the end-grain face: miterKerf x width x height.
+    """
+    lim = _limits(tool_limits)
+    batch = project.get("batch", 1)
+    ft = measure_to_sixteenths(project["finishedThickness"])
+    sd = measure_to_sixteenths(project["sliceDepth"])
+    mpl = measure_to_sixteenths(lim.get("minPlaneLoss", [0, 0]))
+    mk = measure_to_sixteenths(lim["miterKerf"])
+    flat = sd - ft
+    comp = {c["id"]: c for c in project["components"]}
+    panels = {p["id"]: p for p in project["panels"]}
+
+    def row_height(pid: str) -> Sixteenths:
+        pn = panels[pid]
+        if "sliceStrips" in pn:
+            return measure_to_sixteenths(pn["sliceStrips"]["width"])
+        return measure_to_sixteenths(pn["thickness"])
+
+    fin: "OrderedDict[str, int]" = OrderedDict()
+    loss: "OrderedDict[str, int]" = OrderedDict()
+    for row in project.get("sliceGrid", []):
+        for cell in row:
+            pid = cell["sliceId"].split("-")[0]
+            rh = row_height(pid)
+            for pc in panels[pid]["components"]:
+                c = comp[pc["type"]]
+                sp = c["species"]
+                w = measure_to_sixteenths(c["width"])
+                fin[sp] = fin.get(sp, 0) + w * ft * rh
+                piece_loss = (
+                    w * flat * rh
+                    + mpl * sd * 2 * (w + rh)
+                    + mk * w * rh
+                )
+                loss[sp] = loss.get(sp, 0) + piece_loss
+
+    avail: "OrderedDict[str, int]" = OrderedDict()
+    for b in project["boards"]:
+        v = measure_to_sixteenths(b["length"]) * measure_to_sixteenths(b["width"]) \
+            * measure_to_sixteenths(b["thickness"])
+        avail[b["species"]] = avail.get(b["species"], 0) + v
+
+    species = sorted(set(list(fin) + list(avail) + list(loss)))
+    return [
+        VolumeRow(
+            species=sp,
+            finished=fin.get(sp, 0) * batch,
+            available=avail.get(sp, 0),
+            required_loss=loss.get(sp, 0) * batch,
+        )
+        for sp in species
+    ]
+
+
+# --------------------------------------------------------------------------- #
 # component demand (walk the sliceGrid)
 # --------------------------------------------------------------------------- #
 
