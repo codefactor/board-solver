@@ -257,6 +257,20 @@ def test_actual_panel_sequence_mismatch_flagged(project, tool_limits, cut_spec):
     assert panels[0].sequence_ok is False
 
 
+def test_actual_panel_slices_attributed_to_matched_profile(project, tool_limits, cut_spec):
+    # An actual panel realizes exactly the profile its sequence matches, and all
+    # its slices belong to that profile (not split across L/R).
+    spec = copy.deepcopy(cut_spec)
+    spec["panels"] = [_p_code(project, spec, tool_limits)]  # a P-R panel (M A B A)
+    specs = {(s.panel_id, s.source): s for s in derive.panel_specs(project, spec, tool_limits)}
+    p = next(s for s in derive.panel_specs(project, spec, tool_limits)
+             if s.panel_id == "P" and s.source == "actual")
+    # P-R has no trailing D -> all slices are R, zero L.
+    prof = dict(p.profile_slices)
+    assert prof.get("R", 0) > 0
+    assert prof.get("L", 0) == 0
+
+
 def test_panel_recipe_main_and_smaller(project):
     panel = next(p for p in project["panels"] if p["id"] == "P")
     rec = derive.panel_recipe(project, panel)
