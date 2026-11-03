@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=../../../schema.json
 name: Plaid v1
 description: Two end-grain plaid cutting boards built from cherry, walnut, and brown maple.
+batch: 2
 finishedThickness: [1, 4]
 sliceDepth: [1, 8]
 

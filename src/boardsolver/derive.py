@@ -851,7 +851,10 @@ def actual_panels(
     against the ideal panel's sequence (sequence_ok flags a mismatch). Empty when
     the cut-spec declares no panels.
     """
-    codes = cut_spec.get("panels", [])
+    codes = cut_spec.get("panels")
+    if not codes:
+        # No authored panels: auto-generate from the produced pieces.
+        codes = auto_panels(project, cut_spec, tool_limits)
     if not codes:
         return []
     comp_by_sw: Dict[tuple, str] = {}
@@ -873,3 +876,276 @@ def actual_panels(
         out.append(ActualPanel(panel_id=panel_id, code=code, pieces=pieces,
                                length=length, sequence_ok=sequence_ok))
     return out
+
+
+# --------------------------------------------------------------------------- #
+# panel recipes + auto-generation of panel codes when the cut-spec omits them
+# --------------------------------------------------------------------------- #
+
+@dataclass(frozen=True)
+class RecipePart:
+    position: int        # index in the full (fullest-profile) sequence
+    component_id: str
+    species: str
+    width: Sixteenths
+    ratio: float         # fraction of the panel this component spans (1.0 = full)
+
+
+@dataclass(frozen=True)
+class PanelRecipe:
+    panel_id: str
+    main: List[RecipePart]     # components present in every profile (ratio 1.0)
+    smaller: List[RecipePart]  # drop-out components (ratio < 1.0), by minimumRatio
+
+
+def panel_recipe(project: Dict[str, Any], panel: Dict[str, Any]) -> PanelRecipe:
+    """Split a panel's components into the main list (present in every profile,
+    full length) and the smaller components (drop-outs, each spanning a fraction
+    of the panel = slices-in-profiles-it-appears / total slices).
+    """
+    comps_by_id = {c["id"]: c for c in project["components"]}
+    if "profiles" in panel:
+        prof_slices = [p["slices"] for p in panel["profiles"]]
+    else:
+        prof_slices = [panel["slices"]]
+    total = sum(prof_slices)
+    nprof = len(prof_slices)
+
+    main: List[RecipePart] = []
+    smaller: List[RecipePart] = []
+    for pos, pc in enumerate(panel["components"]):
+        mp = pc.get("maxProfile")              # appears in profiles [0, mp)
+        appears = nprof if mp is None else mp
+        covered = sum(prof_slices[:appears])
+        ratio = covered / total
+        comp = comps_by_id[pc["type"]]
+        part = RecipePart(
+            position=pos, component_id=comp["id"], species=comp["species"],
+            width=measure_to_sixteenths(comp["width"]), ratio=ratio,
+        )
+        if ratio >= 1.0:
+            main.append(part)
+        else:
+            smaller.append(part)
+    return PanelRecipe(panel_id=panel["id"], main=main, smaller=smaller)
+
+
+def auto_panels(
+    project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
+    threshold: Sixteenths = 2,   # +/- 1/8" tolerance for smaller-component length
+) -> List[str]:
+    """Greedily build panel codes from the produced pieces when the cut-spec has
+    no authored ``panels``.
+
+    Per panel recipe: find a complete set of MAIN-LIST components all at one
+    length (the panel body / full length); usable length = full length - snipe;
+    each SMALLER component's prescribed length = ratio * usable length, matched
+    against supply within +/- threshold. A panel forms only when the main list
+    is complete and every smaller component is satisfied. Pieces are consumed as
+    used; panels are attempted in project order, fullest body first.\n    """
+    lim = _limits(tool_limits)
+    snipe = measure_to_sixteenths(lim.get("snipeTail", [0, 0]))
+
+    # Supply pool: component_id -> length -> list of refs (mutable, consumable).
+    pool: Dict[str, Dict[Sixteenths, List[str]]] = {}
+    comp_by_sw: Dict[tuple, str] = {
+        (c["species"], measure_to_sixteenths(c["width"])): c["id"]
+        for c in project["components"]
+    }
+    for r in board_rips(project, cut_spec, tool_limits):
+        for si, strip in enumerate(r.strips):
+            width = measure_to_sixteenths(strip["width"])
+            cid = comp_by_sw.get((r.species, width))
+            if cid is None:
+                continue
+            for ci, cut in enumerate(strip.get("cuts", [])):
+                L = measure_to_sixteenths(cut)
+                pool.setdefault(cid, {}).setdefault(L, []).append(f"{r.id}/{si}/{ci}")
+
+    recipes = {p["id"]: panel_recipe(project, p) for p in project["panels"]}
+    codes: List[str] = []
+
+    made_one = True
+    while made_one:
+        made_one = False
+        for panel in project["panels"]:
+            rec = recipes[panel["id"]]
+            # Candidate body lengths: any length that could satisfy the whole main
+            # list. Try longest first so bigger panels form first.
+            main_ids = [p.component_id for p in rec.main]
+            lengths = sorted(
+                {L for cid in set(main_ids) for L in pool.get(cid, {})},
+                reverse=True,
+            )
+            for body_len in lengths:
+                # Enough main-list pieces at body_len?
+                from collections import Counter
+                need = Counter(main_ids)
+                if any(len(pool.get(cid, {}).get(body_len, [])) < n for cid, n in need.items()):
+                    continue
+                usable = body_len - snipe
+                # Assemble the full sequence in position order, consuming pieces.
+                # If any part can't be filled, roll back every pop and move on.
+                seq_parts = sorted(rec.main + rec.smaller, key=lambda p: p.position)
+                refs_in_order = []
+                popped = []  # (cid, length, ref) to restore on failure
+                good = True
+                for p in seq_parts:
+                    if p.ratio >= 1.0:
+                        refs = pool.get(p.component_id, {}).get(body_len, [])
+                        if not refs:
+                            good = False
+                            break
+                        ref = refs.pop()
+                        popped.append((p.component_id, body_len, ref))
+                    else:
+                        target = round(p.ratio * usable)
+                        lengths_map = pool.get(p.component_id, {})
+                        cand = sorted(
+                            (abs(L - target), L)
+                            for L, rs in lengths_map.items()
+                            if rs and abs(L - target) <= threshold
+                        )
+                        if not cand:
+                            good = False
+                            break
+                        L = cand[0][1]
+                        ref = pool[p.component_id][L].pop()
+                        popped.append((p.component_id, L, ref))
+                    refs_in_order.append(ref)
+                if not good:
+                    for cid, L, ref in popped:
+                        pool[cid][L].append(ref)
+                    continue
+                codes.append(f"{panel['id']}:" + ";".join(refs_in_order))
+                made_one = True
+                break  # re-loop panels from the top after making one
+    return codes
+
+
+# --------------------------------------------------------------------------- #
+# (end auto_panels)
+# --------------------------------------------------------------------------- #
+
+
+# --------------------------------------------------------------------------- #
+# two-layer model: panel specs -> slice supply ; grid x batch -> slice demand
+# --------------------------------------------------------------------------- #
+
+@dataclass(frozen=True)
+class PanelSpec:
+    panel_id: str
+    source: str                 # "actual" | "ideal"
+    length: Sixteenths          # full length (ideal derived, or actual body length)
+    usable: Sixteenths          # length - snipe
+    profile_slices: List[tuple] # [(profile_id or None, slice_count)]
+    code: Optional[str]         # the actual panel code, if source == "actual"
+
+
+def panel_specs(
+    project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any]
+) -> List[PanelSpec]:
+    """The fixed panels the plan builds.
+
+    For each ideal panel type: if actual panels of that type exist (authored or
+    auto-generated), use exactly those (slices derived from each actual panel's
+    usable length and profile ratios). Otherwise default one spec from the ideal
+    (ideal profile slice counts). Panel specs fix the slices each panel produces.
+    """
+    lim = _limits(tool_limits)
+    snipe = measure_to_sixteenths(lim.get("snipeTail", [0, 0]))
+    slice_depth = measure_to_sixteenths(project["sliceDepth"])
+    miter_kerf = measure_to_sixteenths(lim["miterKerf"])
+    pitch = slice_depth + miter_kerf
+
+    actuals = actual_panels(project, cut_spec, tool_limits)
+    by_type: Dict[str, List[ActualPanel]] = {}
+    for ap in actuals:
+        by_type.setdefault(ap.panel_id, []).append(ap)
+
+    specs: List[PanelSpec] = []
+    for panel in project["panels"]:
+        pid = panel["id"]
+        if pid in by_type:
+            rec = panel_recipe(project, panel)
+            for ap in by_type[pid]:
+                usable = ap.length - snipe
+                total = max(usable // pitch, 0)
+                # Profile slice split: each profile region's share by ratio.
+                if "profiles" in panel:
+                    prof_slices = []
+                    assigned = 0
+                    profs = panel["profiles"]
+                    for i, pr in enumerate(profs):
+                        # ratio for this profile = fraction of panel its region spans.
+                        # Region i spans from previous boundary to this profile's end.
+                        # Use the cumulative ratio of components present only through
+                        # profile i: approximate by (profiles up to i)/total profiles
+                        # weighted by ideal slice share.
+                        ideal_total = sum(p["slices"] for p in profs)
+                        share = pr["slices"] / ideal_total
+                        n = round(total * share)
+                        prof_slices.append((pr["id"], n))
+                        assigned += n
+                    # Fix rounding drift onto the first profile.
+                    if prof_slices:
+                        pid0, n0 = prof_slices[0]
+                        prof_slices[0] = (pid0, n0 + (total - assigned))
+                else:
+                    prof_slices = [(None, total)]
+                specs.append(PanelSpec(
+                    panel_id=pid, source="actual", length=ap.length, usable=usable,
+                    profile_slices=prof_slices, code=ap.code,
+                ))
+        else:
+            # Ideal default: ideal profile slice counts, length derived.
+            if "profiles" in panel:
+                prof_slices = [(p["id"], p["slices"]) for p in panel["profiles"]]
+            else:
+                prof_slices = [(None, panel["slices"])]
+            length = panel_length(panel, project, tool_limits)
+            specs.append(PanelSpec(
+                panel_id=pid, source="ideal", length=length, usable=length - snipe,
+                profile_slices=prof_slices, code=None,
+            ))
+    return specs
+
+
+@dataclass(frozen=True)
+class SliceDemandRow:
+    slice_id: str       # "S-L", "H-R", ...
+    demand: int         # grid placements x batch
+    supplied: int       # slices produced by panel specs
+    shortfall: int
+
+
+def slice_fulfillment(
+    project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any]
+) -> List[SliceDemandRow]:
+    """Layer 2: grid x batch slice demand vs. slices produced by the panel specs.
+
+    Demand is the source of truth: every slice placement in the grid, times the
+    batch count. Supply is the fixed slices the panel specs produce (snipe lost).
+    Whether the panels were fully built from the cut list is IGNORED here.
+    """
+    batch = project.get("batch", 1)
+    # Demand: count slice placements in the grid.
+    demand: "OrderedDict[str, int]" = OrderedDict()
+    for row in project.get("sliceGrid", []):
+        for cell in row:
+            sid = cell["sliceId"]
+            demand[sid] = demand.get(sid, 0) + batch
+
+    # Supply: slices produced by panel specs, keyed as panel-profile.
+    supply: Dict[str, int] = {}
+    for spec in panel_specs(project, cut_spec, tool_limits):
+        for prof_id, n in spec.profile_slices:
+            sid = f"{spec.panel_id}-{prof_id}" if prof_id else spec.panel_id
+            supply[sid] = supply.get(sid, 0) + n
+
+    rows = []
+    for sid, d in demand.items():
+        s = supply.get(sid, 0)
+        rows.append(SliceDemandRow(slice_id=sid, demand=d, supplied=s,
+                                   shortfall=max(d - s, 0)))
+    return rows
