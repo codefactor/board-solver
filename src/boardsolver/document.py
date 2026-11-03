@@ -148,6 +148,18 @@ def build_markdown(
     L.append(f"![Panel faces to scale]({images['panel_faces']})")
     L.append("")
 
+    L.append("### Ripped Slice Diagram")
+    L.append("")
+    L.append(
+        "Slices from panels that are ripped (sliceStrips). Identical slices across "
+        "panels are merged into one diagram, labeled with how many to cut. The "
+        "horizontal axis is the slice length (end-grain face); dashed lines are the "
+        "rip cuts; the red band is rip kerf + planing / margin loss."
+    )
+    L.append("")
+    L.append(f"![Ripped slice diagrams]({images['ripped_slices']})")
+    L.append("")
+
     # --- Section: crosscut blanks ---------------------------------------- #
     L.append(sec("Crosscut Blanks"))
     L.append("")

@@ -49,6 +49,12 @@ Each panel drawn to scale with its length running top-to-bottom. Components are 
 
 ![Panel faces to scale](images/panel-faces-4bee84a516b7.png)
 
+### Ripped Slice Diagram
+
+Slices from panels that are ripped (sliceStrips). Identical slices across panels are merged into one diagram, labeled with how many to cut. The horizontal axis is the slice length (end-grain face); dashed lines are the rip cuts; the red band is rip kerf + planing / margin loss.
+
+![Ripped slice diagrams](images/ripped-slices-17e6d4bbd3c3.png)
+
 ## 5. Crosscut Blanks
 
 The first operation: crosscut each raw inventory board along its length into the labeled board blanks that get ripped later (the Initial board rips section). Boards that start from another board's leftover margin are not raw-stock crosscuts — they appear as the labeled offcuts in the Board Rip Diagram.

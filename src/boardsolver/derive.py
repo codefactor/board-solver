@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from .geometry import (
+    ResolvedComponent,
     Sixteenths,
     measure_to_sixteenths,
     resolve_slice,
@@ -711,3 +712,60 @@ def slice_length_of_fullest(project: Dict[str, Any], panel_id: str) -> Sixteenth
             fid = f"{panel_id}-{panel['profiles'][0]['id']}" if "profiles" in panel else panel_id
             return slice_length(resolve_slice(project, fid))
     raise KeyError(f"no panel {panel_id!r}")
+
+
+# --------------------------------------------------------------------------- #
+# ripped-slice profiles: distinct ripped slice shapes, merged across panels
+# --------------------------------------------------------------------------- #
+
+@dataclass(frozen=True)
+class RippedSliceProfile:
+    key: tuple                      # dedupe key (sequence + height + rip)
+    components: List["ResolvedComponent"]  # ordered, the end-grain stripes
+    length: Sixteenths              # slice length = glue-up width (stripe run)
+    panel_thickness: Sixteenths     # the height that gets ripped
+    strip_count: int                # sliceStrips.count
+    strip_width: Sixteenths         # sliceStrips.width (installed row height)
+    slice_ids: List[str]            # contributing slice ids (e.g. ["H-L"])
+    count: int                      # total identical slices to cut this way
+
+
+def ripped_slice_profiles(
+    project: Dict[str, Any], tool_limits: Dict[str, Any]
+) -> List[RippedSliceProfile]:
+    """Distinct ripped-slice shapes across all panels, merged by key.
+
+    Only panels with ``sliceStrips`` produce ripped slices. Each (panel, profile)
+    yields ``profile.slices`` identical slices; slices from different panels with
+    the same end-grain sequence + panel thickness + rip spec are the SAME profile
+    and merge into one entry (counts summed, slice ids collected).\n    """
+    groups: "OrderedDict[tuple, dict]" = OrderedDict()
+    for panel in project["panels"]:
+        ss = panel.get("sliceStrips")
+        if not ss:
+            continue
+        thickness = measure_to_sixteenths(panel["thickness"])
+        strip_count = ss["count"]
+        strip_width = measure_to_sixteenths(ss["width"])
+        # Enumerate (profile_id, slice_count) just like panel_summaries.
+        if "profiles" in panel:
+            regions = [(p["id"], p["slices"]) for p in panel["profiles"]]
+        else:
+            regions = [(None, panel["slices"])]
+        for prof_id, n in regions:
+            slice_id = f"{panel['id']}-{prof_id}" if prof_id else panel["id"]
+            resolved = resolve_slice(project, slice_id)
+            seq = tuple((c.id, c.species, c.width) for c in resolved.components)
+            key = (seq, thickness, strip_count, strip_width)
+            g = groups.get(key)
+            if g is None:
+                groups[key] = dict(
+                    key=key, components=list(resolved.components),
+                    length=slice_length(resolved), panel_thickness=thickness,
+                    strip_count=strip_count, strip_width=strip_width,
+                    slice_ids=[slice_id], count=n,
+                )
+            else:
+                g["slice_ids"].append(slice_id)
+                g["count"] += n
+    return [RippedSliceProfile(**g) for g in groups.values()]

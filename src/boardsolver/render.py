@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Tuple
 
 from .canvas import PILCanvas
 from .colors import DEFAULT_COLORS, ColorMap, slice_color_map, text_on, lighten
-from .derive import board_rips, crosscut_blanks, panel_summaries
+from .derive import board_rips, crosscut_blanks, panel_summaries, ripped_slice_profiles
 from .draw import draw_cut_board, draw_panel, draw_slice, _KERF_COLOR, _LOSS_COLOR, _OUTLINE
 from .geometry import measure_to_sixteenths, px, resolve_slice, slice_length
 from .format import frac_inches
@@ -369,6 +369,98 @@ def render_panel_faces(
     # cross-hatch = potential snipe loss
     canvas.hatch_rect(lx, ly + 3, sample_w, line_h - 8, _SNIPE_BASE, _SNIPE_HATCH, outline=_OUTLINE)
     canvas.text(tx, ly + 3, "cross-hatch = potential loss from planer snipe", 12, "#333333")
+
+    return _to_png_bytes(canvas)
+
+
+# --------------------------------------------------------------------------- #
+# ripped-slice diagrams: one per distinct ripped slice profile
+# --------------------------------------------------------------------------- #
+
+def render_ripped_slices(
+    project: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 46.0, colors: ColorMap = DEFAULT_COLORS,
+) -> bytes:
+    """One zoomed diagram per distinct ripped-slice profile (merged across
+    panels). Horizontal axis = the slice's length (end-grain stripes as vertical
+    bands); vertical = the panel thickness, divided by dashed rip lines into
+    ``strip_count`` strips; a reddish full-width band at the bottom is the rip
+    kerf + planing/margin loss. Each diagram is labeled with how many identical
+    slices to cut and the contributing slice ids.
+    """
+    lim = tool_limits["limits"] if "limits" in tool_limits else tool_limits
+    miter_kerf = measure_to_sixteenths(lim["miterKerf"])  # (slices already cut)
+    profiles = ripped_slice_profiles(project, tool_limits)
+    pad = 20
+    title_px = 14
+    sub_px = 12
+    gap = 34
+    label_h = title_px + 4 + sub_px + 8
+    legend_h = 2 * 18 + 10
+
+    if not profiles:
+        canvas = PILCanvas(260, 60, _BG)
+        canvas.text(pad, pad, "No ripped slices in this project.", 13, "#555555")
+        return _to_png_bytes(canvas)
+
+    # Sizes.
+    def dims(rp):
+        w = px(rp.length, scale)
+        h = px(rp.panel_thickness, scale)
+        return w, h
+
+    max_w = max(dims(rp)[0] for rp in profiles)
+    total_h = 0
+    for rp in profiles:
+        total_h += label_h + dims(rp)[1] + gap
+    H = int(total_h + legend_h + 2 * pad)
+    W = int(max_w + 2 * pad)
+    canvas = PILCanvas(W, H, _BG)
+
+    y = pad
+    for rp in profiles:
+        w_px, h_px = dims(rp)
+        ids = ", ".join(rp.slice_ids)
+        canvas.text(pad, y, f"Slice {ids}  —  cut {rp.count} identical", title_px, "#222222")
+        canvas.text(pad, y + title_px + 4,
+                    f"{frac_inches(rp.length, ascii=True)} long, ripped into "
+                    f"{rp.strip_count} x {frac_inches(rp.strip_width, ascii=True)} strips",
+                    sub_px, "#555555")
+        by = y + label_h
+
+        # End-grain stripes: vertical bands across the length, full thickness.
+        cx = pad
+        for c in rp.components:
+            cwpx = px(c.width, scale)
+            canvas.rect(cx, by, cwpx, h_px, fill=colors[c.species], outline=_OUTLINE)
+            cx += cwpx
+
+        # Rip loss band at the bottom: thickness - strip_count * strip_width.
+        strips_h = px(rp.strip_count * rp.strip_width, scale)
+        loss_h = h_px - strips_h
+        if loss_h > 0:
+            canvas.rect(pad, by + strips_h, w_px, loss_h, fill=_LOSS_COLOR, outline=None)
+
+        # Dashed rip lines dividing the strips (strip_count - 1 interior lines),
+        # overflowing the width.
+        for i in range(1, rp.strip_count):
+            ly = by + px(i * rp.strip_width, scale)
+            canvas.dashed_hline(pad - 8, pad + w_px + 8, ly, "#444444", width=1)
+
+        # Outline the slice.
+        canvas.rect(pad, by, w_px, h_px, fill=None, outline="#222222")
+        y = by + h_px + gap
+
+    # Legend.
+    lx, ly = pad, y
+    sample_w = 34
+    tx = lx + sample_w + 10
+    cy = ly + 9
+    canvas.dashed_hline(lx, lx + sample_w, cy, "#444444", width=1)
+    canvas.text(tx, ly + 3, "dashed line = rip cut", 12, "#333333")
+    ly += 18
+    canvas.rect(lx, ly + 3, sample_w, 11, fill=_LOSS_COLOR, outline=_OUTLINE)
+    canvas.text(tx, ly + 3, "red = rip kerf + planing / margin loss", 12, "#333333")
 
     return _to_png_bytes(canvas)
 

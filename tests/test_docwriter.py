@@ -104,6 +104,7 @@ def test_markdown_has_sections_and_diagnostics(project, tool_limits, cut_spec):
     md = build_markdown(project, tool_limits, cut_spec,
                         {"finished": "f.png", "slice_map": "sm.png",
                          "panels": "p.png", "panel_faces": "pf.png",
+                         "ripped_slices": "rs.png",
                          "crosscut": "cc.png", "strip_map": "s.png"})
     for heading in [
         "## 1. Warnings",
