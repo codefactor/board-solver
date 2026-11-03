@@ -5,6 +5,77 @@
 # panel-length sticks. Per-strip width budget reserves saw kerf + planing loss.
 # Panel codes address sticks as boardId/strip/cut. One ghost board covers the spill.
 boards:
+- id: BM1A
+  source: BM1
+  length: [48, 0]
+  strips:
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+- id: BM1B
+  source: BM1
+  length: [48, 0]
+  strips:
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [17, 12]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [17, 12]
+    - [17, 12]
 - id: BC1A
   source: BC1
   length: [48, 0]
@@ -105,74 +176,3 @@ boards:
     cuts:
     - [19, 6]
     - [19, 6]
-- id: BM1A
-  source: BM1
-  length: [48, 0]
-  strips:
-  - width: [1, 8]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [1, 8]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [1, 8]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [1, 8]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 12]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 4]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-- id: BM1B
-  source: BM1
-  length: [48, 0]
-  strips:
-  - width: [0, 12]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 12]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 12]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 12]
-    cuts:
-    - [17, 12]
-  - width: [0, 4]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 4]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 4]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 4]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 4]
-    cuts:
-    - [19, 6]
-    - [19, 6]
-  - width: [0, 4]
-    cuts:
-    - [17, 12]
-    - [17, 12]

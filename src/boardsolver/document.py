@@ -75,7 +75,11 @@ def build_markdown(
     )
     L.append("")
 
-    rips = board_rips(project, cut_spec, tool_limits)
+    # Cut list order is always alphabetical by species, then board id,
+    # regardless of the order boards appear in the cut-spec file, so
+    # the table and the Board Rip Diagram always match.
+    rips = sorted(board_rips(project, cut_spec, tool_limits),
+                  key=lambda r: (r.species, r.id))
     summaries = panel_summaries(project, tool_limits)
 
     # --- Section: warnings (omitted entirely when there are none) -------- #

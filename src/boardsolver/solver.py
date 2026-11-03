@@ -496,6 +496,10 @@ def solve(project: Dict[str, Any], tool_limits: Dict[str, Any]) -> Dict[str, Any
     blanks = [by_id[b.id] for b in blanks if by_id[b.id].strips]
 
     # --- emit YAML in the existing cut-specs style ------------------------
+    # Cut list order is always alphabetical by species, then board id,
+    # so the table and the Board Rip Diagram read the same way in
+    # every plan, generated or hand-crafted.
+    blanks = sorted(blanks, key=lambda b: (b.species, b.id))
     out_boards = []
     for blank in blanks:
         entry: Dict[str, Any] = {"id": blank.id}
@@ -504,7 +508,12 @@ def solve(project: Dict[str, Any], tool_limits: Dict[str, Any]) -> Dict[str, Any
         else:
             entry["buySpecies"] = blank.buy_species
         entry["length"] = blank.length
-        entry["strips"] = blank.strips
+        # Strips within a board, widest first (stable, so equal widths
+        # keep their original order). This matches how the hand-crafted
+        # spec lists strips, so a generated plan and a hand-crafted one
+        # with the same counts draw the same diagram.
+        entry["strips"] = sorted(
+            blank.strips, key=lambda s: -s["width"])
         out_boards.append(entry)
     return {"boards": out_boards}
 

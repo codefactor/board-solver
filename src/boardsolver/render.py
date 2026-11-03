@@ -612,7 +612,12 @@ def render_strip_map(
 ) -> bytes:
     pad = 16
     gap = 30
-    boards = cut_spec["boards"]
+    # Board Rip Diagram order always matches the cut list table:
+    # alphabetical by species, then board id, regardless of the
+    # order boards appear in the cut-spec file.
+    _rips = {r.id: r for r in board_rips(project, cut_spec, tool_limits)}
+    boards = sorted(cut_spec["boards"],
+                    key=lambda b: (_rips[b["id"]].species, b["id"]))
     # Pre-measure height by drawing into a scratch canvas is overkill; estimate
     # generously, then crop by drawing into a correctly-sized canvas in one pass.
     # Width: longest board length * scale + source-width overhang margin.
