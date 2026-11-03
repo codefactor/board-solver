@@ -110,9 +110,7 @@ def build_markdown(
     if batch > 1:
         L.append(f"{batch} finished boards." + (f" Final thickness {frac_inches(measure_to_sixteenths(ft))}." if ft else ""))
         L.append("")
-    L.append("The finished plaid face.")
-    L.append("")
-    L.append(f"![Finished plaid face]({images['finished']})")
+    L.append(f"![Finished board]({images['finished']})")
     L.append("")
 
     # --- Section: volume sanity check ------------------------------------ #
@@ -262,18 +260,6 @@ def build_markdown(
         "A panel type may have more than one instance; the ideal panels are always "
         "quantity 1._"
     )
-    L.append("")
-
-    L.append("### Ripped Slice Diagram")
-    L.append("")
-    L.append(
-        "Slices from panels that are ripped (sliceStrips). Identical slices across "
-        "panels are merged into one diagram, labeled with how many to cut. The "
-        "horizontal axis is the slice length (end-grain face); dashed lines are the "
-        "rip cuts; the red band is rip kerf + planing / margin loss."
-    )
-    L.append("")
-    L.append(f"![Ripped slice diagrams]({images['ripped_slices']})")
     L.append("")
 
     # --- Section 5: initial board rips (the actual cut list) ------------- #

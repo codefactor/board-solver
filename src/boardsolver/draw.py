@@ -386,9 +386,9 @@ def _start_dims(cut_spec_board, project, cut_spec, source_width, board_len) -> s
     else:  # sourceRemainder slab
         length = board_len
         width = source_width
-    parts = f"{frac_inches(length, ascii=True)} x {frac_inches(width, ascii=True)}"
+    parts = f"{frac_inches(length)} x {frac_inches(width)}"
     if thickness is not None:
-        parts += f" x {frac_inches(thickness, ascii=True)}"
+        parts += f" x {frac_inches(thickness)}"
     return parts
 
 

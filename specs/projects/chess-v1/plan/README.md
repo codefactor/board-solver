@@ -8,9 +8,7 @@ This is a generated plan: the finished design and the cut list that realizes it 
 
 2 finished boards. Final thickness 1¼″.
 
-The finished plaid face.
-
-![Finished plaid face](images/finished-board-8daaa9a0a698.png)
+![Finished board](images/finished-board-c49f044c259b.png)
 
 ## 2. Volume Sanity Check
 
@@ -39,7 +37,7 @@ The first operation: crosscut each raw inventory board along its length into the
 
 Each bar is one raw board drawn to scale by length; segments are the blanks (labeled with id and length inside), reddish stripes are crosscut kerfs (sawdust), and the pale tail is leftover length. A red tail means the blanks overflow the raw board. An untouched spare is shown washed-out and uncut; a board used whole goes straight to the rip diagram.
 
-![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-d86920307fcf.png)
+![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-blanks-9ca7b508cff3.png)
 
 ## 4. Panels overview
 
@@ -59,7 +57,7 @@ Each panel's end-grain cross-section (the glue-up of component stripes).
 
 Each panel drawn to scale with its length running top-to-bottom. Components are vertical stripes aligned on the squared edge; profile regions stack down the length, so the silhouette steps narrower where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer).
 
-![Panel faces to scale](images/panel-faces-e382959d79e9.png)
+![Panel faces to scale](images/panel-faces-74991757e188.png)
 
 ### Slice Fulfillment
 
@@ -72,12 +70,6 @@ Each panel drawn to scale with its length running top-to-bottom. Components are 
 | B | 4 × 2 = 8 | 9 | +1 |
 
 _The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in this section. A panel type may have more than one instance; the ideal panels are always quantity 1._
-
-### Ripped Slice Diagram
-
-Slices from panels that are ripped (sliceStrips). Identical slices across panels are merged into one diagram, labeled with how many to cut. The horizontal axis is the slice length (end-grain face); dashed lines are the rip cuts; the red band is rip kerf + planing / margin loss.
-
-![Ripped slice diagrams](images/ripped-slices-b17b72658982.png)
 
 ## 5. Initial board rips (the cut list)
 
@@ -93,7 +85,7 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 
 Each labeled block below is one physical board. Horizontal bands are the strips ripped down the board's width; within a band, the colored cells are the crosscut pieces (with thin kerf gaps between them) and the lightened tail is the offcut. The pale band under the strips is the leftover margin; a gray title marks a board that must be bought.
 
-![Board Rip Diagram — how the cut list lands on each board](images/strip-map-e5c9eacfda45.png)
+![Board Rip Diagram — how the cut list lands on each board](images/strip-map-37d036939571.png)
 
 ## 6. Components
 

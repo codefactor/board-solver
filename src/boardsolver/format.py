@@ -41,9 +41,12 @@ def frac_inches(s: Sixteenths, *, quote: bool = True, ascii: bool = False) -> st
     """Format integer sixteenths as an inch string.
 
     ``118 -> '7⅜"'`` style. ``quote`` appends the inch mark. Unicode by default
-    (vulgar/superscript fractions + ″). With ``ascii=True`` the fraction is
-    rendered as ``n/d`` and the inch mark as a plain ``"`` — for drawing surfaces
-    whose font lacks built-up fraction glyphs (they would otherwise tofu).
+    (vulgar/superscript fractions + ″). Diagram labels use this default too:
+    this project's rendering fonts are DejaVu (PNG diagrams via PIL, PDF via
+    reportlab), and DejaVu covers every glyph used here, so the old
+    ``ascii=True`` diagram workaround (slash fractions, plain quote) was
+    unnecessary and inconsistent with the Markdown tables. ``ascii=True``
+    remains only as a fallback for a surface whose font lacks those glyphs.
     """
     whole, part = divmod(s, 16)
     if part == 0:
