@@ -323,11 +323,30 @@ def build_markdown(
     # --- Section 7: panels (merged / sequence) --------------------------- #
     L.append(sec("Panels (profiles and sequence)"))
     L.append("")
-    L.append("| Panel | Length | Profiles (slices) | Component sequence |")
-    L.append("| --- | --- | --- | --- |")
-    for s in summaries:
-        profs = ", ".join(f"{pid or 'single'}: {n}" for pid, n in s.profiles)
-        L.append(f"| {s.id} | {frac_inches(s.length)} | {profs} | {s.sequence} |")
+    L.append(
+        "The physical panels this plan builds (from the project's panel specs), "
+        "grouped by identical shape. Qty is how many of each to glue up."
+    )
+    L.append("")
+    L.append("| Panel | Qty | Length | Profiles (slices) | Component sequence |")
+    L.append("| --- | --- | --- | --- | --- |")
+    seq_by_type = {s.id: s.sequence for s in summaries}
+    from collections import OrderedDict as _OD
+    grouped: "_OD[tuple, dict]" = _OD()
+    for ps in panel_specs(project, cut_spec, tool_limits):
+        key = (ps.panel_id, ps.length, tuple(ps.profile_slices))
+        g = grouped.get(key)
+        if g is None:
+            grouped[key] = dict(spec=ps, qty=1)
+        else:
+            g["qty"] += 1
+    for g in grouped.values():
+        ps = g["spec"]
+        profs = ", ".join(f"{pid or 'single'}: {n}" for pid, n in ps.profile_slices)
+        L.append(
+            f"| {ps.panel_id} | {g['qty']} | {frac_inches(ps.length)} | {profs} | "
+            f"{seq_by_type.get(ps.panel_id, '')} |"
+        )
     L.append("")
 
     # --- Section: slice grid (the final assembly step) ------------------- #

@@ -136,11 +136,13 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 ## 7. Panels (profiles and sequence)
 
-| Panel | Length | Profiles (slices) | Component sequence |
-| --- | --- | --- | --- |
-| S | 37¼″ | L: 11, R: 11 | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
-| M | 37¼″ | L: 11, R: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
-| H | 27½″ | L: 8, R: 8 | Me · W1 · Md · W1 · Md |
+The physical panels this plan builds (from the project's panel specs), grouped by identical shape. Qty is how many of each to glue up.
+
+| Panel | Qty | Length | Profiles (slices) | Component sequence |
+| --- | --- | --- | --- | --- |
+| S | 2 | 37¼″ | L: 11, R: 11 | Me · C2 · M1 · C2 · Md · C2 · M1 · C2 · Md |
+| M | 2 | 37¼″ | L: 11, R: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
+| H | 1 | 27½″ | L: 8, R: 8 | Me · W1 · Md · W1 · Md |
 
 ## 8. Slice Grid
 
