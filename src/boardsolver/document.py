@@ -108,26 +108,27 @@ def build_markdown(
     L.append(sec("Volume Sanity Check"))
     L.append("")
     L.append(
-        "A per-species feasibility check in cubic inches. **Finished** is the "
-        f"surfaced volume of every installed slice across all {batch} board(s). "
-        "**Available** is the inventory stock volume. **Required Loss** is the "
-        "volume that must be removed to produce the finished pieces — flattening "
-        "(sliceDepth − finishedThickness), planing all four edges (minPlaneLoss), "
-        "and one miter kerf per slice. If Finished + Required Loss exceeds "
-        "Available for a species, the project cannot be built from stock in hand."
+        "A per-species feasibility check in board feet (1 BF = 144 cubic inches). "
+        f"**Required** is the surfaced volume of every installed slice across all "
+        f"{batch} board(s) plus the volume that must be removed to produce them — "
+        "flattening (sliceDepth − finishedThickness), planing all four edges "
+        "(minPlaneLoss), and one miter kerf per slice. **Available** is the "
+        "inventory stock volume. **Volume Offset** = available − required; a "
+        "negative value means the project cannot be built from stock in hand."
     )
     L.append("")
-    L.append("| Species | Finished | Available | Required Loss | Finished + Loss | Headroom |")
-    L.append("| --- | --- | --- | --- | --- | --- |")
-    def _ci(v):  # cubic sixteenths -> cubic inches string
-        return f"{v / 4096:.1f}"
+    L.append("| Species | Available | Required | Volume Offset |")
+    L.append("| --- | --- | --- | --- |")
+    def _bf(v):  # cubic sixteenths -> board feet string
+        return f"{v / 4096 / 144:.1f}"
     for r in volume_sanity(project, tool_limits):
         need = r.finished + r.required_loss
-        head = r.available - need
-        flag = "" if head >= 0 else " ⚠\ufe0f"
+        off = r.available - need
+        off_bf = off / 4096 / 144
+        off_s = f"+{off_bf:.1f}" if off_bf >= 0 else f"{off_bf:.1f}"
+        req = f"{_bf(r.finished)} BF + {_bf(r.required_loss)} BF loss = {_bf(need)} BF"
         L.append(
-            f"| {_species_short(r.species)} | {_ci(r.finished)} | {_ci(r.available)} | "
-            f"{_ci(r.required_loss)} | {_ci(need)} | {_ci(head)}{flag} |"
+            f"| {_species_short(r.species)} | {_bf(r.available)} BF | {req} | {off_s} BF |"
         )
     L.append("")
 
