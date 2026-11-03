@@ -252,8 +252,6 @@ def render_panel_faces(
 
     # Pre-measure.
     metas = []
-    max_h = 0.0
-    max_w = 0.0
     for panel in panels:
         regions = profile_regions(panel)
         n = sum(c for _, c in regions)
@@ -263,30 +261,43 @@ def render_panel_faces(
         total_len = body_len + kerf_len + snipe
         metas.append(dict(panel=panel, regions=regions, n=n, full_w=full_w,
                           body_len=body_len, kerf_len=kerf_len, total_len=total_len))
-        max_h = max(max_h, px(total_len, scale))
-        max_w = max(max_w, px(full_w, scale))
 
-    total_w = sum(px(m["full_w"], scale) for m in metas) + gap * (len(metas) - 1) + 2 * pad + 2 * overflow
-    H = int(label_h + max_h + 2 * pad)
+    # Grid layout: max 3 panels per row; each row's height = its tallest panel
+    # (label + snipe + body + kerf). Next row starts below the previous row.
+    per_row = 3
+    row_gap = 40
+    rows = [metas[i:i + per_row] for i in range(0, len(metas), per_row)]
+
+    def cell_w(m):
+        return px(m["full_w"], scale) + 2 * overflow
+
+    def cell_h(m):
+        return label_h + px(m["total_len"], scale)
+
+    row_widths = [
+        sum(cell_w(m) for m in row) + gap * (len(row) - 1) for row in rows
+    ]
+    row_heights = [max(cell_h(m) for m in row) for row in rows]
+    total_w = max(row_widths) + 2 * pad
+    H = int(sum(row_heights) + row_gap * (len(rows) - 1) + 2 * pad)
     canvas = PILCanvas(int(total_w), H, _BG)
 
-    x = pad + overflow
-    for m in metas:
+    def draw_one(m, cell_x, cell_y):
+        """Draw one panel; cell_x is the left of the cell (before overflow),
+        cell_y is the top of the cell (label line)."""
         panel = m["panel"]
+        x = cell_x + overflow
         full_w_px = px(m["full_w"], scale)
-        y0 = pad + label_h
-        canvas.text(x, pad, f"Panel {panel['id']}", title_px, "#222222")
-        canvas.text(x, pad + title_px + 2,
+        canvas.text(x, cell_y, f"Panel {panel['id']}", title_px, "#222222")
+        canvas.text(x, cell_y + title_px + 2,
                     f"{frac_inches(m['total_len'], ascii=True)} long", title_px - 1, "#555555")
-
+        y0 = cell_y + label_h
         half_snipe = px(snipe / 2, scale)
         body_y = y0 + half_snipe
 
-        # Draw each profile region stacked down the length.
         ry = body_y
         for resolved, count in m["regions"]:
             region_h = px(count * slice_depth, scale)
-            # Component columns present in THIS profile (aligned on left edge).
             cx = x
             for c in resolved.components:
                 cwpx = px(c.width, scale)
@@ -294,24 +305,27 @@ def render_panel_faces(
                 cx += cwpx
             ry += region_h
 
-        # Dashed crosscut lines at every slice boundary across the whole body.
         for i in range(1, m["n"]):
             ly = body_y + px(i * slice_depth, scale)
             canvas.dashed_hline(x - overflow, x + full_w_px + overflow, ly, "#444444", width=1)
 
-        # Kerf-loss band (definite sawdust), full width, above the bottom snipe.
         kerf_px = px(m["kerf_len"], scale)
         kerf_y = body_y + px(m["body_len"], scale)
         if kerf_px > 0:
             canvas.rect(x, kerf_y, full_w_px, kerf_px, fill=_LOSS_COLOR, outline=None)
 
-        # Snipe half-tails: reddish cross-hatch (possible loss), full width.
         bot_snipe_y = kerf_y + kerf_px
         if half_snipe > 0:
             canvas.hatch_rect(x, y0, full_w_px, half_snipe, _SNIPE_BASE, _SNIPE_HATCH)
             canvas.hatch_rect(x, bot_snipe_y, full_w_px, half_snipe, _SNIPE_BASE, _SNIPE_HATCH)
 
-        x += full_w_px + gap
+    y = pad
+    for row, rh in zip(rows, row_heights):
+        x = pad
+        for m in row:
+            draw_one(m, x, y)
+            x += cell_w(m) + gap
+        y += rh + row_gap
 
     return _to_png_bytes(canvas)
 
