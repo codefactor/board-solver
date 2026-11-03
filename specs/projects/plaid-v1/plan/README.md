@@ -8,7 +8,8 @@ This is a generated plan: the finished design and the cut list that realizes it 
 
 | # | Lvl | Type | Message |
 | --- | --- | --- | --- |
-| 1 | 🟡 | ghost_boards | 1 board(s) must be bought (not in inventory): GHC0A. |
+| 1 | 🔴 | over_rip | Cut list for board BC2A over-rips by ³⁄₁₆″: the strips are wider than the board. |
+| 2 | 🟡 | small_margin | Board BC1A leaves only ⅛″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
 
 ## 2. Finished board pattern
 
@@ -96,9 +97,8 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 
 | Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BC1A @ 7¼″ | BC1 | cherry | 48″ | 1½″ ×4 | 6″ | ¾″ | ½″ |
-| BC2A @ 6¹⁵⁄₁₆″ | BC2 | cherry | 48″ | ¾″ ×7 | 5¼″ | 1⁵⁄₁₆″ | ⅜″ |
-| GHC0A @ ¹⁵⁄₁₆″ | *None* | cherry | 48″ | ¾″ ×1 | ¾″ | ³⁄₁₆″ | 0″ |
+| BC1A @ 7¼″ | BC1 | cherry | 48″ | 1½″ ×2 · ¾″ ×4 | 6″ | 1⅛″ | ⅛″ |
+| BC2A @ 6¹⁵⁄₁₆″ | BC2 | cherry | 48″ | 1½″ ×2 · ¾″ ×4 | 6″ | 1⅛″ | -³⁄₁₆″ |
 | BW1A @ 6¼″ | BW1 | walnut | 48″ | 3″ ×1 · ¾″ ×3 | 5¼″ | ¾″ | ¼″ |
 | BW2A @ 6¹⁄₁₆″ | BW2 | walnut | 48″ | ¾″ ×5 | 3¾″ | ¹⁵⁄₁₆″ | 1⅜″ |
 | BM1A @ 8⁷⁄₁₆″ | BM1 | maple | 48″ | 1½″ ×4 · ¾″ ×1 · ¼″ ×1 | 7″ | 1⅛″ | ⁵⁄₁₆″ |
@@ -108,7 +108,7 @@ Each row is one physical board at the saw: rip the strips down its width, then c
 
 Each labeled block below is one physical board. Horizontal bands are the strips ripped down the board's width; within a band, the colored cells are the crosscut pieces (with thin kerf gaps between them) and the lightened tail is the offcut. The pale band under the strips is the leftover margin; a gray title marks a board that must be bought.
 
-![Board Rip Diagram — how the cut list lands on each board](images/strip-map-e350cb2078bc.png)
+![Board Rip Diagram — how the cut list lands on each board](images/strip-map-0c8422593311.png)
 
 ## 7. Components
 
