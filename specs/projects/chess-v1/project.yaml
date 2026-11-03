@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=../../../schema.json
+name: Chess v1
+description: Two end-grain chess-pattern boards, walnut and brown maple 0.5 in cells, wrapping cherry border 0.75 in.
+batch: 2
+finishedThickness: [1, 4]
+sliceDepth: [1, 8]
+
+# Finished face, 5.5 in square: 0.75 in cherry border top and bottom (rows C),
+# 8 chess rows of 0.5 in, each row 0.75 in cherry border left and right inside
+# panels A/B, 8 cells of 0.5 in in between. Row heights: C 0.75 + 8 x 0.5 + C 0.75 = 5.5.
+sliceGrid:
+  - - sliceId: C
+  - - sliceId: A
+  - - sliceId: B
+  - - sliceId: A
+  - - sliceId: B
+  - - sliceId: A
+  - - sliceId: B
+  - - sliceId: A
+  - - sliceId: B
+  - - sliceId: C
+
+components:
+  - id: W
+    species: Walnut
+    width: [0, 8]
+    thickness: [0, 8]
+  - id: M
+    species: Brown Maple
+    width: [0, 8]
+    thickness: [0, 8]
+  - id: CB
+    species: Cherry
+    width: [0, 12]
+    thickness: [0, 8]
+  - id: CW
+    species: Cherry
+    width: [5, 8]
+    thickness: [0, 12]
+
+panels:
+  - id: A
+    thickness: [0, 8]
+    slices: 9
+    components:
+      - type: CB
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: CB
+  - id: B
+    thickness: [0, 8]
+    slices: 9
+    components:
+      - type: CB
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: M
+      - type: W
+      - type: CB
+  - id: C
+    thickness: [0, 12]
+    slices: 9
+    components:
+      - type: CW
+
+# Each panel yields 9 slices (body 9 x pitch 1 10/16 = 14 10/16, plus 1 8/16 snipe
+# = 16 2/16 long). Demand for 2 boards: A 8, B 8, C 4; supply 9 each, so +1, +1, +5.
+panelSpecs:
+  - panel: A
+    profileLengths: [[14, 10]]
+    count: 1
+  - panel: B
+    profileLengths: [[14, 10]]
+    count: 1
+  - panel: C
+    profileLengths: [[14, 10]]
+    count: 1
+
+boards:
+ - id: BC1
+   species: Cherry
+   length: [48, 0]
+   width: [8, 0]
+   thickness: [0, 13]
+ # 8 in wide so one board carries the 5.5 in border-row strip plus both
+ # 0.75 in border strips (5.5 + 0.75 + 0.75 + 3 x 3/16 loss = 7 9/16 in).
+ - id: BW1
+   species: Walnut
+   length: [48, 0]
+   width: [4, 0]
+   thickness: [0, 13]
+ - id: BM1
+   species: Brown Maple
+   length: [48, 0]
+   width: [4, 0]
+   thickness: [0, 13]
