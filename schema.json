@@ -51,10 +51,38 @@
                     "description": "The glue-up panels, each an ordered list of components cut to length.",
                     "items": { "$ref": "#/definitions/panel" }
                 },
+                "panelSpecs": {
+                    "type": "array",
+                    "description": "Optional. The chosen set of physical panels to build, described independently of how their component pieces are cut (no board/strip/cut references). Each entry fixes a panel type and the length of each of its profile regions; the solver resolves these into actual cuts and panel codes. When present, the solver builds exactly these panels; when absent, the solver chooses an optimal set that packs into the available boards.",
+                    "items": { "$ref": "#/definitions/panel-spec" }
+                },
                 "boards": {
                     "type": "array",
                     "description": "The actual inventory boards in hand for this project.",
                     "items": { "$ref": "#/definitions/board" }
+                }
+            }
+        },
+        "panel-spec": {
+            "type": "object",
+            "description": "One physical panel to build, defined by its type and its per-profile region lengths — with no reference to how its component pieces are cut from boards. The solver turns a panel spec into concrete rips/crosscuts and a panel code.",
+            "required": ["panel", "profileLengths"],
+            "additionalProperties": false,
+            "properties": {
+                "panel": {
+                    "$ref": "#/definitions/id-reference",
+                    "description": "Id of the panels[] entry this spec builds. The panel's component sequence, profiles, thickness and sliceStrips come from that definition."
+                },
+                "profileLengths": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "The length of each profile region, in the panel's profile order (fullest region first). Exactly one entry for a single-profile panel; one entry per profile otherwise. Each entry is that region's own extent (not cumulative); the physical panel length is the sum of the region lengths. A region's length divided by the slice pitch gives how many slices of that profile this panel yields.",
+                    "items": { "$ref": "#/definitions/measurement" }
+                },
+                "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "How many identical physical panels of this exact spec to build. Omitted means 1. Two panels of the same type with different profileLengths are separate specs."
                 }
             }
         },
