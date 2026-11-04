@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=../schema.json
 limits:
-  # Kreg ACS track saw, on-table cut capacity
-  maxCutLength: [48, 0]
+  # Kreg ACS track saw, cutting length up to the last outer dog hole,
+  # measured by Scott 2026-11-04 (roughly 49.5 in)
+  maxCutLength: [49, 8]
   # Saw kerf removed per cut (ACS track saw blade)
   sawKerf: [0, 2]
   # Kerf removed per cut on the DeWalt miter saw blade

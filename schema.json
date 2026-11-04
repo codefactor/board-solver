@@ -27,6 +27,25 @@
                     "description": "Final thickness of the finished board after flattening.",
                     "$ref": "#/definitions/measurement"
                 },
+                "finishedWidth": {
+                    "description": "Final width of the finished board after trimming. The target size; edge trims, when declared, must sum to grid width minus this value, but need not be equal.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "finishedLength": {
+                    "description": "Final length of the finished board after trimming. The target size; edge trims, when declared, must sum to grid height minus this value, but need not be equal.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "edgeTrims": {
+                    "description": "Optional cut length off each of the four finished-face edges, in grid order: left and right are the two width edges, top and bottom are the two length edges. Each entry is optional; a missing edge is untrimmed (0). Finished width is grid width minus left minus right; finished length is grid height minus top minus bottom.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "left": { "$ref": "#/definitions/measurement" },
+                        "right": { "$ref": "#/definitions/measurement" },
+                        "top": { "$ref": "#/definitions/measurement" },
+                        "bottom": { "$ref": "#/definitions/measurement" }
+                    }
+                },
                 "sliceDepth": {
                     "description": "How thick each slice is cut from a panel (the crosscut pitch along the panel's length). This dimension becomes the finished board's thickness before flattening, so it must be at least finishedThickness plus the flattening allowance. A panel's length is derived as the total number of slices times (sliceDepth + miter kerf), plus any snipe allowance.",
                     "$ref": "#/definitions/measurement"
@@ -82,6 +101,25 @@
                 "finishedThickness": {
                     "description": "Final thickness of the finished board after flattening.",
                     "$ref": "#/definitions/measurement"
+                },
+                "finishedWidth": {
+                    "description": "Final width of the finished board after trimming. The target size; edge trims, when declared, must sum to grid width minus this value, but need not be equal.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "finishedLength": {
+                    "description": "Final length of the finished board after trimming. The target size; edge trims, when declared, must sum to grid height minus this value, but need not be equal.",
+                    "$ref": "#/definitions/measurement"
+                },
+                "edgeTrims": {
+                    "description": "Optional cut length off each of the four finished-face edges, in grid order: left and right are the two width edges, top and bottom are the two length edges. Each entry is optional; a missing edge is untrimmed (0). Finished width is grid width minus left minus right; finished length is grid height minus top minus bottom.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "left": { "$ref": "#/definitions/measurement" },
+                        "right": { "$ref": "#/definitions/measurement" },
+                        "top": { "$ref": "#/definitions/measurement" },
+                        "bottom": { "$ref": "#/definitions/measurement" }
+                    }
                 },
                 "sliceDepth": {
                     "description": "How thick each slice is cut from a panel (the crosscut pitch along the panel's length).",

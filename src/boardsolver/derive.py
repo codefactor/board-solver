@@ -592,11 +592,15 @@ def crosscut_blanks(
     inventory board). Only covers raw-stock crosscuts; ``sourceRemainder`` and
     bought boards are not raw-stock crosscuts and are excluded.
 
-    A crosscut is counted for each blank taken off the raw board EXCEPT when the
-    blanks exactly use the whole board (a single full-length blank needs no
-    crosscut). Modeled simply: one miter kerf per blank after the first, matching
-    the schema note that a shorter section is crosscut off, reducing the source
-    by that length plus one kerf.
+    A crosscut is counted for each cut that separates material: between
+    blanks, and between the last blank and the leftover, if a leftover
+    remains. The checklist was already correct here; the plan was not:
+    it counted only the kerfs between blanks, so its leftover was 1/8 in
+    too long, and its crosscut diagram summed to raw length + 1 kerf.
+    If the blanks exactly use the whole board, there is no leftover and
+    no final kerf. If the blanks already overflow the board, the
+    negative leftover is kept as the overflow amount, not made larger
+    by a final kerf for a leftover that does not exist.
     """
     lim = _limits(tool_limits)
     miter_kerf = measure_to_sixteenths(lim["miterKerf"])
@@ -617,6 +621,11 @@ def crosscut_blanks(
         ]
         n_cuts = max(len(blanks) - 1, 0)
         used = sum(bl.length for bl in blanks) + n_cuts * miter_kerf
+        intermediate = raw_len - used
+        # Actual free leftover piece: subtract the final kerf that
+        # separates it from the last blank, if a leftover remains.
+        # Exact fit (0) and overflow (< 0) stay as they are.
+        leftover = intermediate - miter_kerf if intermediate > 0 else intermediate
         # A single blank equal to the full raw length is used whole (no crosscut).
         if len(blanks) == 1 and blanks[0].length == raw_len:
             state = "whole"
@@ -630,7 +639,7 @@ def crosscut_blanks(
             thickness=measure_to_sixteenths(inv["thickness"]),
             blanks=blanks,
             kerf=miter_kerf,
-            leftover=raw_len - used,
+            leftover=leftover,
             state=state,
         ))
 
@@ -679,6 +688,101 @@ def diagnostics(
 
 
 # --------------------------------------------------------------------------- #
+# planer gangs: strips of the same finished width, planed together
+# --------------------------------------------------------------------------- #
+# A strip fed into the planer on edge is stable alone only while its
+# width does not exceed its thickness. Wider strips must be ganged:
+# taped together, stacked face to face, so the gang's total thickness
+# is at least the strip width. A gang is every strip (or, after
+# crosscutting, every component) of one finished width.
+#
+# Order of checks, per width:
+#  1. requires_gang = width > thickness for a strip in the group.
+#  2. strip gang: total thickness of all strips of that width.
+#     If it reaches the width, plane the strips as a gang, then crosscut.
+#  3. If the strip gang is too small, crosscut the strips to component
+#     lengths first, then gang the components. If that component gang
+#     reaches the width, planing is possible, just in that order, and
+#     the components must not be listed again as later crosscuts.
+#  4. If the component gang is still too small, the plan is blocked
+#     for that width: a red planer_gang_too_small warning.
+#
+# Thickness comes from the source inventory board, recursing through
+# sourceRemainder parents. Bought boards have no thickness on file, so
+# a width group containing a bought strip is skipped here, not warned
+# on guessed thickness.
+
+@dataclass(frozen=True)
+class GangGroup:
+    width: Sixteenths
+    thickness: Sixteenths  # minimum strip thickness in the group
+    strip_count: int
+    strip_total_thickness: Sixteenths
+    component_count: int
+    component_total_thickness: Sixteenths
+    requires_gang: bool
+    strip_sufficient: bool
+    component_sufficient: bool
+    crosscut_first: bool  # requires gang, strip gang too small
+    insufficient: bool  # requires gang, both gangs too small
+    required_count: int  # pieces at minimum thickness to reach width
+
+
+def _strip_thickness(board, project, cut_spec):
+    if "source" in board:
+        inv = _find_board(project, board["source"])
+        thick = inv.get("thickness")
+        return measure_to_sixteenths(thick) if thick is not None else None
+    if "sourceRemainder" in board:
+        parent = _find_cut_board(cut_spec, board["sourceRemainder"])
+        return _strip_thickness(parent, project, cut_spec)
+    return None  # buySpecies: no thickness on file
+
+
+def gang_groups(project, cut_spec, tool_limits):
+    """One GangGroup per finished strip width, widest first."""
+    from collections import OrderedDict as _OD
+
+    groups: "_OD" = _OD()
+    for board in cut_spec["boards"]:
+        thick = _strip_thickness(board, project, cut_spec)
+        if thick is None:
+            continue
+        for strip in board["strips"]:
+            w = measure_to_sixteenths(strip["width"])
+            entry = groups.setdefault(w, {"thicknesses": [], "strips": [], "components": []})
+            entry["thicknesses"].append(thick)
+            entry["strips"].append((board["id"], thick))
+            for cut in strip.get("cuts", []):
+                entry["components"].append((board["id"], thick))
+    out = []
+    for w, entry in groups.items():
+        thicknesses = entry["thicknesses"]
+        min_thick = min(thicknesses)
+        strip_total = sum(t for _bid, t in entry["strips"])
+        comp_total = sum(t for _bid, t in entry["components"])
+        requires = any(w > t for t in thicknesses)
+        strip_suff = strip_total >= w
+        comp_suff = comp_total >= w
+        # Ceiling division: pieces at minimum thickness to reach width.
+        required = -(-w // min_thick) if min_thick else 0
+        out.append(GangGroup(
+            width=w, thickness=min_thick,
+            strip_count=len(entry["strips"]),
+            strip_total_thickness=strip_total,
+            component_count=len(entry["components"]),
+            component_total_thickness=comp_total,
+            requires_gang=requires,
+            strip_sufficient=strip_suff,
+            component_sufficient=comp_suff,
+            crosscut_first=requires and not strip_suff,
+            insufficient=requires and not strip_suff and not comp_suff,
+            required_count=required,
+        ))
+    return sorted(out, key=lambda g: -g.width)
+
+
+# --------------------------------------------------------------------------- #
 # warnings: categorized, actionable problems for the top-of-document banner
 # --------------------------------------------------------------------------- #
 
@@ -694,6 +798,38 @@ def _maybe(v):
     if v is None:
         return None
     return measure_to_sixteenths(v)
+
+
+def zero_offcut_boards(
+    project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
+) -> List[tuple]:
+    """Boards with strips crosscut to an exact fit: 0 in offcut.
+
+    Tail = board length - sum(piece lengths) - (pieces - 1) * miterKerf.
+    A 0 tail leaves no margin for cutting error in the crosscut phase:
+    a cut even slightly long, or kerf drift, makes the last piece short.
+    Bought (ghost) boards are skipped: they are bought to size, so an
+    exact fit on them is expected, not a risk worth flagging.
+    Returns [(board_id, zero_strip_count)] in cut-spec order.
+    """
+    lim = _limits(tool_limits)
+    miter_kerf = measure_to_sixteenths(lim["miterKerf"])
+    out = []
+    for r in board_rips(project, cut_spec, tool_limits):
+        if r.buy_required:
+            continue
+        count = 0
+        for strip in r.strips:
+            cuts = strip.get("cuts", [])
+            if not cuts:
+                continue
+            tail = (r.length - sum(measure_to_sixteenths(c) for c in cuts)
+                    - (len(cuts) - 1) * miter_kerf)
+            if tail == 0:
+                count += 1
+        if count:
+            out.append((r.id, count))
+    return out
 
 
 def warnings(
@@ -833,6 +969,21 @@ def warnings(
                 f"under-supplying strips if the board runs narrow.",
             ))
 
+    # --- YELLOW: strips crosscut to an exact fit (0 in offcut) ----------- #
+    # No margin for cutting error in the crosscut phase: a cut even
+    # slightly long, or kerf drift, makes the last piece short.
+    zero = zero_offcut_boards(project, cut_spec, tool_limits)
+    if zero:
+        total = sum(n for _bid, n in zero)
+        names = ", ".join(f"{bid} ×{n}" for bid, n in zero)
+        out.append(Warning(
+            "yellow", "zero_offcut",
+            f"{total} strip(s) crosscut to an exact fit with 0″ offcut — no "
+            f"margin for cutting error in the crosscut phase: {names}. A cut "
+            f"even slightly long, or kerf drift, will make the last piece short. "
+            f"Consider longer blanks or fewer pieces per strip.",
+        ))
+
     # --- GRAY: wasted pieces (shape matches no component) ----------------- #
     if wasted:
         total = sum(w.count for w in wasted)
@@ -904,6 +1055,26 @@ def warnings(
             "yellow", "panel_components_short",
             f"The cut list cannot supply all components the speced panels need: "
             f"{names}.",
+        ))
+
+    # --- RED: planer gang too small, even after crosscutting first ------ #
+    # Width > thickness requires a gang whose total thickness reaches
+    # the width. A strip gang too small is not yet an error: crosscut
+    # first, then gang the components. Only when the component gang
+    # is still too small is the plan blocked for that width.
+    for g in gang_groups(project, cut_spec, tool_limits):
+        if not g.insufficient:
+            continue
+        out.append(Warning(
+            "red", "planer_gang_too_small",
+            f"Strip width {frac_inches(g.width)} is wider than board thickness "
+            f"{frac_inches(g.thickness)}, and its gang is too small even after "
+            f"crosscutting to component lengths first: {g.strip_count} strip(s) "
+            f"total {frac_inches(g.strip_total_thickness)}, "
+            f"{g.component_count} component(s) total "
+            f"{frac_inches(g.component_total_thickness)}, both below "
+            f"{frac_inches(g.width)} (needs {g.required_count} pieces at "
+            f"{frac_inches(g.thickness)}). Do not plane singly.",
         ))
 
     return out

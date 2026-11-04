@@ -40,6 +40,29 @@ strips between real boards in a way that raises the largest real
 margin, until a ghost strip fits). If none of those produces a
 strictly better packing, the greedy packing is returned unchanged.
 
+Child-split pass (always run, after the ghost passes)
+-----------------------------------------------------
+A fourth improvement attempt, ``_try_child_split``, implements the
+trigger in ``docs/source-remainder.md``: scan a blank's strips
+top-down; if an early strip is far underutilized (utilization < 50%,
+with a highly utilized strip before it) and a later strip is more
+utilized but narrower than it, keep the strips before the bad strip
+on the parent, move the bad strip and later strips (plus, if they
+fit, all the sticks of other blanks of the same species that would
+drop entirely) into exactly two sourceRemainder children, grouped
+by piece length, each child length-matched to its pieces. The
+split is committed only if it is strictly better under the
+area-based score ``_child_split_score``:
+(ghost volume, raw blank count, waste area + loss area), lower is
+better. Waste and loss are areas (width x trimmed length), so a
+smaller blank is rewarded: shortening a blank, or dropping one,
+leaves a full-width raw leftover instead of narrow strip tails,
+and that shows up as less waste + loss. The old margin-width score
+does not reward smaller blanks at all. Blank lengths are never
+increased, and a child never exceeds its parent's remaining slab
+length — hard constraints, because ``derive.warnings`` does not
+check sourceRemainder length overflow.
+
 Method
 ------
 1. Demand comes from ``derive.component_demand`` (one stick per component
@@ -100,13 +123,18 @@ def _fmt(m: int) -> str:
 class _Blank:
     def __init__(self, bid: str, species: str, width: int, length: int,
                  source: Optional[str] = None,
-                 buy_species: Optional[str] = None):
+                 buy_species: Optional[str] = None,
+                 source_remainder: Optional[str] = None):
         self.id = bid
         self.species = species
         self.width = width  # capacity width (source width, or ghost cap)
         self.length = length
         self.source = source
         self.buy_species = buy_species
+        # For a sourceRemainder child: the parent cut-spec board id whose
+        # margin slab this board is crosscut from. Such a board consumes
+        # no new raw stock; its width is the parent's margin slab width.
+        self.source_remainder = source_remainder
         self.strips: List[Dict[str, Any]] = []  # {"width": int, "cuts": [int]}
 
     @property
@@ -150,6 +178,233 @@ def _is_better(new_blanks, old_blanks, loss_per_strip: int) -> bool:
     new_score = _species_score(new_blanks, loss_per_strip)
     old_score = _species_score(old_blanks, loss_per_strip)
     return new_score < old_score
+
+
+# ---------------------------------------------------------------------------
+# Child-split hill climb (sourceRemainder, see docs/source-remainder.md)
+#
+# The greedy pass packs strips onto raw blanks, and the ghost passes
+# above only move ghost strips. Neither ever asks, for a blank whose
+# strips are scanned top-down: "the first few strips fill the blank,
+# then one strip is far underutilized, and later strips are more
+# utilized but cannot use that strip's tail because that strip is
+# wider than they are?" That is the trigger for a child split:
+#
+#   * keep the highly utilized strips before the bad strip on the
+#     parent; the parent's margin slab grows by the removed strips'
+#     widths + their loss;
+#   * crosscut that slab at the bad strip's utilization edge;
+#   * split the remaining pieces (removed strips, plus pieces from
+#     other blanks of the same species that would drop entirely)
+#     by piece length into exactly two children, each length-matched
+#     to its pieces, so no child strip carries an offcut tail.
+#
+# One child is pointless (just relabelling the parent's strips), so a
+# split with one length group is rejected. Three or more length
+# groups are also rejected for now: the point is the two-child case.
+#
+# Scoring is area-based, not margin-width-based, so a smaller blank
+# is rewarded: waste and loss areas scale with board length, so a
+# shorter blank (or a dropped blank) leaves a full-width raw leftover
+# instead of narrow strip tails, and that shows up as less waste +
+# loss. The old (_species_score) margin-width score does not reward
+# shorter blanks at all. Acceptance is lexicographic:
+#   (ghost volume, raw blank count, waste area + loss area)
+# lower is better. Blank lengths are never increased, and a child
+# never exceeds its parent's remaining slab length — those are hard
+# constraints, not score terms, because the planner (derive.warnings)
+# does not check sourceRemainder length overflow.
+# ---------------------------------------------------------------------------
+
+
+def _strip_total(strip: Dict[str, Any], miter_kerf: int) -> int:
+    return sum(strip["cuts"]) + max(len(strip["cuts"]) - 1, 0) * miter_kerf
+
+
+def _trimmed_len(blank: "_Blank", miter_kerf: int) -> int:
+    if not blank.strips:
+        return 0
+    return max(_strip_total(s, miter_kerf) for s in blank.strips)
+
+
+def _expand_sticks(blank: "_Blank") -> List[Dict[str, Any]]:
+    """One stick per cut: {"width": strip width, "length": cut length}."""
+    sticks = []
+    for strip in blank.strips:
+        for cut in strip["cuts"]:
+            sticks.append({"width": strip["width"], "length": cut})
+    return sticks
+
+
+def _child_split_score(blanks, loss_per_strip: int, miter_kerf: int):
+    """(ghost volume, raw blank count, waste area + loss area).
+
+    Waste is terminal waste only: strip tails, child margins, and
+    unclaimed parent slab tails. A parent margin slab that feeds
+    children is not waste — it is partitioned into child boards
+    (their strips, loss and margins) plus the unclaimed tail, and
+    only that tail is counted. Loss is per-strip (sawKerf +
+    minPlaneLoss) times board length, summed over every board
+    including children. Areas are in sixteenths-squared; lengths
+    and widths are in sixteenths, so the scale is consistent.
+    Ghost volume uses the old definition (width x cut length).
+    """
+    children_by_parent: Dict[str, List["_Blank"]] = {}
+    for blank in blanks:
+        if blank.source_remainder is not None:
+            children_by_parent.setdefault(blank.source_remainder, []).append(blank)
+    ghost_volume = 0
+    raw_count = 0
+    waste = 0
+    loss = 0
+    for blank in blanks:
+        if blank.buy_species is not None:
+            for strip in blank.strips:
+                ghost_volume += strip["width"] * sum(strip["cuts"])
+            continue
+        if blank.source_remainder is None:
+            raw_count += 1
+        # Trimmed length is the board's real length: for a child it
+        # is its declared length (strips fill it by construction, but
+        # use the trimmed value so a shorter child is scored shorter).
+        blen = _trimmed_len(blank, miter_kerf) if blank.strips else blank.length
+        if not blank.strips:
+            continue
+        loss += len(blank.strips) * loss_per_strip * blen
+        for strip in blank.strips:
+            waste += (blen - _strip_total(strip, miter_kerf)) * strip["width"]
+        margin_w = blank.width - blank.used - len(blank.strips) * loss_per_strip
+        children = children_by_parent.get(blank.id, [])
+        if children:
+            used_len = sum(_trimmed_len(c, miter_kerf) for c in children)
+            used_len += max(len(children) - 1, 0) * miter_kerf
+            tail_len = blen - used_len
+            if tail_len > 0:
+                waste += tail_len * margin_w
+        else:
+            if margin_w > 0:
+                waste += margin_w * blen
+    return (ghost_volume, raw_count, waste + loss)
+
+
+def _try_child_split(blanks, loss_per_strip: int, miter_kerf: int):
+    """Try one sourceRemainder child split. Returns new blanks or None."""
+    import copy
+    original_score = _child_split_score(blanks, loss_per_strip, miter_kerf)
+    # Real blanks only (source boards, not ghosts, not existing children).
+    real = [b for b in blanks
+            if b.buy_species is None and b.source_remainder is None and b.strips]
+    for parent in real:
+        # Diagram order is widest strip first, stable.
+        strips = sorted(parent.strips, key=lambda s: -s["width"])
+        plen = _trimmed_len(parent, miter_kerf)
+        if plen <= 0 or len(strips) < 3:
+            continue
+        utils = [_strip_total(s, miter_kerf) / plen for s in strips]
+        trigger = None
+        for i in range(1, len(strips)):
+            if utils[i] >= 0.5:
+                continue
+            if max(utils[:i]) < 0.8:
+                continue
+            later = [j for j in range(i + 1, len(strips))
+                     if utils[j] >= utils[i] + 0.3
+                     and strips[j]["width"] < strips[i]["width"]]
+            if not later:
+                continue
+            trigger = i
+            break
+        if trigger is None:
+            continue
+        kept = strips[:trigger]
+        removed = strips[trigger:]
+        kept_used = sum(s["width"] for s in kept)
+        slab_w = parent.width - kept_used - len(kept) * loss_per_strip
+        if slab_w <= 0:
+            continue
+        removed_sticks = []
+        for strip in removed:
+            for cut in strip["cuts"]:
+                removed_sticks.append({"width": strip["width"], "length": cut})
+        # Donor blanks: other real blanks of this species, fewest
+        # strips / largest margin first. A donor only counts if every
+        # one of its sticks lands in the children, so the donor drops.
+        donors = [b for b in real if b.id != parent.id]
+        donors.sort(key=lambda b: (len(b.strips), -_margin(b, loss_per_strip)))
+        candidate_pools = []
+        # Removed pool alone, then removed + each donor alone, then
+        # removed + all donors together. The chess case needs the
+        # last one (CTH lives on BC2A); the first two are the
+        # no-donor / single-donor fallbacks.
+        candidate_pools.append((removed_sticks, []))
+        for donor in donors:
+            candidate_pools.append((removed_sticks + _expand_sticks(donor), [donor]))
+        if len(donors) > 1:
+            all_sticks = removed_sticks[:]
+            for donor in donors:
+                all_sticks.extend(_expand_sticks(donor))
+            candidate_pools.append((all_sticks, donors))
+        best_trial = None
+        best_score = original_score
+        for pool, pool_donors in candidate_pools:
+            groups: Dict[int, List[Dict[str, Any]]] = {}
+            for stick in pool:
+                groups.setdefault(stick["length"], []).append(stick)
+            if len(groups) != 2:
+                continue
+            # Children in trigger order: the bad strip's length group
+            # first (that is the crosscut at its utilization edge),
+            # then the other group.
+            bad_len = _strip_total(strips[trigger], miter_kerf)
+            ordered_lengths = sorted(
+                groups, key=lambda ln: (0 if ln == bad_len else 1, ln))
+            children = []
+            ok = True
+            for idx, ln in enumerate(ordered_lengths):
+                sticks = groups[ln]
+                child_strips = [{"width": s["width"], "cuts": [s["length"]]}
+                                for s in sticks]
+                used_w = sum(s["width"] for s in child_strips)
+                if used_w + len(child_strips) * loss_per_strip > slab_w:
+                    ok = False
+                    break
+                cid = f"{parent.id}{idx + 1}"
+                if any(b.id == cid for b in blanks):
+                    ok = False
+                    break
+                child = _Blank(cid, parent.species, slab_w, ln,
+                               source_remainder=parent.id)
+                child.strips = child_strips
+                children.append(child)
+            if not ok:
+                continue
+            total_child_len = sum(c.length for c in children) + \
+                max(len(children) - 1, 0) * miter_kerf
+            if total_child_len > plen:
+                continue
+            trial = copy.deepcopy(blanks)
+            t_parent = next(b for b in trial if b.id == parent.id)
+            # Remove exactly the removed strips (by width+cuts match).
+            for strip in removed:
+                match = next(
+                    (s for s in t_parent.strips
+                     if s["width"] == strip["width"]
+                     and s["cuts"] == strip["cuts"]), None)
+                if match is not None:
+                    t_parent.strips.remove(match)
+            donor_ids = {d.id for d in pool_donors}
+            trial = [b for b in trial if b.id not in donor_ids]
+            # Insert children directly after the parent, in order.
+            pos = next(i for i, b in enumerate(trial) if b.id == parent.id)
+            for offset, child in enumerate(children):
+                trial.insert(pos + 1 + offset, copy.deepcopy(child))
+            score = _child_split_score(trial, loss_per_strip, miter_kerf)
+            if score < best_score:
+                best_score = score
+                best_trial = trial
+        if best_trial is not None:
+            return best_trial
+    return None
 
 
 def _best_fit_board(blanks, strip, loss_per_strip, miter_kerf,
@@ -337,7 +592,8 @@ def _improve_species(blanks, loss_per_strip, miter_kerf):
     current = blanks
     for _pass in range(50):
         improved = None
-        for attempt in (_try_direct_ghost, _try_ejection, _try_swap_chain):
+        for attempt in (_try_direct_ghost, _try_ejection, _try_swap_chain,
+                        _try_child_split):
             improved = attempt(current, loss_per_strip, miter_kerf)
             if improved is not None:
                 break
@@ -498,13 +754,14 @@ def solve(project: Dict[str, Any], tool_limits: Dict[str, Any]) -> Dict[str, Any
         species_blanks = [b for b in blanks if b.species == species]
         improved_by_species[species] = _improve_species(
             species_blanks, loss_per_strip, miter_kerf)
-    # Rebuild in the original board order, taking the improved
-    # version of each board id; boards left empty are dropped.
-    by_id = {}
+    # Rebuild per species, in improved order. Boards left empty by
+    # improvement are dropped. New boards created by improvement
+    # (sourceRemainder children) must survive this step: they have
+    # ids that were not in the original blanks list, so rebuilding
+    # from the original list alone would drop them.
+    blanks = []
     for species in species_order:
-        for improved in improved_by_species[species]:
-            by_id[improved.id] = improved
-    blanks = [by_id[b.id] for b in blanks if by_id[b.id].strips]
+        blanks.extend(b for b in improved_by_species[species] if b.strips)
 
     # --- trim each blank to its longest strip ----------------------------
     # Crosscut before rip: the blank is only as long as the longest
@@ -525,7 +782,9 @@ def solve(project: Dict[str, Any], tool_limits: Dict[str, Any]) -> Dict[str, Any
     out_boards = []
     for blank in blanks:
         entry: Dict[str, Any] = {"id": blank.id}
-        if blank.source:
+        if blank.source_remainder is not None:
+            entry["sourceRemainder"] = blank.source_remainder
+        elif blank.source:
             entry["source"] = blank.source
         else:
             entry["buySpecies"] = blank.buy_species
@@ -549,7 +808,9 @@ def _dump(cut_spec: Dict[str, Any]) -> str:
     ]
     for board in cut_spec["boards"]:
         lines.append(f"- id: {board['id']}")
-        if "source" in board:
+        if "sourceRemainder" in board:
+            lines.append(f"  sourceRemainder: {board['sourceRemainder']}")
+        elif "source" in board:
             lines.append(f"  source: {board['source']}")
         else:
             lines.append(f"  buySpecies: {board['buySpecies']}")

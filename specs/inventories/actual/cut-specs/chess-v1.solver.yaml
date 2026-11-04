@@ -26,20 +26,26 @@ boards:
     - [12, 14]
     - [12, 14]
     - [12, 14]
+- id: BC1A1
+  sourceRemainder: BC1A
+  length: [12, 14]
+  strips:
   - width: [2, 4]
     cuts:
     - [12, 14]
   - width: [1, 2]
     cuts:
-    - [16, 2]
-    - [16, 2]
-- id: BC2A
-  source: BC2
-  length: [12, 14]
+    - [12, 14]
+- id: BC1A2
+  sourceRemainder: BC1A
+  length: [16, 2]
   strips:
   - width: [1, 2]
     cuts:
-    - [12, 14]
+    - [16, 2]
+  - width: [1, 2]
+    cuts:
+    - [16, 2]
 - id: BW1A
   source: BW1
   length: [32, 6]

@@ -10,6 +10,13 @@ description: One end-grain chess-pattern board, walnut and brown maple 2.25 in c
   covers the old CR half.
 batch: 1
 finishedThickness: [0, 8]
+finishedWidth: [20, 4]
+finishedLength: [20, 4]
+edgeTrims:
+  left: [0, 0]
+  right: [0, 0]
+  top: [0, 0]
+  bottom: [0, 0]
 sliceDepth: [1, 8]
 sliceGrid:
 - - sliceId: C

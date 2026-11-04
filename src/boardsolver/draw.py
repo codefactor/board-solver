@@ -369,9 +369,11 @@ def _root_inventory_board(cut_spec_board, project, cut_spec):
 
 
 def _start_dims(cut_spec_board, project, cut_spec, source_width, board_len) -> str:
-    """Starting-stock dimensions string for the title.
+    """Blank dimensions string for the title.
 
-    * source: the inventory board's full length x width x thickness.
+    * source: the blank's own length x width x thickness. The blank length
+      is the cut-spec board length, not the inventory board's full length
+      (a trimmed blank must not be labelled as if it were the whole board).
     * sourceRemainder: the leftover slab it starts from (board length x slab
       width x inherited thickness).
     * buySpecies: 'Not Available' (no stock on hand).
@@ -381,7 +383,7 @@ def _start_dims(cut_spec_board, project, cut_spec, source_width, board_len) -> s
     inv = _root_inventory_board(cut_spec_board, project, cut_spec)
     thickness = measure_to_sixteenths(inv["thickness"]) if inv else None
     if "source" in cut_spec_board:
-        length = measure_to_sixteenths(inv["length"])
+        length = board_len
         width = measure_to_sixteenths(inv["width"])
     else:  # sourceRemainder slab
         length = board_len

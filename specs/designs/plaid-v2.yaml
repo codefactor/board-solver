@@ -1,0 +1,217 @@
+name: Plaid v2
+description: Two end-grain plaid cutting boards built from cherry, walnut, and brown
+  maple.
+batch: 2
+finishedThickness:
+- 1
+- 4
+finishedWidth:
+- 14
+- 0
+finishedLength:
+- 16
+- 0
+sliceDepth:
+- 1
+- 8
+sliceGrid:
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: H-L
+  - sliceId: H-R
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: H-L
+  - sliceId: H-R
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: H-L
+  - sliceId: H-R
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: H-L
+  - sliceId: H-R
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: ML
+  - sliceId: MR
+    flip: H
+- - sliceId: S-L
+  - sliceId: S-R
+    flip: H
+components:
+- id: C1
+  species: Cherry
+  width:
+  - 1
+  - 8
+  thickness:
+  - 0
+  - 12
+- id: C2
+  species: Cherry
+  width:
+  - 0
+  - 12
+  thickness:
+  - 0
+  - 12
+- id: M1
+  species: Brown Maple
+  width:
+  - 1
+  - 8
+  thickness:
+  - 0
+  - 12
+- id: Me
+  species: Brown Maple
+  width:
+  - 0
+  - 12
+  thickness:
+  - 0
+  - 12
+- id: Md
+  species: Brown Maple
+  width:
+  - 0
+  - 4
+  thickness:
+  - 0
+  - 12
+- id: W1
+  species: Walnut
+  width:
+  - 3
+  - 0
+  thickness:
+  - 0
+  - 12
+- id: W2
+  species: Walnut
+  width:
+  - 0
+  - 12
+  thickness:
+  - 0
+  - 12
+panels:
+- id: S
+  thickness:
+  - 0
+  - 12
+  profiles:
+  - id: L
+    slices: 4
+  - id: R
+    slices: 4
+  components:
+  - type: Me
+  - type: C2
+  - type: M1
+  - type: C2
+  - type: Md
+  - type: C2
+  - type: M1
+  - type: C2
+  - type: Md
+    maxProfile: 1
+- id: ML
+  thickness:
+  - 0
+  - 12
+  slices: 20
+  components:
+  - type: Me
+  - type: W2
+  - type: C1
+  - type: W2
+  - type: Md
+  - type: W2
+  - type: C1
+  - type: W2
+  - type: Md
+- id: MR
+  thickness:
+  - 0
+  - 12
+  slices: 20
+  components:
+  - type: Me
+  - type: W2
+  - type: C1
+  - type: W2
+  - type: Md
+  - type: W2
+  - type: C1
+  - type: W2
+- id: H
+  thickness:
+  - 0
+  - 13
+  sliceStrips:
+    count: 2
+    width:
+    - 0
+    - 4
+  profiles:
+  - id: L
+    slices: 4
+  - id: R
+    slices: 4
+  components:
+  - type: Me
+  - type: W1
+  - type: Md
+  - type: W1
+  - type: Md
+    maxProfile: 1

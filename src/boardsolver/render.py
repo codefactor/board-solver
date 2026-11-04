@@ -19,7 +19,7 @@ from .draw import draw_cut_board, draw_panel, draw_slice, _KERF_COLOR, _LOSS_COL
 from .geometry import measure_to_sixteenths, px, resolve_slice, slice_length
 from .format import frac_inches
 
-_BG = "#f7f4e9"
+_BG = "#ffffff"
 
 # Finished-board image margins: dimension line on the left, outer pad on
 # both sides, and the drop-shadow offset on the right. The finished face
@@ -142,6 +142,44 @@ def render_finished_board(
             )
             x += bb.w
         y += h
+
+    # Crop to final dimensions: the finished board is the grid face
+    # after trimming, not the untrimmed glue-up. Finished width/height
+    # come from finishedWidth/finishedLength when declared, else from
+    # edgeTrims (grid minus edges). The crop per edge follows edgeTrims
+    # when declared; otherwise the excess comes off the right and
+    # bottom edges, keeping the top-left corner fixed. If no finished
+    # size is declared, the grid size stands.
+    _fw16, _fl16 = row_w_16, total_h_16
+    _fw_decl = project.get("finishedWidth")
+    _fl_decl = project.get("finishedLength")
+    if _fw_decl is not None and _fl_decl is not None:
+        _fw16, _fl16 = measure_to_sixteenths(_fw_decl), measure_to_sixteenths(_fl_decl)
+    elif project.get("edgeTrims"):
+        _tr = project["edgeTrims"]
+        _et = lambda e: measure_to_sixteenths(_tr[e]) if e in _tr else 0
+        _fw16 = row_w_16 - _et("left") - _et("right")
+        _fl16 = total_h_16 - _et("top") - _et("bottom")
+    if _fw16 < row_w_16 or _fl16 < total_h_16:
+        _tr = project.get("edgeTrims") or {}
+        _et = lambda e: measure_to_sixteenths(_tr[e]) if e in _tr else 0
+        _cl, _cr, _ct, _cb = _et("left"), _et("right"), _et("top"), _et("bottom")
+        # Declared edges are the distribution; any undeclared remainder
+        # of the total trim goes to the right/bottom edges, so the crop
+        # always sums to grid minus finished, even when only one edge
+        # is declared (e.g. top only).
+        _rem_w = (row_w_16 - _fw16) - _cl - _cr
+        _rem_h = (total_h_16 - _fl16) - _ct - _cb
+        if _rem_w > 0:
+            _cr += _rem_w
+        if _rem_h > 0:
+            _cb += _rem_h
+        _crop = face._img.crop((
+            int(round(px(_cl, scale))), int(round(px(_ct, scale))),
+            board_w - int(round(px(_cr, scale))), board_h - int(round(px(_cb, scale)))))
+        face._img = _crop
+        board_w, board_h = _crop.size
+        row_w_16, total_h_16 = _fw16, _fl16
 
     # Final canvas: room for the dimension lines, the shadow, and an outer pad.
     dim_top, dim_left, outer = 52, _FINISHED_DIM_LEFT, _FINISHED_OUTER
@@ -332,15 +370,17 @@ def render_panel_faces(
     scale: float = 16.0, colors: ColorMap = DEFAULT_COLORS,
     quantities: Optional[Dict[str, int]] = None,
 ) -> bytes:
-    """Each panel drawn to-scale, length running top-to-bottom.
+    """Each panel drawn to-scale, length running left-to-right (rotated:
+    x and y swapped from the old top-to-bottom version, so each panel is
+    wider than it is tall, with its titles still horizontal on top).
 
-    Components are glued aligned on one squared edge (the left/width origin) and
-    run as vertical columns. Profiles are length regions stacked top-to-bottom:
-    the fullest profile (all components) is the top region; later profiles drop
-    trailing components, so the panel silhouette steps narrower down its length.
-    A dashed crosscut line (overflowing the width) marks each slice boundary; a
-    solid reddish band is the total kerf loss above the bottom snipe tail; both
-    snipe half-tails (top and bottom) are reddish cross-hatch (possible loss).
+    Components are glued aligned on one squared edge (the top/width origin) and
+    run as horizontal rows. Profiles are length regions stacked left-to-right:
+    the fullest profile (all components) is the left region; later profiles drop
+    trailing components, so the panel silhouette steps shorter to the right.
+    A dashed crosscut line (overflowing the height) marks each slice boundary; a
+    solid reddish band is the total kerf loss before the right snipe tail; both
+    snipe half-tails (left and right) are reddish cross-hatch (possible loss).
     """
     lim = tool_limits["limits"] if "limits" in tool_limits else tool_limits
     slice_depth = measure_to_sixteenths(project["sliceDepth"])
@@ -389,33 +429,33 @@ def render_panel_faces(
         metas.append(dict(panel=panel, regions=regions, n=n, full_w=full_w,
                           body_len=body_len, kerf_len=kerf_len, total_len=total_len))
 
-    # Grid layout: max 3 panels per row; each row's height = its tallest panel
-    # (label + snipe + body + kerf). Next row starts below the previous row.
-    per_row = 3
+    # Rotated layout: one panel per row, stacked vertically, left-aligned.
+    # Each cell is wider than it is tall: body width = total length,
+    # body height = fullest profile width. The cell height adds overflow
+    # for the crosscut lines and room for the profile-change diamond
+    # below the panel (overflow + diamond diameter + margin).
     row_gap = 40
-    rows = [metas[i:i + per_row] for i in range(0, len(metas), per_row)]
 
     def cell_w(m):
-        return px(m["full_w"], scale) + 2 * overflow
+        return px(m["total_len"], scale) + 2 * overflow
 
     def cell_h(m):
-        return label_h + px(m["total_len"], scale)
+        # Extra 16 px between the title lines and the panel body, so the
+        # body does not sit tight under the title.
+        return label_h + 16 + px(m["full_w"], scale) + 2 * overflow + 12
 
-    row_widths = [
-        sum(cell_w(m) for m in row) + gap * (len(row) - 1) for row in rows
-    ]
-    row_heights = [max(cell_h(m) for m in row) for row in rows]
     legend_h = 4 * 20 + 16  # four entries + heading padding
-    # Panel titles ("16⅛″ long (9 slices)") are wider than the narrow
-    # panel cells, so allow title overflow past the last cell in a row
-    # instead of clipping it at the canvas edge.
-    total_w = max(max(row_widths), 360) + 2 * pad + 80
-    H = int(sum(row_heights) + row_gap * (len(rows) - 1) + 2 * pad + legend_h)
+    # Legend text ("solid line + diamond = crosscut and profile change")
+    # is wider than a rotated panel cell, so the canvas must be at
+    # least wide enough for it, or the legend text clips at the edge.
+    total_w = max(max(cell_w(m) for m in metas), 420) + 2 * pad
+    H = int(sum(cell_h(m) for m in metas) + row_gap * (len(metas) - 1) + 2 * pad + legend_h)
     canvas = PILCanvas(int(total_w), H, _BG)
 
     def draw_one(m, cell_x, cell_y):
-        """Draw one panel; cell_x is the left of the cell (before overflow),
-        cell_y is the top of the cell (label line)."""
+        """Draw one rotated panel; cell_x is the left of the cell (before
+        overflow), cell_y is the top of the cell (label line). Titles stay
+        horizontal above the panel; only the panel body has x/y swapped."""
         panel = m["panel"]
         x = cell_x + overflow
         full_w_px = px(m["full_w"], scale)
@@ -429,90 +469,256 @@ def render_panel_faces(
         canvas.text(x, cell_y + title_px + 2,
                     f"{frac_inches(m['total_len'])} long  {slice_txt}",
                     title_px - 1, "#555555")
-        y0 = cell_y + label_h
+        y0 = cell_y + label_h + 16  # top of the panel body, moved down from the title
         half_snipe = px(snipe / 2, scale)
-        body_y = y0 + half_snipe
+        body_x = x + half_snipe  # left snipe band sits left of the body
 
-        ry = body_y
-        region_boundaries = []  # y of each interior profile transition
+        rx = body_x
+        region_boundaries = []  # x of each interior profile transition
         for ri, (resolved, count) in enumerate(m["regions"]):
-            region_h = px(count * slice_depth, scale)
-            cx = x
+            region_w = px(count * slice_depth, scale)
+            cy = y0
             for c in resolved.components:
-                cwpx = px(c.width, scale)
-                canvas.rect(cx, ry, cwpx, region_h, fill=colors[c.species], outline=_OUTLINE)
-                cx += cwpx
-            ry += region_h
+                chpx = px(c.width, scale)
+                canvas.rect(rx, cy, region_w, chpx, fill=colors[c.species], outline=_OUTLINE)
+                cy += chpx
+            rx += region_w
             if ri < len(m["regions"]) - 1:
-                region_boundaries.append(ry)  # transition to the next profile
+                region_boundaries.append(rx)  # transition to the next profile
 
         for i in range(1, m["n"]):
-            ly = body_y + px(i * slice_depth, scale)
-            canvas.dashed_hline(x - overflow, x + full_w_px + overflow, ly, "#444444", width=1)
+            lx = body_x + px(i * slice_depth, scale)
+            canvas.dashed_vline(lx, y0 - overflow, y0 + full_w_px + overflow, "#444444", width=1)
 
-        # Profile transitions: solid line across + a blue diamond off the right
-        # edge, vertically centered on the transition.
-        for by in region_boundaries:
-            canvas.line(x, by, x + full_w_px, by, "#222222", width=2)
+        # Profile transitions: solid line down + a blue diamond below the
+        # panel, horizontally centered on the transition.
+        for bx in region_boundaries:
+            canvas.line(bx, y0, bx, y0 + full_w_px, "#222222", width=2)
             d = 6  # diamond half-size
-            dx = x + full_w_px + overflow + d + 2  # center, just right of the panel
+            dy = y0 + full_w_px + overflow + d + 2  # center, just below the panel
             canvas.polygon(
-                [(dx, by - d), (dx + d, by), (dx, by + d), (dx - d, by)],
+                [(bx - d, dy), (bx, dy - d), (bx + d, dy), (bx, dy + d)],
                 fill="#1f6fe0", outline="#0b3c86",
             )
 
         kerf_px = px(m["kerf_len"], scale)
-        kerf_y = body_y + px(m["body_len"], scale)
+        kerf_x = body_x + px(m["body_len"], scale)
         if kerf_px > 0:
-            canvas.rect(x, kerf_y, full_w_px, kerf_px, fill=_LOSS_COLOR, outline=None)
+            canvas.rect(kerf_x, y0, kerf_px, full_w_px, fill=_LOSS_COLOR, outline=None)
 
-        bot_snipe_y = kerf_y + kerf_px
+        right_snipe_x = kerf_x + kerf_px
         if half_snipe > 0:
-            canvas.hatch_rect(x, y0, full_w_px, half_snipe, _SNIPE_BASE, _SNIPE_HATCH)
-            canvas.hatch_rect(x, bot_snipe_y, full_w_px, half_snipe, _SNIPE_BASE, _SNIPE_HATCH)
+            canvas.hatch_rect(x, y0, half_snipe, full_w_px, _SNIPE_BASE, _SNIPE_HATCH)
+            canvas.hatch_rect(right_snipe_x, y0, half_snipe, full_w_px, _SNIPE_BASE, _SNIPE_HATCH)
 
     y = pad
-    for row, rh in zip(rows, row_heights):
-        x = pad
-        for m in row:
-            draw_one(m, x, y)
-            x += cell_w(m) + gap
-        y += rh + row_gap
+    for m in metas:
+        draw_one(m, pad, y)
+        y += cell_h(m) + row_gap
 
-    # Legend.
+    # Legend, samples rotated to match the rotated panels.
     lx = pad
     ly = y
     sample_w = 34
     tx = lx + sample_w + 10
     line_h = 20
-    # dashed line = crosscut
-    cy = ly + line_h // 2
-    canvas.dashed_hline(lx, lx + sample_w, cy, "#444444", width=1)
+    cx = lx + sample_w // 2  # center of the sample area
+    # dashed line = crosscut (vertical, as in the rotated panels)
+    canvas.dashed_vline(cx, ly + 3, ly + 17, "#444444", width=1)
     canvas.text(tx, ly + 3, "dashed line = crosscut", 12, "#333333")
     ly += line_h
     # solid line + diamond = crosscut AND profile change
-    cy = ly + line_h // 2
-    canvas.line(lx, cy, lx + sample_w, cy, "#222222", width=2)
-    d = 5
-    dcx = lx + sample_w + 2
-    canvas.polygon([(dcx, cy - d), (dcx + d, cy), (dcx, cy + d), (dcx - d, cy)],
+    canvas.line(cx, ly + 2, cx, ly + 10, "#222222", width=2)
+    d = 4
+    dcy = ly + 14
+    canvas.polygon([(cx - d, dcy), (cx, dcy - d), (cx + d, dcy), (cx, dcy + d)],
                    fill="#1f6fe0", outline="#0b3c86")
-    canvas.text(tx + 6, ly + 3, "solid line + diamond = crosscut and profile change", 12, "#333333")
+    canvas.text(tx, ly + 3, "solid line + diamond = crosscut and profile change", 12, "#333333")
     ly += line_h
-    # red = kerf loss
-    canvas.rect(lx, ly + 3, sample_w, line_h - 8, fill=_LOSS_COLOR, outline=_OUTLINE)
+    # red = kerf loss (vertical band, as in the rotated panels)
+    canvas.rect(cx - 6, ly + 3, 12, line_h - 8, fill=_LOSS_COLOR, outline=_OUTLINE)
     canvas.text(tx, ly + 3, "red = kerf loss (sawdust)", 12, "#333333")
     ly += line_h
-    # cross-hatch = potential snipe loss
-    canvas.hatch_rect(lx, ly + 3, sample_w, line_h - 8, _SNIPE_BASE, _SNIPE_HATCH, outline=_OUTLINE)
+    # cross-hatch = potential snipe loss (vertical band)
+    canvas.hatch_rect(cx - 6, ly + 3, 12, line_h - 8, _SNIPE_BASE, _SNIPE_HATCH, outline=_OUTLINE)
     canvas.text(tx, ly + 3, "cross-hatch = potential loss from planer snipe", 12, "#333333")
 
     return _to_png_bytes(canvas)
 
 
+def _panel_face_single_meta(project, tool_limits, panel_id):
+    """(cell_w, cell_h) for one rotated panel face, matching render_panel_faces.
+
+    Rotated: cell_w is total length, cell_h is label + fullest width +
+    overflow + diamond room; the single-panel combo's top section is
+    pad + cell_h, then a row gap, then the legend.
+    """
+    lim = tool_limits["limits"] if "limits" in tool_limits else tool_limits
+    slice_depth = measure_to_sixteenths(project["sliceDepth"])
+    miter_kerf = measure_to_sixteenths(lim["miterKerf"])
+    snipe = measure_to_sixteenths(lim.get("snipeTail", [0, 0]))
+    pitch = slice_depth + miter_kerf
+    panel = next(p for p in project["panels"] if p["id"] == panel_id)
+    spec = None
+    for _e in project.get("panelSpecs", []) or []:
+        if _e["panel"] == panel_id:
+            spec = _e
+            break
+    spec_slices = None
+    if spec:
+        spec_slices = [measure_to_sixteenths(m) // pitch for m in spec["profileLengths"]]
+    if "profiles" in panel:
+        regions = [(resolve_slice(project, f"{panel_id}-{p['id']}"),
+                    spec_slices[i] if spec_slices else p["slices"])
+                   for i, p in enumerate(panel["profiles"])]
+    else:
+        regions = [(resolve_slice(project, panel_id),
+                    spec_slices[0] if spec_slices else panel["slices"])]
+    n = sum(c for _, c in regions)
+    full_w = slice_length(regions[0][0])
+    total_len = n * slice_depth + n * miter_kerf + snipe
+    label_h = 2 * 13 + 10
+    cell_w = px(total_len, 16.0) + 2 * 10
+    cell_h = label_h + 16 + px(full_w, 16.0) + 2 * 10 + 12
+    return cell_w, cell_h
+
+
+def render_panel_face_primitive(
+    panel_id, project: Dict[str, Any], tool_limits: Dict[str, Any],
+    colors: ColorMap = DEFAULT_COLORS,
+    quantities: Optional[Dict[str, int]] = None,
+) -> bytes:
+    """Single-panel-face primitive, rotated wider than tall.
+
+    It is a tight crop of the single-panel panel-faces combo, so it
+    matches the combined diagram exactly. Titles stay horizontal; only
+    the panel body has x/y swapped. The combined panel-faces diagram
+    is kept as well.
+    """
+    import io as _io
+    from PIL import Image as _Image
+    single = dict(project)
+    single["panels"] = [p for p in project["panels"] if p["id"] == panel_id]
+    combo = render_panel_faces(single, tool_limits, colors=colors,
+                               quantities=quantities)
+    cell_w, cell_h = _panel_face_single_meta(project, tool_limits, panel_id)
+    img = _Image.open(_io.BytesIO(combo)).convert("RGB")
+    # Top section only: pad + cell height. Tight-crop horizontally to
+    # non-background pixels in that section.
+    top = img.crop((0, 0, img.size[0], int(20 + cell_h)))
+    bg = (255, 255, 255)
+    xs = []
+    for x in range(top.size[0]):
+        for y in range(top.size[1]):
+            if top.getpixel((x, y)) != bg:
+                xs.append(x)
+                break
+    left = max(min(xs) - 20, 0) if xs else 0
+    right = min(max(xs) + 20, top.size[0]) if xs else top.size[0]
+    out = top.crop((left, 0, right, top.size[1]))
+    buf = _io.BytesIO()
+    out.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def render_panel_faces_primitives(
+    project: Dict[str, Any], tool_limits: Dict[str, Any],
+    colors: ColorMap = DEFAULT_COLORS,
+    quantities: Optional[Dict[str, int]] = None,
+) -> Dict[str, bytes]:
+    """{panel_id: single-panel-face PNG} in project panels order."""
+    return {p["id"]: render_panel_face_primitive(
+        p["id"], project, tool_limits, colors, quantities) for p in project["panels"]}
+
+
+def render_panel_faces_legend(
+    project: Dict[str, Any], tool_limits: Dict[str, Any],
+    colors: ColorMap = DEFAULT_COLORS,
+) -> bytes:
+    """Panel-faces legend alone, as a separate image to sit centered
+    below the flowed panel-face primitives (instead of being stuck
+    at the bottom of one tall combined image)."""
+    import io as _io
+    from PIL import Image as _Image
+    combo = render_panel_faces(project, tool_limits, colors=colors)
+    img = _Image.open(_io.BytesIO(combo)).convert("RGB")
+    # Legend is the bottom 4*20+16 px of the combo.
+    legend_h = 4 * 20 + 16
+    leg = img.crop((0, img.size[1] - legend_h, img.size[0], img.size[1]))
+    bg = (255, 255, 255)
+    xs = []
+    for x in range(leg.size[0]):
+        for y in range(leg.size[1]):
+            if leg.getpixel((x, y)) != bg:
+                xs.append(x)
+                break
+    left = max(min(xs) - 20, 0) if xs else 0
+    right = min(max(xs) + 20, leg.size[0]) if xs else leg.size[0]
+    out = leg.crop((left, 0, right, leg.size[1]))
+    buf = _io.BytesIO()
+    out.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 # --------------------------------------------------------------------------- #
 # crosscut blanks diagram (to-scale by length; modest fixed bar height)
 # --------------------------------------------------------------------------- #
+
+def _draw_crosscut_bar(canvas, cb, x0, y0, scale, colors, bar_h, kerf_s):
+    """Draw one raw board's crosscut bar (title + segments + tail) at (x0, y0).
+
+    Shared by the combined diagram and by the single-bar primitive, so the
+    two always match pixel for pixel. Returns the height used
+    (title + gap + bar height); the caller advances y by that plus its gap.
+    """
+    title_px = 13
+    if cb.state == "spare":
+        title = f"{cb.source_id}  ({frac_inches(cb.length)} long)  — untouched spare"
+        title_color = "#888888"
+    elif cb.state == "whole":
+        title = f"{cb.source_id}  ({frac_inches(cb.length)} long)  — used whole (no crosscut)"
+        title_color = "#222222"
+    else:
+        title = f"{cb.source_id}  ({frac_inches(cb.length)} long)"
+        title_color = "#222222"
+    canvas.text(x0, y0, title, title_px, title_color)
+    by = y0 + title_px + 4
+    x = x0
+    species_color = colors[cb.species]
+    if cb.state == "spare":
+        full = px(cb.length, scale)
+        canvas.rect(x, by, full, bar_h, fill=lighten(species_color, 0.4), outline=_OUTLINE)
+        canvas.text(x + 4, by + bar_h / 2 - 6, f"{cb.source_id} spare — not cut",
+                    11, text_on(lighten(species_color, 0.4)))
+        return title_px + 4 + bar_h
+    for i, bl in enumerate(cb.blanks):
+        seg_w = px(bl.length, scale)
+        canvas.rect(x, by, seg_w, bar_h, fill=species_color, outline=_OUTLINE)
+        label = f"{bl.blank_id} {frac_inches(bl.length)}"
+        if cb.state == "whole":
+            label += "  → rip diagram"
+        canvas.text(x + 4, by + bar_h / 2 - 6, label, 11, text_on(species_color))
+        x += seg_w
+        if i != len(cb.blanks) - 1:
+            kerf_px = px(kerf_s, scale)
+            canvas.rect(x, by, kerf_px, bar_h, fill=_LOSS_COLOR, outline=None)
+            x += kerf_px
+    if cb.leftover > 0:
+        if cb.state != "whole":
+            kerf_px = px(kerf_s, scale)
+            canvas.rect(x, by, kerf_px, bar_h, fill=_LOSS_COLOR, outline=None)
+            x += kerf_px
+        lp = px(cb.leftover, scale)
+        canvas.rect(x, by, lp, bar_h, fill="#e8e4d6", outline=_OUTLINE)
+        canvas.text(x + 4, by + bar_h / 2 - 6,
+                    f"left {frac_inches(cb.leftover)}", 10, "#666666")
+    elif cb.leftover < 0:
+        op = px(-cb.leftover, scale)
+        canvas.rect(x, by, op, bar_h, fill="#c0392b", outline=_OUTLINE)
+        canvas.text(x + 4, by + bar_h / 2 - 6,
+                    f"over {frac_inches(-cb.leftover)}", 10, "#ffffff")
+    return title_px + 4 + bar_h
+
 
 def render_crosscut_blanks(
     project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
@@ -528,73 +734,43 @@ def render_crosscut_blanks(
     title_px = 13
     gap = 22
     kerf_s = blanks[0].kerf if blanks else 2
-
     max_len = max((cb.length for cb in blanks), default=0)
     W = int(px(max_len, scale) + 2 * pad)
     H = int(len(blanks) * (title_px + 4 + bar_h + gap) + 2 * pad)
     canvas = PILCanvas(W, H, _BG)
-
     y = pad
     for cb in blanks:
-        # Title: spares and whole-use boards are annotated distinctly.
-        if cb.state == "spare":
-            title = f"{cb.source_id}  ({frac_inches(cb.length)} long)  — untouched spare"
-            title_color = "#888888"
-        elif cb.state == "whole":
-            title = f"{cb.source_id}  ({frac_inches(cb.length)} long)  — used whole (no crosscut)"
-            title_color = "#222222"
-        else:
-            title = f"{cb.source_id}  ({frac_inches(cb.length)} long)"
-            title_color = "#222222"
-        canvas.text(pad, y, title, title_px, title_color)
-        by = y + title_px + 4
-        x = pad
-        species_color = colors[cb.species]
-
-        if cb.state == "spare":
-            # Untouched spare: hollow/outlined bar in a muted dashed look (no fill
-            # treatment available, so draw a pale wash with a dashed-ish double
-            # outline) and no blanks.
-            full = px(cb.length, scale)
-            canvas.rect(x, by, full, bar_h, fill=lighten(species_color, 0.4), outline=_OUTLINE)
-            canvas.text(x + 4, by + bar_h / 2 - 6, f"{cb.source_id} spare — not cut",
-                        11, text_on(lighten(species_color, 0.4)))
-            y = by + bar_h + gap
-            continue
-
-        for i, bl in enumerate(cb.blanks):
-            seg_w = px(bl.length, scale)
-            canvas.rect(x, by, seg_w, bar_h, fill=species_color, outline=_OUTLINE)
-            label = f"{bl.blank_id} {frac_inches(bl.length)}"
-            if cb.state == "whole":
-                label += "  → rip diagram"
-            canvas.text(x + 4, by + bar_h / 2 - 6, label, 11, text_on(species_color))
-            x += seg_w
-            # Reddish crosscut kerf stripe between blanks (sawdust), one per
-            # crosscut after the first blank.
-            if i != len(cb.blanks) - 1:
-                kerf_px = px(kerf_s, scale)
-                canvas.rect(x, by, kerf_px, bar_h, fill=_LOSS_COLOR, outline=None)
-                x += kerf_px
-        # Leftover tail: a trimmed end also pays a crosscut kerf (reddish), then
-        # the pale leftover; or a red overflow bar if the blanks don't fit.
-        if cb.leftover > 0:
-            if cb.state != "whole":
-                kerf_px = px(kerf_s, scale)
-                canvas.rect(x, by, kerf_px, bar_h, fill=_LOSS_COLOR, outline=None)
-                x += kerf_px
-            lp = px(cb.leftover, scale)
-            canvas.rect(x, by, lp, bar_h, fill="#e8e4d6", outline=_OUTLINE)
-            canvas.text(x + 4, by + bar_h / 2 - 6,
-                        f"left {frac_inches(cb.leftover)}", 10, "#666666")
-        elif cb.leftover < 0:
-            # Blanks overflow the raw board: draw a red overflow bar past the end.
-            op = px(-cb.leftover, scale)
-            canvas.rect(x, by, op, bar_h, fill="#c0392b", outline=_OUTLINE)
-            canvas.text(x + 4, by + bar_h / 2 - 6,
-                        f"over {frac_inches(-cb.leftover)}", 10, "#ffffff")
-        y = by + bar_h + gap
+        y += _draw_crosscut_bar(canvas, cb, pad, y, scale, colors, bar_h, kerf_s) + gap
     return _to_png_bytes(canvas)
+
+
+def render_crosscut_blank_primitive(
+    cb, scale: float = 7.0, colors: ColorMap = DEFAULT_COLORS, bar_h: int = 34,
+    kerf_s: int = 2,
+) -> bytes:
+    """Single-bar primitive: one raw board's crosscut bar, left-aligned.
+
+    The combined diagram is kept as well; this primitive is the version
+    the plan document flows, one bar per row, left-aligned, instead of
+    stacking all bars into one tall image.
+    """
+    pad = 16
+    W = int(px(cb.length, scale) + 2 * pad)
+    H = int(13 + 4 + bar_h + 2 * pad)
+    canvas = PILCanvas(W, H, _BG)
+    _draw_crosscut_bar(canvas, cb, pad, pad, scale, colors, bar_h, kerf_s)
+    return _to_png_bytes(canvas)
+
+
+def render_crosscut_blanks_primitives(
+    project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 7.0, colors: ColorMap = DEFAULT_COLORS, bar_h: int = 34,
+) -> Dict[str, bytes]:
+    """{source_id: single-bar PNG} in crosscut_blanks order."""
+    blanks = crosscut_blanks(project, cut_spec, tool_limits)
+    kerf_s = blanks[0].kerf if blanks else 2
+    return {cb.source_id: render_crosscut_blank_primitive(
+        cb, scale, colors, bar_h, kerf_s) for cb in blanks}
 
 
 # --------------------------------------------------------------------------- #
@@ -625,6 +801,33 @@ def render_panels(
         draw_panel(canvas, project, p["id"], (pad, y + title_px + 4), scale, colors)
         y += h + gap
     return _to_png_bytes(canvas)
+
+
+def render_panel_primitive(
+    p, project: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 40.0, colors: ColorMap = DEFAULT_COLORS,
+) -> bytes:
+    """Single-panel primitive: one panel's end-grain cross-section, drawn
+    exactly as in the combined panels diagram, on its own canvas."""
+    pad = 20
+    title_px = 15
+    r = resolve_slice(project, _fullest_id(p))
+    cell_h = px(measure_to_sixteenths(p["thickness"]), scale)
+    W = int(px(slice_length(r), scale) + 2 * pad)
+    H = int(title_px + 4 + cell_h + 2 + 11 + 2 * pad)
+    canvas = PILCanvas(W, H, _BG)
+    canvas.text(pad, pad, f"Panel {p['id']}", title_px, "#222222")
+    draw_panel(canvas, project, p["id"], (pad, pad + title_px + 4), scale, colors)
+    return _to_png_bytes(canvas)
+
+
+def render_panels_primitives(
+    project: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 40.0, colors: ColorMap = DEFAULT_COLORS,
+) -> Dict[str, bytes]:
+    """{panel_id: single-panel PNG} in project panels order."""
+    return {p["id"]: render_panel_primitive(
+        p, project, tool_limits, scale, colors) for p in project["panels"]}
 
 
 # --------------------------------------------------------------------------- #
@@ -665,6 +868,140 @@ def render_strip_map(
         y += bb.h + gap
     return _to_png_bytes(canvas)
 
+
+def render_cut_board_primitive(
+    b, project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 12.0, colors: ColorMap = DEFAULT_COLORS,
+) -> bytes:
+    """Single-board primitive: one cut-spec board, drawn exactly as in the
+    combined strip map, on its own canvas sized to its own length.
+
+    The combined strip map is kept as well (and as strip-map.png at the
+    plan root, for a single-image copy of the cut diagram); this
+    primitive is the version the plan document flows, so a tall stack
+    of boards does not shrink the whole diagram to fit one page.
+    """
+    pad = 16
+    rips = {r.id: r for r in board_rips(project, cut_spec, tool_limits)}
+    r = rips[b["id"]]
+    stacked = max(r.source_width, r.used + r.loss + max(r.margin, 0))
+    board_len = measure_to_sixteenths(b["length"])
+    W = int(px(board_len, scale) + 2 * pad)
+    H = int(14 + 4 + px(stacked, scale) + 4 + 2 * pad)
+    canvas = PILCanvas(W, H, _BG)
+    draw_cut_board(canvas, b, project, tool_limits, (pad, pad), scale, colors, cut_spec)
+    return _to_png_bytes(canvas)
+
+
+def render_strip_map_primitives(
+    project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 12.0, colors: ColorMap = DEFAULT_COLORS,
+) -> Dict[str, bytes]:
+    """{board_id: single-board PNG} in Board Rip Diagram order
+    (alphabetical by species, then board id, matching the cut list table)."""
+    _rips = {r.id: r for r in board_rips(project, cut_spec, tool_limits)}
+    boards = sorted(cut_spec["boards"],
+                    key=lambda b: (_rips[b["id"]].species, b["id"]))
+    return {b["id"]: render_cut_board_primitive(
+        b, project, cut_spec, tool_limits, scale, colors) for b in boards}
+
+
+# --------------------------------------------------------------------------- #
+# column glue-ups: one column diagram, and the columns side by side
+# --------------------------------------------------------------------------- #
+
+def _column_cells(project: Dict[str, Any], col_idx: int):
+    """Slice cells of one grid column, top to bottom: [(sliceId, flip)]."""
+    grid = project.get("sliceGrid", [])
+    if not grid or col_idx >= len(grid[0]):
+        raise ValueError(f"no grid column {col_idx + 1}")
+    return [(row[col_idx]["sliceId"], row[col_idx].get("flip")) for row in grid]
+
+
+def _column_size(project: Dict[str, Any], col_idx: int, scale: float):
+    """(width_px, height_px) of one column, drawn vertically.
+
+    A column stands vertical, as it is glued up: slices stack top to
+    bottom in grid order, each slice a horizontal bar whose width is
+    its length and whose height is its height. So the column width is
+    the longest slice length, and its height is the sum of the slice
+    heights.
+    """
+    cells = _column_cells(project, col_idx)
+    w = max(px(slice_length(resolve_slice(project, sid)), scale) for sid, _ in cells)
+    h = sum(px(resolve_slice(project, sid).height, scale) for sid, _ in cells)
+    return w, h
+
+
+def _draw_column_body(canvas, project, col_idx, origin, scale, colors):
+    """Draw one column vertically at origin. Returns (w, h).
+
+    Slices bleed full to the column's border: draw_slice with
+    outline=None, so there are no borders around slices or
+    components. Only the column itself is outlined, by the caller.
+    """
+    ox, oy = origin
+    w, h = _column_size(project, col_idx, scale)
+    y = oy
+    for sid, flip in _column_cells(project, col_idx):
+        bb = draw_slice(canvas, project, sid, flip, (ox, y), scale, colors, outline=None)
+        y += bb.h
+    return w, h
+
+
+def render_column_diagram(
+    project: Dict[str, Any], col_idx: int,
+    scale: float = 12.0, colors: ColorMap = DEFAULT_COLORS,
+) -> bytes:
+    """One grid column as a diagram, vertically oriented and small.
+
+    Title above a vertical column: the column's slices top to bottom
+    in grid order, each slice a horizontal bar. Only text in the image
+    is the column title. A thick outline around the column marks
+    where it starts and ends, so the diagram replaces a text list of
+    the column's slices.
+    """
+    pad = 16
+    title_px = 14
+    w, h = _column_size(project, col_idx, scale)
+    W = int(w + 2 * pad)
+    H = int(pad + title_px + 6 + h + pad)
+    canvas = PILCanvas(W, H, _BG)
+    canvas.text(pad, pad, f"Column {col_idx + 1}", title_px, "#222222")
+    body_y = pad + title_px + 6
+    _draw_column_body(canvas, project, col_idx, (pad, body_y), scale, colors)
+    canvas._draw.rectangle([pad, body_y, pad + w, body_y + h], outline="#222222", width=3)
+    return _to_png_bytes(canvas)
+
+
+def render_columns_diagram(
+    project: Dict[str, Any],
+    scale: float = 12.0, colors: ColorMap = DEFAULT_COLORS,
+) -> bytes:
+    """The final glue-up: vertical columns side by side, not a repeat.
+
+    No titles: the columns stand vertical, as they are glued up,
+    side by side and aligned at the top, with only a small margin
+    between them. Each column carries its own border; its slices bleed
+    full to that border, with no borders around slices or components.
+    """
+    grid = project.get("sliceGrid", [])
+    if not grid:
+        raise ValueError("no sliceGrid to render columns from")
+    ncols = len(grid[0])
+    pad = 16
+    gap = 6
+    sizes = [_column_size(project, c, scale) for c in range(ncols)]
+    col_h = max(h for _, h in sizes)
+    W = int(2 * pad + sum(w for w, _ in sizes) + gap * (ncols - 1))
+    H = int(2 * pad + col_h)
+    canvas = PILCanvas(W, H, _BG)
+    x = pad
+    for c, (w, h) in enumerate(sizes):
+        _draw_column_body(canvas, project, c, (x, pad), scale, colors)
+        canvas._draw.rectangle([x, pad, x + w, pad + h], outline="#222222", width=3)
+        x += w + gap
+    return _to_png_bytes(canvas)
 
 # --------------------------------------------------------------------------- #
 

@@ -4,13 +4,13 @@ description: Scott's actual measured boards, MacBeath buy 2026-10-31 (same pile 
 boards:
 - id: BC1
   species: Cherry
-  length: [48, 2]
-  width: [7, 4]
+  length: [48, 1]
+  width: [7, 3]
   thickness: [0, 13]
 - id: BC2
   species: Cherry
   length: [48, 1]
-  width: [6, 15]
+  width: [6, 8]
   thickness: [0, 13]
 - id: BW1
   species: Walnut

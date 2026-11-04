@@ -118,6 +118,16 @@ Draws ONE cut-spec board: a title, then its strips stacked across the board widt
     tool-limit the implementation round will read (documented as the per-strip face cleanup).
   - margin = `source_width - sum(strip widths) - loss`. Negative margin → draw in an alert
     color; it signals the strips do not fit the real board.
+  - title = `board_id (blank length × source width × thickness)`, where blank
+    length is the cut-spec board's own length — never the inventory board's
+    full length (a trimmed blank must not be labelled as if it were the
+    whole board). A `sourceRemainder` board's title uses its board length
+    × its slab width (see `docs/source-remainder.md`).
+  - margin children: every later board with `sourceRemainder` pointing at
+    this board is drawn as a ghost rectangle in the margin band, in
+    cut-spec document order, each followed by a `miterKerf` stripe, with
+    any unclaimed slab tail drawn plain. See `docs/source-remainder.md`
+    for the length-fit rules the planner does not warn on.
 - **Output bbox:** spans the title + all strips + loss + margin bands.
 - **Example:** `draw_cut_board(c, BW1A, project, limits, (0,0), s, default)` where `BW1A`
   is `{source:"BW1", length:[27,8], strips:[{width:[3,0],cuts:[[27,8]]} x2]}` → two 3″-tall

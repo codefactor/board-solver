@@ -1,9 +1,15 @@
 # Cut-spec for design chess-v1, inventory actual.
 # Kind: hand, date: 2026-11-03.
-# Hand tweak: cherry all from BC1 alone, no BC2.
-# BC1A carries only the 3-cut CT strip, leaving a 4 13/16 in margin slab.
-# BC1A2 is cut from that margin slab (sourceRemainder: BC1A): one CT
-# strip plus one narrow strip carrying CB x2 and CTH x1.
+# Hand tweak 3: cherry from BC1A plus exactly 2 child boards of BC1A.
+# BC1A is the trimmed solver blank, 38 7/8 in long (not raised to 48 in):
+# it carries CT x3 only, so its margin slab is 4 13/16 in wide and
+# 38 7/8 in long. The 2 children are length-matched segments of that slab,
+# so no strip carries an offcut tail:
+# BC1A1: 16 1/8 in, 2 thinner longer strips (CB 1 1/8 in each, cut 16 1/8 in).
+# BC1A2: 12 7/8 in, 1 larger strip (CT 2 1/4 in, cut 12 7/8 in) plus 1 thinner
+# shorter strip (CTH 1 1/8 in, cut 12 7/8 in).
+# Children in document order take 16 1/8 in + 1/8 in kerf + 12 7/8 in
+# = 29 1/8 in of the 38 7/8 in slab, leaving a 9 3/4 in slab tail unused.
 design: chess-v1
 inventory: actual
 kind: hand
@@ -23,24 +29,32 @@ boards:
     - [16, 2]
 - id: BC1A
   source: BC1
-  length: [48, 0]
+  length: [38, 14]
   strips:
   - width: [2, 4]
     cuts:
     - [12, 14]
     - [12, 14]
     - [12, 14]
+- id: BC1A1
+  sourceRemainder: BC1A
+  length: [16, 2]
+  strips:
+  - width: [1, 2]
+    cuts:
+    - [16, 2]
+  - width: [1, 2]
+    cuts:
+    - [16, 2]
 - id: BC1A2
   sourceRemainder: BC1A
-  length: [45, 6]
+  length: [12, 14]
   strips:
   - width: [2, 4]
     cuts:
     - [12, 14]
   - width: [1, 2]
     cuts:
-    - [16, 2]
-    - [16, 2]
     - [12, 14]
 - id: BW1A
   source: BW1

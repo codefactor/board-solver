@@ -79,7 +79,7 @@ class PILCanvas:
     primitive contract.
     """
 
-    def __init__(self, width: int, height: int, background: str = "#f7f4e9"):
+    def __init__(self, width: int, height: int, background: str = "#ffffff"):
         from PIL import Image, ImageDraw
 
         self._img = Image.new("RGB", (int(width), int(height)), background)
@@ -131,6 +131,14 @@ class PILCanvas:
             seg = min(dash, x1 - x)
             self._draw.line([x, y, x + seg, y], fill=color, width=int(width))
             x += dash + gap
+
+    def dashed_vline(self, x, y0, y1, color, width=1, dash=6, gap=4):
+        """Vertical dashed line from y0 to y1 at x."""
+        y = y0
+        while y < y1:
+            seg = min(dash, y1 - y)
+            self._draw.line([x, y, x, y + seg], fill=color, width=int(width))
+            y += dash + gap
 
     def hatch_rect(self, x, y, w, h, base_fill, hatch_color, outline=None,
                    spacing=7, width=1):

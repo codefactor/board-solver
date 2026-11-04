@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import io
 import os
+import re
 
 import pytest
 
@@ -147,6 +148,45 @@ def test_markdown_has_sections(project, tool_limits, cut_spec):
     assert "must be bought" in md and "GHX" in md
 
 
+def test_rip_cuts_before_panels_table_before_diagram(project, tool_limits, cut_spec):
+    md = build_markdown(project, tool_limits, cut_spec,
+                        {"finished": "f.png", "slice_map": "sm.png",
+                         "panels": "p.png", "panel_faces": "pf.png",
+                         "ripped_slices": "rs.png",
+                         "crosscut": "cc.png", "strip_map": "s.png"})
+    titles = re.findall(r"^## \d+\. (.+)$", md, re.MULTILINE)
+    # Rip cuts ahead of Panels overview, not after it.
+    assert titles.index("Initial board rips (the cut list)") < titles.index("Panels overview")
+    # Inside the rip cuts section: the table first, then the diagram.
+    rip = md[md.index("Initial board rips (the cut list)"):]
+    _next = rip.find("\n## ", 3)
+    if _next != -1:
+        rip = rip[:_next]
+    assert rip.index("| Board |") < rip.index("### Board Rip Diagram")
+
+
+def test_rip_table_crosscut_row_after_parent(project, tool_limits, cut_spec):
+    cs = copy.deepcopy(cut_spec)
+    # Child off IC1A's margin slab: IC1A margin is 1 9/16", one 3/4" strip fits.
+    cs["boards"].append({
+        "id": "IC1A1", "sourceRemainder": "IC1A", "length": [20, 0],
+        "strips": [{"width": [0, 12], "cuts": [[20, 0]]}],
+    })
+    md = build_markdown(project, tool_limits, cs,
+                        {"finished": "f.png", "slice_map": "sm.png",
+                         "panels": "p.png", "panel_faces": "pf.png",
+                         "ripped_slices": "rs.png",
+                         "crosscut": "cc.png", "strip_map": "s.png"})
+    lines = md.splitlines()
+    parent = next(i for i, l in enumerate(lines) if l.startswith("| IC1A @"))
+    cross = next(i for i, l in enumerate(lines) if "margin crosscuts" in l and "IC1A" in l)
+    child = next(i for i, l in enumerate(lines) if l.startswith("| IC1A1 @"))
+    assert parent < cross < child
+    # Crosscut row lists the child and its length: 20" child, 1/8" kerf,
+    # so the row's Length is 20 1/8" and its Margin is the slab tail.
+    assert "IC1A1 = 20″" in lines[cross]
+
+
 # --------------------------------------------------------------------------- #
 # image hashing
 # --------------------------------------------------------------------------- #
@@ -219,10 +259,14 @@ def test_write_document_creates_self_contained_folder(project, tool_limits, cut_
     res = write_document(project, tool_limits, cut_spec, str(tmp_path))
     assert os.path.isfile(res.markdown_path)
     assert os.path.basename(res.markdown_path) == "README.md"
-    for relpath in res.images.values():
+    # images values are combo paths (str) plus primitive dicts; flatten both.
+    _all = []
+    for v in res.images.values():
+        _all.extend(v.values() if isinstance(v, dict) else [v])
+    for relpath in _all:
         assert relpath.startswith("images/")
         assert os.path.isfile(os.path.join(res.folder, relpath))
-    assert all("-" in f and f.endswith(".png") for f in res.images.values())
+    assert all("-" in f and f.endswith(".png") for f in _all)
 
 
 def test_rerun_overwrites_previous_folder(project, tool_limits, cut_spec, tmp_path):
@@ -393,3 +437,76 @@ def test_no_small_margin_warning_on_ghost_boards(project, tool_limits, cut_spec)
     msgs = [w.message for w in derive.warnings(project, cut_spec, tool_limits)
             if w.code == "small_margin"]
     assert not any("GHX" in msg for msg in msgs)
+
+
+# --------------------------------------------------------------------------- #
+# primitive images + flow document
+# --------------------------------------------------------------------------- #
+
+def test_primitive_renderers_match_combo_sizes(project, tool_limits, cut_spec):
+    from PIL import Image
+    from boardsolver.render import (
+        render_crosscut_blanks_primitives, render_panels_primitives,
+        render_panel_faces_primitives, render_panel_faces_legend,
+        render_strip_map_primitives,
+    )
+    assert set(render_crosscut_blanks_primitives(project, cut_spec, tool_limits)) == {"IC1", "IW1", "IM1", "IM2"}
+    strip = render_strip_map_primitives(project, cut_spec, tool_limits)
+    assert set(strip) == {"IC1A", "IW1A", "IM1A", "GHX"}
+    for data in strip.values():
+        assert Image.open(io.BytesIO(data)).size[0] > 0
+    assert set(render_panels_primitives(project, tool_limits)) == {"P", "Q", "R"}
+    faces = render_panel_faces_primitives(project, tool_limits)
+    assert set(faces) == {"P", "Q", "R"}
+    assert Image.open(io.BytesIO(render_panel_faces_legend(project, tool_limits))).size[1] == 96
+
+
+def test_markdown_uses_primitives_not_combos(project, tool_limits, cut_spec):
+    images = {"finished": "f.png", "slice_map": "sm.png",
+              "panels": "p.png", "panel_faces": "pf.png",
+              "crosscut": "cc.png", "strip_map": "s.png",
+              "crosscut_prims": {"IC1": "cc-IC1.png"},
+              "strip_prims": {"IC1A": "s-IC1A.png"},
+              "panel_prims": {"P": "p-P.png"},
+              "panel_face_prims": {"P": "pf-P.png"},
+              "panel_faces_legend": "pf-legend.png"}
+    md = build_markdown(project, tool_limits, cut_spec, images)
+    # Flow sections reference primitives; combos for those sections are not in MD.
+    assert "![Crosscut — IC1](cc-IC1.png)" in md
+    assert "![Board rip — IC1A](s-IC1A.png)" in md
+    assert "![Panel — P](p-P.png)" in md
+    assert "![Panel face — P](pf-P.png)" in md
+    assert "![Panel faces legend](pf-legend.png)" in md
+    assert "![Crosscut Diagram" not in md
+    assert "![Board Rip Diagram" not in md
+    # Legend comes after the panel-face primitives.
+    assert md.index("![Panel face — P]") < md.index("![Panel faces legend]")
+
+
+def test_pdf_flows_primitives(tmp_path, project, tool_limits, cut_spec):
+    pytest.importorskip("reportlab")
+    from boardsolver.docwriter import write_document
+    from boardsolver.pdf import build_pdf
+    res = write_document(project, tool_limits, cut_spec, str(tmp_path), folder_name="plan")
+    pdf_path = str(tmp_path / "out.pdf")
+    build_pdf(res.markdown_path, pdf_path)
+    assert os.path.getsize(pdf_path) > 0
+    # Primitives were written, combos kept alongside.
+    names = os.listdir(os.path.join(res.folder, "images"))
+    assert any(n.startswith("crosscut-") for n in names)
+    assert any(n.startswith("strip-") for n in names)
+    assert any(n.startswith("panel-face-") for n in names)
+    assert any(n.startswith("crosscut-blanks-") for n in names)
+    assert any(n.startswith("strip-map-") for n in names)
+
+
+def test_panel_face_primitive_rotated_wider_than_tall_and_white_bg(project, tool_limits):
+    from PIL import Image
+    from boardsolver.render import render_panel_faces_primitives, render_finished_board
+    faces = render_panel_faces_primitives(project, tool_limits)
+    for data in faces.values():
+        im = Image.open(io.BytesIO(data))
+        assert im.size[0] > im.size[1], im.size
+        assert im.getpixel((0, 0)) == (255, 255, 255)
+    fin = Image.open(io.BytesIO(render_finished_board(project)))
+    assert fin.getpixel((0, 0)) == (255, 255, 255)

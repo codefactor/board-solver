@@ -28,6 +28,28 @@ defines the code to be written in ordered rounds. `src/` is empty until Round 1.
   commit, using the design + inventory + cut-spec tuple as its identity.
   Images use content-hash filenames for cache-busting.
 
+## sourceRemainder / child boards
+
+Read `docs/source-remainder.md` before using `sourceRemainder`, and
+apply its rules, not just the schema shape:
+
+- A `sourceRemainder` board is a crosscut piece off its parent's margin
+  slab (parent source width − parent strips − parent loss, parent board
+  length). Children of one parent are taken in document order, one
+  `miterKerf` between successive children.
+- **One child is pointless** (just relabelling the parent's strips).
+  The benefit starts at **two children** with different lengths and
+  rip layouts, each length-matched to its pieces, so no strip carries
+  an offcut tail.
+- **Length fit is not warned on.** Check by hand:
+  sum(child lengths) + kerfs ≤ parent length, and a nested child's
+  length ≤ its immediate parent child's length. The planner accepts an
+  overflowing child silently (ghost truncated, own diagram full).
+- **Never raise a blank's length to fit a layout.** A layout that needs
+  a longer blank than the blank you have is invalid.
+- **Strip-map titles show the blank's length**, not the inventory
+  board's full length (fixed in `draw.py` `_start_dims`).
+
 ## Axis / term discipline (these words have fixed meanings — use them exactly)
 
 - **length** — a board's/strip's long dimension (the rip direction).

@@ -25,11 +25,16 @@ import yaml
 from .document import build_markdown
 from .render import (
     render_crosscut_blanks,
+    render_crosscut_blanks_primitives,
     render_finished_board,
     render_panel_faces,
+    render_panel_faces_legend,
+    render_panel_faces_primitives,
     render_panels,
+    render_panels_primitives,
     render_slice_map,
     render_strip_map,
+    render_strip_map_primitives,
 )
 
 
@@ -98,6 +103,34 @@ def write_document(
             f.write(data)
         # Markdown references images by their relative path within the folder.
         images[key] = f"images/{fname}"
+
+    # Individual primitives, tracked the same way (content-hashed names
+    # in images/). The combined diagrams above are kept as well, so a
+    # single-image copy of e.g. the cut diagram can still be requested;
+    # the document itself flows the primitives, not the tall combos.
+    def _write_prims(prefix, prims):
+        out = {}
+        for _id, _data in prims.items():
+            fname = _hashed_name(f"{prefix}-{_id}", _data)
+            with open(os.path.join(images_dir, fname), "wb") as f:
+                f.write(_data)
+            out[_id] = f"images/{fname}"
+        return out
+
+    images["crosscut_prims"] = _write_prims(
+        "crosscut", render_crosscut_blanks_primitives(project, cut_spec, tool_limits))
+    images["strip_prims"] = _write_prims(
+        "strip", render_strip_map_primitives(project, cut_spec, tool_limits))
+    images["panel_prims"] = _write_prims(
+        "panel", render_panels_primitives(project, tool_limits))
+    images["panel_face_prims"] = _write_prims(
+        "panel-face", render_panel_faces_primitives(
+            project, tool_limits, quantities=dict(_qty)))
+    _leg = render_panel_faces_legend(project, tool_limits)
+    _leg_name = _hashed_name("panel-faces-legend", _leg)
+    with open(os.path.join(images_dir, _leg_name), "wb") as f:
+        f.write(_leg)
+    images["panel_faces_legend"] = f"images/{_leg_name}"
 
     md = build_markdown(project, tool_limits, cut_spec, images)
     md_path = os.path.join(active, "README.md")

@@ -11,6 +11,10 @@
 #                                by default. --out is only an override for
 #                                a shelf copy outside the repo.
 #   ./run.sh test [pytest args...]        Run the test suite.
+#   ./run.sh regenerate-all              Freshly generate every plan in
+#                                plans/ from the current code (all
+#                                designs, inventories and cut-specs;
+#                                plaid-v2 keeps its panelSpecs override).
 #   ./run.sh help | --help | -h           Show this help.
 #
 # Examples:
@@ -34,7 +38,7 @@ if [[ ! -x "$PY" ]]; then
 fi
 
 usage() {
-  sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 action="${1:-help}"
@@ -48,6 +52,11 @@ case "$action" in
   test)
     cd "$ROOT"
     exec "$PY" -m pytest "$@"
+    ;;
+
+  regenerate-all)
+    cd "$ROOT"
+    exec "$PY" -m boardsolver.regenerate_all "$@"
     ;;
 
   deliver)

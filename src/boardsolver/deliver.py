@@ -193,7 +193,9 @@ def _extract_cut_list(md_text: str) -> str:
     text = m.group(1)
     # The cut-list section ends with its diagram subsection, which is
     # a separate --what (strip-map); a standalone cut-list file must
-    # not reference an image it does not ship.
+    # not reference an image it does not ship. The rip cut table,
+    # including its crosscut rows, comes before the diagram, so it is
+    # kept by truncating at the diagram heading.
     text = text.split("\n### Board Rip Diagram")[0]
     text = "\n".join(line for line in text.splitlines()
                      if not line.startswith("!["))
@@ -203,7 +205,7 @@ def _extract_cut_list(md_text: str) -> str:
 def deliver(
     project: Dict[str, Any], cut_spec: Dict[str, Any],
     tool_limits: Dict[str, Any], out_dir: str, what: str,
-    run_name: str,
+    run_name: str, finished_width_in: float = 3.5,
 ) -> Dict[str, str]:
     """Write exactly the requested output(s) into out_dir. Returns paths."""
     if what not in ("cut-list", "strip-map", "finished", "plan", "pdf", "all"):
@@ -231,7 +233,8 @@ def deliver(
             outputs["plan"] = os.path.join(out_dir, "README.md")
         if what in ("pdf", "all"):
             pdf_path = os.path.join(out_dir, f"{run_name}-cut-plan.pdf")
-            build_pdf(res.markdown_path, pdf_path)
+            build_pdf(res.markdown_path, pdf_path,
+                      finished_width_in=finished_width_in)
             outputs["pdf"] = pdf_path
         if what in ("cut-list", "all"):
             cut_path = os.path.join(out_dir, "cut-list.md")
@@ -261,6 +264,8 @@ def main(argv=None) -> int:
     ap.add_argument("--what", default="plan",
                     choices=["cut-list", "strip-map", "finished", "plan", "pdf", "all"])
     ap.add_argument("--out", default=None, help="output directory")
+    ap.add_argument("--finished-width-inches", type=float, default=3.5,
+                    help="display width in inches of the Finished board pattern in the PDF (default 3.5)")
     ap.add_argument("--root", default=None, help="repo root (default: cwd's repo)")
     ap.add_argument("--no-save-cut-spec", action="store_true")
     args = ap.parse_args(argv)
@@ -278,7 +283,8 @@ def main(argv=None) -> int:
     run_name = f"{args.design}-{args.inventory}-{variant}"
     out_dir = args.out or os.path.join(
         root, "plans", args.design, args.inventory, variant)
-    outputs = deliver(project, cut_spec, tool_limits, out_dir, args.what, run_name)
+    outputs = deliver(project, cut_spec, tool_limits, out_dir, args.what, run_name,
+                      finished_width_in=args.finished_width_inches)
     for key, path in outputs.items():
         print(f"wrote {key}: {path}")
     return 0

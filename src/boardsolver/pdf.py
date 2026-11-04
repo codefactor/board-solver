@@ -26,6 +26,9 @@ from PIL import Image as PILImage
 FONT_DIR_CANDIDATES = (
     "/usr/share/fonts/truetype/dejavu",
     "/usr/local/share/fonts/truetype/dejavu",
+    # DejaVuSans-Oblique lives here on this VM; without it, <i> maps
+    # to the normal font and italics do not actually slant in the PDF.
+    "/usr/share/matplotlib/mpl-data/fonts/ttf",
 )
 
 
@@ -111,7 +114,17 @@ def parse_md(path):
         i += 1
 
 
-def build_pdf(md_path, out_path):
+def build_pdf(md_path, out_path, finished_width_in: float = 3.5):
+    """Render a plan MD folder to PDF.
+
+    ``finished_width_in`` is the desired display width, in inches, of
+    the Finished board pattern image only. At the old behaviour it
+    scaled to the full page width (about 7.3") and about 7" tall --
+    almost an entire page for a pattern overview. Other diagrams keep
+    the old behaviour (full available width, capped by height, never
+    upscaled). Pass a larger value to scale the finished board up,
+    a smaller value to scale it down.
+    """
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import LETTER
     from reportlab.lib.styles import ParagraphStyle
@@ -119,10 +132,12 @@ def build_pdf(md_path, out_path):
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.platypus import (
+        BaseDocTemplate,
+        Frame,
         Image as RLImage,
         PageBreak,
+        PageTemplate,
         Paragraph,
-        SimpleDocTemplate,
         Spacer,
         Table,
         TableStyle,
@@ -132,14 +147,18 @@ def build_pdf(md_path, out_path):
         ("DejaVuSans", "DejaVuSans.ttf"),
         ("DejaVuSans-Bold", "DejaVuSans-Bold.ttf"),
         ("DejaVuSansMono", "DejaVuSansMono.ttf"),
+        ("DejaVuSans-Oblique", "DejaVuSans-Oblique.ttf"),
     ):
         path = _find_font(fname)
         if path:
             pdfmetrics.registerFont(TTFont(family, path))
     if "DejaVuSans-Bold" in pdfmetrics.getRegisteredFontNames():
+        italic = ("DejaVuSans-Oblique"
+                  if "DejaVuSans-Oblique" in pdfmetrics.getRegisteredFontNames()
+                  else "DejaVuSans")
         pdfmetrics.registerFontFamily(
             "DejaVuSans", normal="DejaVuSans", bold="DejaVuSans-Bold",
-            italic="DejaVuSans", boldItalic="DejaVuSans-Bold",
+            italic=italic, boldItalic="DejaVuSans-Bold",
         )
     base_font = "DejaVuSans" if "DejaVuSans" in pdfmetrics.getRegisteredFontNames() else "Helvetica"
 
@@ -147,12 +166,12 @@ def build_pdf(md_path, out_path):
     avail_w = page_w - 1.2 * inch
     styles = {
         "h1": ParagraphStyle("h1", fontName=base_font + "-Bold" if base_font != "Helvetica" else "Helvetica-Bold",
-                             fontSize=20, leading=24, spaceAfter=10),
+                             fontSize=20, leading=24, spaceAfter=10, leftIndent=0, rightIndent=0),
         "h2": ParagraphStyle("h2", fontName=base_font + "-Bold" if base_font != "Helvetica" else "Helvetica-Bold",
-                             fontSize=14, leading=17, spaceBefore=14, spaceAfter=6),
+                             fontSize=14, leading=17, spaceBefore=14, spaceAfter=6, leftIndent=0, rightIndent=0),
         "h3": ParagraphStyle("h3", fontName=base_font + "-Bold" if base_font != "Helvetica" else "Helvetica-Bold",
-                             fontSize=11.5, leading=14, spaceBefore=10, spaceAfter=4),
-        "p": ParagraphStyle("p", fontName=base_font, fontSize=10, leading=13.5, spaceAfter=6),
+                             fontSize=11.5, leading=14, spaceBefore=10, spaceAfter=4, leftIndent=0, rightIndent=0),
+        "p": ParagraphStyle("p", fontName=base_font, fontSize=10, leading=13.5, spaceAfter=6, leftIndent=0, rightIndent=0),
         "cell": ParagraphStyle("cell", fontName=base_font, fontSize=8.5, leading=11),
         "cellhead": ParagraphStyle("cellhead", fontName=base_font + "-Bold" if base_font != "Helvetica" else "Helvetica-Bold",
                                    fontSize=8.5, leading=11),
@@ -160,7 +179,96 @@ def build_pdf(md_path, out_path):
 
     md_dir = os.path.dirname(os.path.abspath(md_path))
     story = []
+
+    def _img_size(alt, img_path):
+        with PILImage.open(img_path) as im:
+            iw, ih = im.size
+        if alt == "Finished board" and finished_width_in:
+            w = min(finished_width_in * inch, avail_w)
+            h = w * ih / iw
+        else:
+            scale = min(avail_w / iw, 8.0 * inch / ih, 1.0)
+            w, h = iw * scale, ih * scale
+        if alt.startswith("Panel face"):
+            # Panel faces display at 75% of their current size in the PDF
+            # (native image files are unchanged).
+            w, h = w * 0.75, h * 0.75
+        return w, h
+
+    def _flush_images(group):
+        """Render a run of consecutive images: a single image as before,
+        a run as flow rows that pack left to right, wrapping when the
+        next item would exceed the available width. A legend image in
+        the run is rendered centered below the flow rows, not in them.
+        Left-aligned rows (not centered) keep crosscut bars and other
+        wide primitives aligned with the tables above them."""
+        if not group:
+            return
+        legends = [(a, p) for a, p in group if "legend" in a.lower()]
+        items = [(a, p) for a, p in group if "legend" not in a.lower()]
+        if len(items) == 1 and not legends:
+            alt, img_path = items[0]
+            if not os.path.exists(img_path):
+                story.append(Paragraph(f"[missing image: {alt}]", styles["p"]))
+                return
+            w, h = _img_size(alt, img_path)
+            story.append(RLImage(img_path, width=w, height=h))
+            story.append(Spacer(1, 8))
+            return
+        # Flow rows. No gap between images of the same type: each
+        # primitive already carries its own pad margin inside the image
+        # (white, so it bleeds into the page), and an extra inter-image
+        # gap on top of that reads as too much white space.
+        gap = 0
+        row, row_w = [], 0
+        rows = []
+        for alt, img_path in items:
+            if not os.path.exists(img_path):
+                story.append(Paragraph(f"[missing image: {alt}]", styles["p"]))
+                continue
+            w, h = _img_size(alt, img_path)
+            need = w + (gap if row else 0)
+            if row and row_w + need > avail_w:
+                rows.append(row)
+                row, row_w = [], 0
+                need = w
+            row.append((img_path, w, h))
+            row_w += need
+        if row:
+            rows.append(row)
+        for row in rows:
+            cells = [RLImage(p, width=w, height=h) for p, w, h in row]
+            widths = [w + (gap if i < len(row) - 1 else 0) for i, (_, w, _) in enumerate(row)]
+            # Panel end-grain and panel-face rows are centered; all
+            # other flow rows (crosscut, cut boards) stay left-aligned.
+            _alts = [a for a, _ in items]
+            _center = all(a.startswith("Panel —") or a.startswith("Panel face") for a in _alts)
+            t = Table([cells], colWidths=widths, hAlign="CENTER" if _center else "LEFT")
+            t.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            story.append(t)
+        for alt, img_path in legends:
+            if not os.path.exists(img_path):
+                continue
+            w, h = _img_size(alt, img_path)
+            img = RLImage(img_path, width=w, height=h)
+            img.hAlign = "CENTER"
+            story.append(img)
+            story.append(Spacer(1, 8))
+
+    _img_group: list = []
     for kind, value in parse_md(md_path):
+        if kind == "image":
+            _alt, _rel = value
+            _img_group.append((_alt, os.path.join(md_dir, _rel)))
+            continue
+        _flush_images(_img_group)
+        _img_group = []
         if kind == "h1":
             story.append(Paragraph(md_inline_to_xml(value), styles["h1"]))
         elif kind == "h2":
@@ -169,19 +277,6 @@ def build_pdf(md_path, out_path):
             story.append(Paragraph(md_inline_to_xml(value), styles["h3"]))
         elif kind == "p":
             story.append(Paragraph(md_inline_to_xml(value), styles["p"]))
-        elif kind == "image":
-            alt, rel = value
-            img_path = os.path.join(md_dir, rel)
-            if not os.path.exists(img_path):
-                story.append(Paragraph(f"[missing image: {alt} ({rel})]", styles["p"]))
-                continue
-            with PILImage.open(img_path) as im:
-                iw, ih = im.size
-            scale = min(avail_w / iw, 8.0 * inch / ih, 1.0)
-            # Do not upscale small diagrams; cap tall diagrams by height.
-            w, h = iw * scale, ih * scale
-            story.append(RLImage(img_path, width=w, height=h))
-            story.append(Spacer(1, 8))
         elif kind == "table":
             rows = value
             ncols = max(len(r) for r in rows)
@@ -221,7 +316,7 @@ def build_pdf(md_path, out_path):
             for ri, row in enumerate(rows):
                 style = styles["cellhead"] if ri == 0 else styles["cell"]
                 data.append([Paragraph(md_inline_to_xml(c), style) for c in row])
-            t = Table(data, colWidths=widths, repeatRows=1)
+            t = Table(data, colWidths=widths, repeatRows=1, hAlign="LEFT")
             t.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e8e8e8")),
                 ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#999999")),
@@ -234,12 +329,23 @@ def build_pdf(md_path, out_path):
             story.append(t)
             story.append(Spacer(1, 8))
 
-    doc = SimpleDocTemplate(
+    _flush_images(_img_group)
+
+    # Frame padding must be 0: the default 6 pt padding (used by
+    # SimpleDocTemplate) left tables starting 6 pt left of titles
+    # and body text, and text wrapping short of tables on the right.
+    # With padding 0, tables, titles, and body text all share the
+    # same 0.6 in left and right margins.
+    doc = BaseDocTemplate(
         out_path, pagesize=LETTER,
         leftMargin=0.6 * inch, rightMargin=0.6 * inch,
         topMargin=0.6 * inch, bottomMargin=0.6 * inch,
         title=os.path.basename(md_dir) or "Cut Plan",
     )
+    frame = Frame(0.6 * inch, 0.6 * inch, avail_w, page_h - 1.2 * inch,
+                  id="main", leftPadding=0, rightPadding=0,
+                  topPadding=0, bottomPadding=0)
+    doc.addPageTemplates([PageTemplate(id="main", frames=[frame], pagesize=LETTER)])
     doc.build(story)
     return out_path
 
@@ -249,6 +355,8 @@ def main(argv=None):
     ap.add_argument("--md", help="path to plan README.md")
     ap.add_argument("--project", help="project dir containing plan/README.md")
     ap.add_argument("--out", required=True, help="output PDF path")
+    ap.add_argument("--finished-width-inches", type=float, default=3.5,
+                    help="display width in inches of the Finished board pattern (default 3.5)")
     args = ap.parse_args(argv)
     if args.md:
         md_path = args.md
@@ -267,7 +375,7 @@ def main(argv=None):
         return 2
     out_dir = os.path.dirname(os.path.abspath(args.out))
     os.makedirs(out_dir, exist_ok=True)
-    build_pdf(md_path, args.out)
+    build_pdf(md_path, args.out, finished_width_in=args.finished_width_inches)
     print(f"wrote {args.out}")
     return 0
 
