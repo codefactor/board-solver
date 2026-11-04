@@ -1,0 +1,56 @@
+# Cut-spec for design chess-v1, inventory actual.
+# Kind: hand, date: 2026-11-03.
+# Hand tweak: cherry all from BC1 alone, no BC2.
+# BC1A carries only the 3-cut CT strip, leaving a 4 13/16 in margin slab.
+# BC1A2 is cut from that margin slab (sourceRemainder: BC1A): one CT
+# strip plus one narrow strip carrying CB x2 and CTH x1.
+design: chess-v1
+inventory: actual
+kind: hand
+date: '2026-11-03'
+boards:
+- id: BM1A
+  source: BM1
+  length: [32, 6]
+  strips:
+  - width: [2, 4]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [2, 4]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+- id: BC1A
+  source: BC1
+  length: [48, 0]
+  strips:
+  - width: [2, 4]
+    cuts:
+    - [12, 14]
+    - [12, 14]
+    - [12, 14]
+- id: BC1A2
+  sourceRemainder: BC1A
+  length: [45, 6]
+  strips:
+  - width: [2, 4]
+    cuts:
+    - [12, 14]
+  - width: [1, 2]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+    - [12, 14]
+- id: BW1A
+  source: BW1
+  length: [32, 6]
+  strips:
+  - width: [2, 4]
+    cuts:
+    - [16, 2]
+    - [16, 2]
+  - width: [2, 4]
+    cuts:
+    - [16, 2]
+    - [16, 2]
