@@ -578,6 +578,14 @@ class CrosscutBlank:
     kerf: Sixteenths            # miter kerf consumed per crosscut
     leftover: Sixteenths        # raw length - sum(blank lengths) - cut kerfs
     state: str                  # 'crosscut' | 'whole' | 'spare'
+    # Shave case: the crosscut results in a non-positive offcut whose
+    # absolute value is less than one kerf, so no separate offcut
+    # piece can survive the saw — the trim cut shaves the end of the
+    # board instead. Leftover is then 0, not negative: this is not a
+    # true overflow, where the over-cut is at least one kerf.
+    raw_margin: Sixteenths = 0
+    resulting_offcut: Sixteenths = 0
+    shave: bool = False
     # 'crosscut': cut into >=2 blanks, or a single trimmed blank (< raw length).
     # 'whole'   : a single blank equal to the full raw length (used uncut, goes
     #             straight into the rip diagram).
@@ -622,15 +630,25 @@ def crosscut_blanks(
         n_cuts = max(len(blanks) - 1, 0)
         used = sum(bl.length for bl in blanks) + n_cuts * miter_kerf
         intermediate = raw_len - used
-        # Actual free leftover piece: subtract the final kerf that
-        # separates it from the last blank, if a leftover remains.
-        # Exact fit (0) and overflow (< 0) stay as they are.
-        leftover = intermediate - miter_kerf if intermediate > 0 else intermediate
-        # A single blank equal to the full raw length is used whole (no crosscut).
+        # Resulting offcut under the old rule: subtract the final kerf
+        # that separates a leftover piece from the last blank, if a
+        # leftover remains; exact fit (0) and overflow (< 0) stay.
+        resulting_offcut = (intermediate - miter_kerf
+                            if intermediate > 0 else intermediate)
+        # Shave rule: resulting offcut non-positive with absolute
+        # value less than one kerf. The trim cut shaves the end of
+        # the board and leaves no separate offcut, so leftover is 0.
+        # Anything at least one kerf over is a true overflow and
+        # stays negative. A single blank equal to the full raw length
+        # is used whole (no crosscut), so it is never a shave.
         if len(blanks) == 1 and blanks[0].length == raw_len:
             state = "whole"
+            shave = False
         else:
             state = "crosscut"
+            shave = (resulting_offcut <= 0
+                     and abs(resulting_offcut) < miter_kerf)
+        leftover = 0 if shave else resulting_offcut
         out.append(CrosscutBlank(
             source_id=source_id,
             species=inv["species"],
@@ -641,6 +659,9 @@ def crosscut_blanks(
             kerf=miter_kerf,
             leftover=leftover,
             state=state,
+            raw_margin=intermediate,
+            resulting_offcut=resulting_offcut,
+            shave=shave,
         ))
 
     # Inventory boards not referenced by any cut-spec board are untouched spares.
@@ -704,8 +725,8 @@ def diagnostics(
 #     lengths first, then gang the components. If that component gang
 #     reaches the width, planing is possible, just in that order, and
 #     the components must not be listed again as later crosscuts.
-#  4. If the component gang is still too small, the plan is blocked
-#     for that width: a red planer_gang_too_small warning.
+#  4. If the component gang is still too small, it is a warning
+#     for that width: a yellow planer_gang_too_small warning.
 #
 # Thickness comes from the source inventory board, recursing through
 # sourceRemainder parents. Bought boards have no thickness on file, so
@@ -832,6 +853,25 @@ def zero_offcut_boards(
     return out
 
 
+def rip_margin_class(margin: int, saw_kerf: int) -> str:
+    """Classify a board's total rip margin.
+
+    Total margin is the margin after the last rip, so a small negative
+    total can only arise on the last rip: the running margin is
+    monotonically decreasing, so a negative running margin on an
+    earlier rip would make the total at least one more strip's
+    consumption more negative. A total margin in (-kerf, 0) is
+    therefore a last-rip shave: the saw blade is still touching
+    actual material. A total margin of -kerf or less is an over-rip:
+    the blade would be touching air. Returns "shave", "over", or "".
+    """
+    if -saw_kerf < margin < 0:
+        return "shave"
+    if margin < 0:
+        return "over"
+    return ""
+
+
 def warnings(
     project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
     small_margin_threshold: Sixteenths = 4,  # 1/4" = 4 sixteenths
@@ -870,8 +910,11 @@ def warnings(
             ))
 
     # --- RED: over-rip (strips wider than the board) ---------------------- #
+    # A small negative total margin is not an over-rip: it is a
+    # last-rip shave, handled in the yellow section below.
+    _saw_kerf = _maybe(lim.get("sawKerf"))
     for r in rips:
-        if r.margin < 0:
+        if rip_margin_class(r.margin, _saw_kerf) == "over":
             out.append(Warning(
                 "red", "over_rip",
                 f"Cut list for board {r.id} over-rips by {frac_inches(-r.margin)}: "
@@ -937,6 +980,31 @@ def warnings(
                         f"Panel {panel['id']} is ripped at {frac_inches(depth)} deep, "
                         f"beyond the saw's {frac_inches(max_depth)} cut depth.",
                     ))
+
+    # --- YELLOW: crosscut shave ------------------------------------------ #
+    for cb in blanks:
+        if cb.shave:
+            out.append(Warning(
+                "yellow", "crosscut_shave",
+                f"Board {cb.source_id}'s cut is close to the end of the board, "
+                f"so the saw blade will be shaving off the end with no off cut.",
+            ))
+
+    # --- YELLOW: rip shave (last rip, small negative margin) ------------- #
+    # The saw blade is still touching actual material on the last
+    # rip, so the last strip is shaved by less than one kerf: doable
+    # but risky, shown as 0″ margin, not an error. A negative margin
+    # on an earlier rip is an over-rip error, not a shave, because
+    # the later rips would be cut from material that isn't there —
+    # and, as rip_margin_class notes, a small negative total can
+    # only arise on the last rip.
+    for r in rips:
+        if rip_margin_class(r.margin, _saw_kerf) == "shave":
+            out.append(Warning(
+                "yellow", "rip_shave",
+                f"Board {r.id}'s last rip is close to the edge of the board, "
+                f"so the saw blade will be shaving off the edge with no margin.",
+            ))
 
     # --- YELLOW: bought (ghost) boards needed ----------------------------- #
     ghosts = [r for r in rips if r.buy_required]
@@ -1057,24 +1125,21 @@ def warnings(
             f"{names}.",
         ))
 
-    # --- RED: planer gang too small, even after crosscutting first ------ #
+    # --- YELLOW: planer gang too small, even after crosscutting first --- #
     # Width > thickness requires a gang whose total thickness reaches
-    # the width. A strip gang too small is not yet an error: crosscut
+    # the width. A strip gang too small is not yet a warning: crosscut
     # first, then gang the components. Only when the component gang
-    # is still too small is the plan blocked for that width.
+    # is still too small is it a warning for that width — not an error,
+    # since sacrificial wood can make up the gang.
     for g in gang_groups(project, cut_spec, tool_limits):
         if not g.insufficient:
             continue
         out.append(Warning(
-            "red", "planer_gang_too_small",
-            f"Strip width {frac_inches(g.width)} is wider than board thickness "
-            f"{frac_inches(g.thickness)}, and its gang is too small even after "
-            f"crosscutting to component lengths first: {g.strip_count} strip(s) "
-            f"total {frac_inches(g.strip_total_thickness)}, "
-            f"{g.component_count} component(s) total "
-            f"{frac_inches(g.component_total_thickness)}, both below "
-            f"{frac_inches(g.width)} (needs {g.required_count} pieces at "
-            f"{frac_inches(g.thickness)}). Do not plane singly.",
+            "yellow", "planer_gang_too_small",
+            f"There aren't enough {frac_inches(g.width)} strips to gang "
+            f"together to safely pass through the planer without tipping "
+            f"over. You might need sacrificial wood to tape onto it in "
+            f"order to prevent movement.",
         ))
 
     return out

@@ -1,0 +1,33 @@
+name: edge-crosscut
+description: 'Hypothetical edge case: cherry boards shortened to 47 in and widened to 7 1/2 / 7 in so rips fit; all other boards as actual. Plaid-v1 hand blanks demand 48 in cherry blanks, so crosscut overflow is RED.'
+boards:
+- id: BC1
+  species: Cherry
+  length: [47, 0]
+  width: [7, 8]
+  thickness: [0, 13]
+- id: BC2
+  species: Cherry
+  length: [47, 0]
+  width: [7, 0]
+  thickness: [0, 13]
+- id: BW1
+  species: Walnut
+  length: [54, 5]
+  width: [6, 4]
+  thickness: [0, 13]
+- id: BW2
+  species: Walnut
+  length: [54, 5]
+  width: [6, 1]
+  thickness: [0, 13]
+- id: BM1
+  species: Brown Maple
+  length: [98, 1]
+  width: [8, 7]
+  thickness: [0, 13]
+- id: BM2
+  species: Brown Maple
+  length: [47, 15]
+  width: [8, 4]
+  thickness: [0, 13]

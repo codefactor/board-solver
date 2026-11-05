@@ -26,13 +26,14 @@ from .document import build_markdown
 from .render import (
     render_crosscut_blanks,
     render_crosscut_blanks_primitives,
+    render_crosscut_compact,
     render_finished_board,
     render_panel_faces,
     render_panel_faces_legend,
     render_panel_faces_primitives,
     render_panels,
+    render_panels_compact,
     render_panels_primitives,
-    render_slice_map,
     render_strip_map,
     render_strip_map_primitives,
 )
@@ -80,22 +81,24 @@ def write_document(
 
     # Render visual sections and write content-hashed images into images/.
     finished = render_finished_board(project)
-    slice_map = render_slice_map(project)
     panels = render_panels(project, tool_limits)
+    panels_compact = render_panels_compact(project, tool_limits)
     from .derive import panel_specs as _panel_specs
     from collections import Counter as _Counter
     _qty = _Counter(s.panel_id for s in _panel_specs(project, cut_spec, tool_limits))
     panel_faces = render_panel_faces(project, tool_limits, quantities=dict(_qty))
     crosscut = render_crosscut_blanks(project, cut_spec, tool_limits)
+    crosscut_compact = render_crosscut_compact(project, cut_spec, tool_limits)
     strip_map = render_strip_map(project, cut_spec, tool_limits)
 
     images = {}
     for key, prefix, data in (
         ("finished", "finished-board", finished),
-        ("slice_map", "slice-map", slice_map),
         ("panels", "panels", panels),
+        ("panels_compact", "panels-compact", panels_compact),
         ("panel_faces", "panel-faces", panel_faces),
         ("crosscut", "crosscut-blanks", crosscut),
+        ("crosscut_compact", "crosscut-compact", crosscut_compact),
         ("strip_map", "strip-map", strip_map),
     ):
         fname = _hashed_name(prefix, data)

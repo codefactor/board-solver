@@ -205,7 +205,7 @@ def _extract_cut_list(md_text: str) -> str:
 def deliver(
     project: Dict[str, Any], cut_spec: Dict[str, Any],
     tool_limits: Dict[str, Any], out_dir: str, what: str,
-    run_name: str, finished_width_in: float = 3.5,
+    run_name: str, finished_width_in: float = 2.1,
 ) -> Dict[str, str]:
     """Write exactly the requested output(s) into out_dir. Returns paths."""
     if what not in ("cut-list", "strip-map", "finished", "plan", "pdf", "all"):
@@ -264,8 +264,8 @@ def main(argv=None) -> int:
     ap.add_argument("--what", default="plan",
                     choices=["cut-list", "strip-map", "finished", "plan", "pdf", "all"])
     ap.add_argument("--out", default=None, help="output directory")
-    ap.add_argument("--finished-width-inches", type=float, default=3.5,
-                    help="display width in inches of the Finished board pattern in the PDF (default 3.5)")
+    ap.add_argument("--finished-width-inches", type=float, default=2.1,
+                    help="display width in inches of the Finished board pattern in the PDF (default 2.1)")
     ap.add_argument("--root", default=None, help="repo root (default: cwd's repo)")
     ap.add_argument("--no-save-cut-spec", action="store_true")
     args = ap.parse_args(argv)

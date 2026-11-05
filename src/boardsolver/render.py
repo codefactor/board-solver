@@ -773,6 +773,182 @@ def render_crosscut_blanks_primitives(
         cb, scale, colors, bar_h, kerf_s) for cb in blanks}
 
 
+def _compact_label(seg_w: float, full: str, short: str) -> str:
+    """Label for a compact bar segment: full text when it fits,
+    short text when only that fits, otherwise nothing. The table
+    still carries the exact lengths, so the diagram only needs to
+    show where each blank comes from."""
+    if seg_w >= 62:
+        return full
+    if seg_w >= 34:
+        return short
+    return ""
+
+
+def render_crosscut_compact(
+    project: Dict[str, Any], cut_spec: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 7.0, colors: ColorMap = DEFAULT_COLORS,
+    bar_h: int = 18, gap: int = 6, label_w: int = 118, annot_w: int = 110,
+) -> bytes:
+    """A single compact crosscut diagram for all raw boards.
+
+    The current crosscut diagrams give each board its own tall bar
+    (title + 34 px bar + gap, or one primitive per board in the
+    plan), and the board's width is drawn as bar height even
+    though width carries no crosscut information: a crosscut only
+    splits a board along its length. This diagram drops that
+    height entirely:
+
+    * one fixed-height bar per raw board, all on a common length
+      scale, left-aligned, so bar widths compare directly across
+      boards — a 98″ board's bar is twice a 49″ board's bar;
+    * bar height is fixed (18 px) and carries no information;
+    * the source id and raw length sit in a left label column,
+      not a title row above each bar, so the diagram's height is
+      just one thin bar + a small gap per board;
+    * segments are the blanks in order, species-colored, with
+      kerf stripes between them, a pale leftover tail, and a
+      washed-out bar for an untouched spare;
+    * a tail whose exact amount does not fit inside it is not
+      dropped: its amount is written to the right of the bar, in
+      the annotation column, on the same row — so a 6″ leftover
+      still reads "left 6³⁄₁₆″", and a shave still reads "shave";
+    * a negative offcut (overflow) is not an extra red piece
+      after a full blank, which would double-count it and make
+      the bar longer than both the raw board and the demand.
+      Instead the raw board is the background: the portion of a
+      blank that fits inside the raw length is species-colored,
+      the portion past the raw end is red, and the amount is
+      written to the right as "over X". The raw end is therefore
+      comparable across boards (same left alignment, same scale),
+      and the red part is exactly the shortfall, not an extra;
+    * a ghost board (buySpecies, no raw stock) gets its own row
+      at the end, gray label, species-colored bar for the bought
+      length, annotated "buy" — so a plan that must buy a board
+      does not silently drop that board from the crosscut view.
+
+    Returns PNG bytes. Not yet wired into the plan document: this
+    is the prototype for review.
+    """
+    blanks = crosscut_blanks(project, cut_spec, tool_limits)
+    buy_boards = [b for b in cut_spec.get("boards", []) if "buySpecies" in b]
+    pad = 10
+    kerf_s = blanks[0].kerf if blanks else 2
+
+    def _demand_len(cb) -> int:
+        return sum(bl.length for bl in cb.blanks) + max(len(cb.blanks) - 1, 0) * kerf_s
+
+    def _drawn_len(cb) -> int:
+        # Fit boards: drawn length is the raw length (blanks + kerfs
+        # + leftover). Overflow boards: drawn length is the demand,
+        # which exceeds the raw length by the shortfall.
+        return max(cb.length, _demand_len(cb))
+
+    max_drawn = max(
+        [_drawn_len(cb) for cb in blanks]
+        + [measure_to_sixteenths(b["length"]) for b in buy_boards],
+        default=0)
+    n_rows = len(blanks) + len(buy_boards)
+    W = int(pad * 2 + label_w + px(max_drawn, scale) + annot_w)
+    H = int(pad * 2 + n_rows * (bar_h + gap) - gap) if n_rows else int(pad * 2)
+    canvas = PILCanvas(W, H, _BG)
+    y = pad
+    for cb in blanks:
+        label_color = "#888888" if cb.state == "spare" else "#222222"
+        canvas.text(pad, y + bar_h / 2 - 6,
+                    f"{cb.source_id}  {frac_inches(cb.length)}", 11, label_color)
+        bx = pad + label_w
+        by = y
+        species_color = colors[cb.species]
+        raw_end_x = bx + px(cb.length, scale)
+        x = bx
+        annot = ""
+        annot_color = "#666666"
+        if cb.state == "spare":
+            full = px(cb.length, scale)
+            canvas.rect(x, by, full, bar_h, fill=lighten(species_color, 0.4), outline=_OUTLINE)
+            lab = _compact_label(full, f"{cb.source_id} spare — not cut", "spare")
+            if lab:
+                canvas.text(x + 4, by + bar_h / 2 - 5, lab, 10, text_on(lighten(species_color, 0.4)))
+            x += full
+            y += bar_h + gap
+            continue
+        # Raw background, so the raw end is visible even when a
+        # blank runs past it. Segments drawn on top cover it for
+        # fit boards; for overflow boards it ends at raw_end_x.
+        canvas.rect(bx, by, px(cb.length, scale), bar_h, fill="#f0f0f0", outline=_OUTLINE)
+        for i, bl in enumerate(cb.blanks):
+            seg_w = px(bl.length, scale)
+            seg_end = x + seg_w
+            if x >= raw_end_x:
+                # Entirely past the raw end: missing material.
+                canvas.rect(x, by, seg_w, bar_h, fill="#c0392b", outline=_OUTLINE)
+            elif seg_end > raw_end_x:
+                # Split at the raw end: fits in species color, the
+                # rest in red, exactly the shortfall.
+                canvas.rect(x, by, raw_end_x - x, bar_h, fill=species_color, outline=_OUTLINE)
+                canvas.rect(raw_end_x, by, seg_end - raw_end_x, bar_h, fill="#c0392b", outline=_OUTLINE)
+            else:
+                canvas.rect(x, by, seg_w, bar_h, fill=species_color, outline=_OUTLINE)
+            lab = _compact_label(
+                seg_w, f"{bl.blank_id} {frac_inches(bl.length)}", bl.blank_id)
+            if cb.state == "whole" and lab:
+                lab += "  → rip"
+                if seg_w < 110:
+                    lab = bl.blank_id
+            if lab:
+                # Label color follows the segment's visible part:
+                # white on red for a fully missing blank, otherwise
+                # the species text color.
+                lab_color = "#ffffff" if x >= raw_end_x else text_on(species_color)
+                canvas.text(x + 4, by + bar_h / 2 - 5, lab, 10, lab_color)
+            x = seg_end
+            if i != len(cb.blanks) - 1:
+                kerf_px = px(kerf_s, scale)
+                canvas.rect(x, by, kerf_px, bar_h, fill=_LOSS_COLOR, outline=None)
+                x += kerf_px
+        if cb.leftover > 0:
+            kerf_px = px(kerf_s, scale)
+            canvas.rect(x, by, kerf_px, bar_h, fill=_LOSS_COLOR, outline=None)
+            x += kerf_px
+            lp = px(cb.leftover, scale)
+            canvas.rect(x, by, lp, bar_h, fill="#e8e4d6", outline=_OUTLINE)
+            # A short "left" inside a narrow tail loses the amount,
+            # so only a full "left X" goes inside; otherwise the
+            # full amount goes in the right annotation column.
+            if lp >= 62:
+                canvas.text(x + 4, by + bar_h / 2 - 5,
+                            f"left {frac_inches(cb.leftover)}", 10, "#666666")
+            else:
+                annot = f"left {frac_inches(cb.leftover)}"
+            x += lp
+        elif cb.leftover < 0:
+            annot = f"over {frac_inches(-cb.leftover)}"
+            annot_color = "#c0392b"
+        elif cb.shave:
+            # No separate offcut: a thin yellow tick at the end.
+            canvas.rect(x, by, 3, bar_h, fill="#ffff00", outline=_OUTLINE)
+            x += 3
+            annot = "shave"
+        if annot:
+            canvas.text(x + 8, by + bar_h / 2 - 5, annot, 10, annot_color)
+        y += bar_h + gap
+    for b in buy_boards:
+        blen = measure_to_sixteenths(b["length"])
+        canvas.text(pad, y + bar_h / 2 - 6,
+                    f"{b['id']}  {frac_inches(blen)}", 11, "#888888")
+        bx = pad + label_w
+        seg_w = px(blen, scale)
+        species_color = colors[b["buySpecies"]]
+        canvas.rect(bx, y, seg_w, bar_h, fill=species_color, outline=_OUTLINE)
+        lab = _compact_label(seg_w, f"{b['id']} {frac_inches(blen)}", b["id"])
+        if lab:
+            canvas.text(bx + 4, y + bar_h / 2 - 5, lab, 10, text_on(species_color))
+        canvas.text(bx + seg_w + 8, y + bar_h / 2 - 5, "buy", 10, "#666666")
+        y += bar_h + gap
+    return _to_png_bytes(canvas)
+
+
 # --------------------------------------------------------------------------- #
 # section 2: panels overview
 # --------------------------------------------------------------------------- #
@@ -828,6 +1004,64 @@ def render_panels_primitives(
     """{panel_id: single-panel PNG} in project panels order."""
     return {p["id"]: render_panel_primitive(
         p, project, tool_limits, scale, colors) for p in project["panels"]}
+
+
+def render_panels_compact(
+    project: Dict[str, Any], tool_limits: Dict[str, Any],
+    scale: float = 40.0, colors: ColorMap = DEFAULT_COLORS,
+    gap: float = 6, pad: float = 10,
+    label_w: float = 84, annot_w: float = 150,
+) -> bytes:
+    """Compact panel end-grain diagram: one image, all panels.
+
+    Same information as the per-panel primitives, in less than half
+    the height — the saving comes from dropping each panel's title
+    row, annotation row, and pads, not from distorting the drawing:
+
+    * one bar per panel, all on a common scale, left-aligned, so
+      component widths compare directly across panels;
+    * bar height is to scale: it is the panel thickness, as in the
+      primitives, because this is a projection of the panel's end
+      grain — height is not fixed;
+    * segments are the fullest profile's components in order,
+      species-colored, widths to scale, exactly as in the primitives
+      (no internal labels, as in the primitives — the sequence is in
+      the Panels overview table);
+    * panel thickness is also written in the left label (e.g.
+      ``SL ¾″``), and slice count, which the primitives showed as an
+      annotation line, is written to the right of the bar (e.g.
+      ``20 slices``, ``8 slices (L=4, R=4)`` for a profiled panel).
+
+    Returns PNG bytes.
+    """
+    panels = project["panels"]
+    rows = []
+    for p in panels:
+        r = resolve_slice(project, _fullest_id(p))
+        if "profiles" in p:
+            total = sum(pr["slices"] for pr in p["profiles"])
+            regions = ", ".join(f"{pr['id']}={pr['slices']}" for pr in p["profiles"])
+            annot = f"{total} slices ({regions})"
+        else:
+            annot = f"{p['slices']} slices"
+        rows.append((p, r, annot, px(measure_to_sixteenths(p["thickness"]), scale)))
+    max_w = max((slice_length(r) for _, r, _, _ in rows), default=0)
+    W = int(pad * 2 + label_w + px(max_w, scale) + annot_w)
+    H = int(pad * 2 + sum(bh for _, _, _, bh in rows) + gap * (len(rows) - 1)) if rows else int(pad * 2)
+    canvas = PILCanvas(W, H, _BG)
+    y = pad
+    for p, r, annot, bar_h in rows:
+        canvas.text(pad, y + bar_h / 2 - 6,
+                    f"{p['id']}  {frac_inches(measure_to_sixteenths(p['thickness']))}",
+                    11, "#222222")
+        x = pad + label_w
+        for c in r.components:
+            w_px = px(c.width, scale)
+            canvas.rect(x, y, w_px, bar_h, fill=colors[c.species], outline=_OUTLINE)
+            x += w_px
+        canvas.text(x + 8, y + bar_h / 2 - 5, annot, 10, "#666666")
+        y += bar_h + gap
+    return _to_png_bytes(canvas)
 
 
 # --------------------------------------------------------------------------- #

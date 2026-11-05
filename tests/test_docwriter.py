@@ -132,12 +132,13 @@ def test_markdown_has_sections(project, tool_limits, cut_spec):
         "Initial board rips (the cut list)",
         "Components",
         "Panels (profiles and sequence)",
-        "Slice Grid",
     ]:
         assert title in titles
-    # Build order: Crosscut comes before the board rips; Slice Grid is last.
+    assert "Slice Grid" not in titles
+    # Build order: Crosscut comes before the board rips; Panels
+    # (profiles and sequence) is last.
     assert titles.index("Crosscut Blanks") < titles.index("Initial board rips (the cut list)")
-    assert titles[-1] == "Slice Grid"
+    assert titles[-1] == "Panels (profiles and sequence)"
     # Numbers are sequential from 1 with no gaps.
     nums = [int(n) for n in re.findall(r"^## (\d+)\.", md, re.MULTILINE)]
     assert nums == list(range(1, len(nums) + 1))

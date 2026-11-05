@@ -7,8 +7,9 @@ from committed project specs.
 Gang rule: a strip wider than its thickness must be ganged, taped
 together, so the gang's total thickness reaches the strip width.
 Strip gang first; if it is too small, crosscut to components first,
-then gang the components; if that gang is still too small, the plan
-is blocked for that width (red planer_gang_too_small warning).
+then gang the components; if that gang is still too small, it is a
+warning for that width (yellow planer_gang_too_small warning, not
+an error — sacrificial wood can make up the gang).
 """
 
 from boardsolver.derive import gang_groups, warnings
@@ -109,4 +110,5 @@ def test_warnings_include_planer_gang_too_small(project, cut_spec, tool_limits):
     found = [w for w in warnings(project, cut_spec, tool_limits)
              if w.code == "planer_gang_too_small" and "3″" in w.message]
     assert len(found) == 1
-    assert found[0].level == "red"
+    assert found[0].level == "yellow"
+    assert "sacrificial wood" in found[0].message

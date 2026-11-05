@@ -29,6 +29,14 @@ def _m(s) -> str:
     return ("-" + frac_inches(-s)) if s < 0 else frac_inches(s)
 
 
+def _margin_str(s: int, kerf: int) -> str:
+    """Margin display: a negative margin whose absolute value is less
+    than one kerf is presented as 0″ margin. The true value is kept
+    for warning amounts; only the display is clamped.
+    """
+    return "0″" if -kerf < s < 0 else _m(s)
+
+
 def _species_short(name: str) -> str:
     return {"Brown Maple": "maple", "Walnut": "walnut", "Cherry": "cherry"}.get(name, name)
 
@@ -66,13 +74,7 @@ def build_markdown(
     if project.get("description"):
         L.append(f"*{project['description']}*")
         L.append("")
-    L.append(
-        "This is a generated plan: the finished design and the "
-        "cut list that realizes it on the boards in hand. Where the cut "
-        "list cannot be met from inventory it calls for **bought boards** — buy those "
-        "and re-run before cutting. The sections follow the build order, from the "
-        "first crosscut to the final slice-grid assembly."
-    )
+    L.append("Cut list for the finished design, in build order.")
     L.append("")
 
     # Cut list order is always alphabetical by species, then board id,
@@ -148,17 +150,7 @@ def build_markdown(
     # --- Section: volume sanity check ------------------------------------ #
     L.append(sec("Volume Sanity Check"))
     L.append("")
-    L.append(
-        "A per-species feasibility check in board feet (1 BF = 144 cubic inches). "
-        f"**Required** is the surfaced volume of every installed slice across all "
-        f"{batch} board(s) plus the volume that must be removed to produce them — "
-        "flattening (sliceDepth − finishedThickness), planing all four edges "
-        "(minPlaneLoss), and one miter kerf per slice. **Available** is the "
-        "inventory stock volume. **Volume Offset** = available − required, with "
-        "available as a percentage of required in parentheses (100% means they "
-        "are equal); a negative value means the project cannot be built from "
-        "stock in hand."
-    )
+    L.append("Review the per-species volumes against inventory.")
     L.append("")
     L.append("| Species | Available | Required | Volume Offset |")
     L.append("| --- | --- | --- | --- |")
@@ -181,13 +173,8 @@ def build_markdown(
     L.append(sec("Crosscut Blanks"))
     L.append("")
     L.append(
-        "The first operation: crosscut each raw inventory board along its length "
-        "into the labeled board blanks that get ripped later (the Initial board rips "
-        "section, which follows immediately, ahead of Panels overview). Boards "
-        "that start from another board's leftover margin are not raw-stock "
-        "crosscuts — they appear as the labeled offcuts in the Board Rip Diagram "
-        "and as a crosscut row (↳) after their parent board's row in the rip "
-        "cut table."
+        "This plan involves cutting blanks from the inventory — review the "
+        "inventory and the planned cuts."
     )
     L.append("")
     blanks = crosscut_blanks(project, cut_spec, tool_limits)
@@ -210,18 +197,9 @@ def build_markdown(
     L.append("")
     L.append("### Crosscut Diagram")
     L.append("")
-    L.append(
-        "Each bar is one raw board drawn to scale by length; segments are the "
-        "blanks (labeled with id and length inside), reddish stripes are crosscut "
-        "kerfs (sawdust), and the pale tail is leftover length. A red tail means "
-        "the blanks overflow the raw board. An untouched spare is shown washed-out "
-        "and uncut; a board used whole goes straight to the rip diagram. "
-        "The bars below are the individual primitives, left-aligned (not "
-        "floated side by side); the combined diagram is also saved in "
-        "images/ as crosscut-blanks-*.png."
-    )
-    L.append("")
-    if images.get("crosscut_prims"):
+    if images.get("crosscut_compact"):
+        L.append(f"![Crosscut Diagram — raw boards cut into length blanks]({images['crosscut_compact']})")
+    elif images.get("crosscut_prims"):
         # Consecutive image lines (no blank lines between them) so a
         # Markdown renderer flows them and the PDF groups them.
         for cb in blanks:
@@ -238,24 +216,7 @@ def build_markdown(
     # then the Board Rip Diagram that pictures it.
     L.append(sec("Initial board rips (the cut list)"))
     L.append("")
-    L.append(
-        "Each row is one physical board at the saw: rip the strips down its width, "
-        "then crosscut each strip to the piece lengths. The **Board** column shows "
-        "`id @ width` — the board's width when ripping begins. **Used** is the summed "
-        "strip width, **Loss** is rip kerf + planer cleanup per strip, **Margin** is "
-        "the leftover width (negative = the strips do not fit; large = the board is "
-        "oversized for what it yields)."
-    )
-    L.append("")
-    L.append(
-        "A board whose leftover margin is itself the source of other boards "
-        "gets a crosscut row (↳) immediately after its own row: it lists, in "
-        "cut-spec document order, the child boards crosscut off that margin slab, "
-        "the miter kerf between them, and the slab tail left after the last "
-        "crosscut. For a crosscut row the Used / Loss / Margin figures are "
-        "length-axis, not width-axis: Used is the total child length, Loss is "
-        "the miter kerf consumed, Margin is the slab tail."
-    )
+    L.append("Review the rip list.")
     L.append("")
     L.append("| Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |")
     L.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
@@ -268,13 +229,14 @@ def build_markdown(
             _children.setdefault(_parent, []).append(_b["id"])
     _rip_by_id = {r.id: r for r in rips}
     _miter_kerf = measure_to_sixteenths(lim["miterKerf"])
+    _saw_kerf = measure_to_sixteenths(lim["sawKerf"])
     for r in rips:
         strip_desc = _rip_desc(r.strips)
         board = f"{r.id} @ {frac_inches(r.source_width)}"
         L.append(
             f"| {board} | {_origin_label(r.origin)} | {_species_short(r.species)} | "
             f"{frac_inches(r.length)} | {strip_desc} | "
-            f"{frac_inches(r.used)} | {frac_inches(r.loss)} | {_m(r.margin)} |"
+            f"{frac_inches(r.used)} | {frac_inches(r.loss)} | {_margin_str(r.margin, _saw_kerf)} |"
         )
         if r.id in _children:
             _child_ids = _children[r.id]
@@ -305,17 +267,7 @@ def build_markdown(
     L.append("")
     L.append("### Board Rip Diagram")
     L.append("")
-    L.append(
-        "Each labeled block below is one physical board. Horizontal bands are the "
-        "strips ripped down the board's width; within a band, the colored cells are "
-        "the crosscut pieces (with thin kerf gaps between them) and the lightened "
-        "tail is the offcut. The pale band under the strips is the leftover margin; "
-        "a gray title marks a board that must be bought. "
-        "The blocks below are the individual primitives, flowed to fill the "
-        "page width instead of one tall combined diagram; the combined "
-        "diagram is also saved as strip-map.png at the plan root and as "
-        "images/strip-map-*.png, for a single-image copy of the cut diagram."
-    )
+    L.append("Review the board rip diagrams against the rip list.")
     L.append("")
     if images.get("strip_prims"):
         for r in rips:
@@ -351,12 +303,11 @@ def build_markdown(
 
     L.append("### Panel End Grain Diagram")
     L.append("")
-    L.append("Each panel's end-grain cross-section (the glue-up of component stripes). "
-        "The panels below are the individual primitives, centered in the "
-        "PDF; the combined diagram is also saved in images/ as "
-        "panels-*.png.")
+    L.append("Review the panel end-grain diagrams.")
     L.append("")
-    if images.get("panel_prims"):
+    if images.get("panels_compact"):
+        L.append(f"![Panel end-grain cross-sections]({images['panels_compact']})")
+    elif images.get("panel_prims"):
         for _p in project["panels"]:
             if _p["id"] in images["panel_prims"]:
                 L.append(f"![Panel — {_p['id']}]({images['panel_prims'][_p['id']]})")
@@ -366,22 +317,7 @@ def build_markdown(
 
     L.append("### Panel Face Diagram")
     L.append("")
-    L.append(
-        "Each panel drawn to scale with its length running left-to-right, "
-        "wider than tall, centered in the PDF at 75% of its rendered size, "
-        "with the panel body moved down away from its title. Components are horizontal stripes "
-        "aligned on the squared edge; profile regions stack left-to-right, "
-        "so the silhouette steps shorter where trailing components drop out. "
-        "Dashed lines are the slice crosscuts; the solid red band is total "
-        "kerf loss, and the cross-hatched ends are the snipe tails "
-        "(possible loss, depending on the planer). A blue diamond below a "
-        "solid line marks a crosscut that is also a profile change. "
-        "The faces below are the individual primitives, on a white "
-        "background that bleeds into the page; the combined diagram is "
-        "also saved in images/ as panel-faces-*.png. The legend follows "
-        "the flow, centered, instead of sitting at the bottom of one "
-        "tall image."
-    )
+    L.append("Review the panel face diagrams.")
     L.append("")
     if images.get("panel_face_prims"):
         for _p in project["panels"]:
@@ -396,13 +332,7 @@ def build_markdown(
 
     L.append("### Slice Fulfillment")
     L.append("")
-    L.append(
-        f"**Demand** is every slice the grid places across all {batch} finished "
-        f"board(s). **Supplied** is the slices the panels above produce "
-        f"— snipe lost, ripped panels multiplied by their strip count. **Supply "
-        f"Offset** = supplied − demand: negative is a shortfall, positive is extra "
-        f"(ideally non-negative everywhere)."
-    )
+    L.append("Review slice demand, supply, and offset.")
     L.append("")
     L.append("| Slice | Demand | Supplied | Supply Offset |")
     L.append("| --- | --- | --- | --- |")
@@ -416,27 +346,11 @@ def build_markdown(
             sup = str(r.supplied)
         L.append(f"| {r.slice_id} | {dem} | {sup} | {off} |")
     L.append("")
-    L.append(
-        "_The slice counts supplied are calculated assuming the panels and their "
-        "quantities are delivered perfectly according to the specs in this section. "
-        "A panel type may have more than one instance; the ideal panels are always "
-        "quantity 1._"
-    )
-    L.append("")
 
     # --- Section 6: components (demand) ---------------------------------- #
     L.append(sec("Components"))
     L.append("")
-    L.append(
-        "**Demand** is what the finished pattern needs (counted from the slice "
-        "grid; length is the panel the component belongs to). **Fulfilled** is how "
-        "many the cut list supplies, matched longest-demand-first using exact-length "
-        "pieces first, then longer pieces cut down (a piece shorter than the demand "
-        "cannot be used). **Shortfall** is the unmet count. **Total Overcut** is the "
-        "wasted length trimmed off — the sum of (piece length − demand length) across "
-        "every longer piece that had to be cut down to fill this row (0 when exact-"
-        "length pieces covered it)."
-    )
+    L.append("Review component demand, fulfillment, and shortfall.")
     L.append("")
     rows, unused, wasted = match_supply_to_demand(project, cut_spec, tool_limits)
     show_overcut = any(r.overcut for r in rows)
@@ -455,10 +369,7 @@ def build_markdown(
         L.append(line)
     L.append("")
     if unused:
-        L.append(
-            "**Unused pieces** — produced by the cut list but not attributable to any "
-            "demand (wrong length for every demand row that needed this component):"
-        )
+        L.append("**Unused pieces:**")
         L.append("")
         L.append("| Component | Species | Width | Length | Count |")
         L.append("| --- | --- | --- | --- | --- |")
@@ -469,11 +380,7 @@ def build_markdown(
             )
         L.append("")
     if wasted:
-        L.append(
-            "**Wasted pieces** — produced by the cut list but matching no component "
-            "shape in this project (end-grain width the pattern never uses); these "
-            "are cut but unusable here:"
-        )
+        L.append("**Wasted pieces:**")
         L.append("")
         L.append("| From board | Species | Width | Length | Count |")
         L.append("| --- | --- | --- | --- | --- |")
@@ -487,10 +394,7 @@ def build_markdown(
     # --- Section 7: panels (merged / sequence) --------------------------- #
     L.append(sec("Panels (profiles and sequence)"))
     L.append("")
-    L.append(
-        "The physical panels this plan builds (from the project's panel specs), "
-        "grouped by identical shape. Qty is how many of each to glue up."
-    )
+    L.append("Review the panels and their quantities.")
     L.append("")
     L.append("| Panel | Qty | Length | Profiles (slices) | Component sequence |")
     L.append("| --- | --- | --- | --- | --- |")
@@ -511,19 +415,6 @@ def build_markdown(
             f"| {ps.panel_id} | {g['qty']} | {frac_inches(ps.length)} | {profs} | "
             f"{seq_by_type.get(ps.panel_id, '')} |"
         )
-    L.append("")
-
-    # --- Section: slice grid (the final assembly step) ------------------- #
-    L.append(sec("Slice Grid"))
-    L.append("")
-    L.append(
-        "The final step: arrange the slices into the finished face. The same grid "
-        "keyed by slice id — each slice is framed in its legend color so you can see "
-        "how to arrange the grid cell by cell. A corner triangle marks a slice "
-        "placed horizontally flipped."
-    )
-    L.append("")
-    L.append(f"![Slice grid keyed by slice id]({images['slice_map']})")
     L.append("")
 
     return "\n".join(L)

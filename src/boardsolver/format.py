@@ -48,15 +48,18 @@ def frac_inches(s: Sixteenths, *, quote: bool = True, ascii: bool = False) -> st
     unnecessary and inconsistent with the Markdown tables. ``ascii=True``
     remains only as a fallback for a surface whose font lacks those glyphs.
     """
-    whole, part = divmod(s, 16)
+    # Negatives format by sign + magnitude: divmod(-1, 16) is (-1, 15),
+    # which would otherwise render -1/16 as "-1¹⁵⁄₁₆", read as -1 15/16.
+    sign = "-" if s < 0 else ""
+    whole, part = divmod(abs(s), 16)
     if part == 0:
-        body = f"{whole}"
+        body = f"{sign}{whole}"
     elif ascii:
         num, den = _reduce(part)
-        body = f"{num}/{den}" if whole == 0 else f"{whole} {num}/{den}"
+        body = f"{sign}{num}/{den}" if whole == 0 else f"{sign}{whole} {num}/{den}"
     else:
         vulgar = _VULGAR[_reduce(part)]
-        body = f"{vulgar}" if whole == 0 else f"{whole}{vulgar}"
+        body = f"{sign}{vulgar}" if whole == 0 else f"{sign}{whole}{vulgar}"
     if not quote:
         return body
     return f'{body}"' if ascii else f"{body}\u2033"

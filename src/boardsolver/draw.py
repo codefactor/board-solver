@@ -27,10 +27,16 @@ _TITLE_COLOR = "#222222"
 _BUY_TITLE_COLOR = "#888888"  # gray title => buy-required (ghost) board
 _LOSS_COLOR = "#c96a5a"  # reddish: material turned to sawdust by rip kerf + planing
 _KERF_COLOR = "#9a8f76"  # material removed by a crosscut (length axis), per cut
-_MARGIN_COLOR = "#e8e4d6"  # leftover width that stays on the source board
 _GHOST_COLOR = "#dcd3bf"  # a margin-slab offcut claimed by a sourceRemainder child
 _GHOST_LABEL_PX = 11.0
-_ALERT_COLOR = "#c0392b"  # negative margin: strips do not fit the real board
+_OFFCUT_FILL = "#e0e0e0"  # light gray base for a margin tail not handed to a child
+_OFFCUT_HATCH = "#888888"  # gray diagonals over the light gray offcut tail
+_OFFCUT_LABEL_BOX = "#d3d3d3"  # lighter gray box behind the "off cut" label
+_OFFCUT_LABEL_TEXT = "#333333"  # darker text on that lighter box
+_OFFCUT_LABEL_PX = 11.0
+_OFFCUT_MIN_LENGTH = 32  # 2" in sixteenths: shortest tail that may be labeled
+_NEGATIVE_MARGIN_FILL = "#ffff00"  # yellow base for a negative margin band
+_NEGATIVE_MARGIN_HATCH = "#333333"  # dark diagonals over the yellow base
 _TITLE_PX = 14.0
 _ANNOT_PX = 11.0  # panel slice-count annotation text size
 
@@ -230,7 +236,7 @@ def draw_cut_board(
     colors: ColorMap = DEFAULT_COLORS,
     cut_spec: Optional[Dict[str, Any]] = None,
 ) -> BoundingBox:
-    """Draw ONE cut-spec board: title, stacked strips, loss band, margin band.
+    """Draw ONE cut-spec board: title, stacked strips with kerf lines, margin band.
 
     Derivations (all from the specs):
 
@@ -238,10 +244,14 @@ def draw_cut_board(
       species; ``buySpecies`` is used directly and marks the board buy-required
       (gray title).
     * drawn board length = ``board.length`` in sixteenths.
-    * loss (width axis) = per strip ``(sawKerf + minPlaneLoss)`` summed.
+    * loss (width axis) = per strip ``(sawKerf + minPlaneLoss)``, drawn as a
+      reddish line after each strip, so each strip sits at its actual
+      vertical place on the board.
     * margin (width axis) = ``source_width - sum(strip widths) - loss``. This is
-      the leftover slab set aside at the same sitting. Negative margin is drawn
-      in an alert color (strips do not fit the real board).
+      the leftover slab set aside at the same sitting. Negative margin is
+      drawn as a yellow crosshatch overlay on the portion of the
+      strips + kerf lines that runs past the board's edge (strips do
+      not fit the real board).
     * margin crosscuts (length axis, ordered): the cut-spec ``boards`` are an
       ordered sequence of events. Every later board whose ``sourceRemainder``
       points at THIS board crosscuts one piece off this margin slab, in order:
@@ -281,6 +291,15 @@ def draw_cut_board(
     right = ox
     strips = cut_spec_board["strips"]
     strip_width_total: Sixteenths = 0
+    # Kerf loss in place: after each strip, a reddish line of
+    # (sawKerf + minPlaneLoss), and the next strip is drawn below
+    # it, so each strip sits at its actual vertical place on the
+    # board. The total loss is the same as the old cumulative band
+    # at the bottom — it is just distributed between the strips —
+    # so used + loss + margin still equals the source width.
+    _kerf_line_s = saw_kerf + plane_loss
+    _kerf_line_px = px(_kerf_line_s, scale)
+    _board_top = y
     for strip in strips:
         bb = draw_cut_strip(
             canvas,
@@ -295,25 +314,31 @@ def draw_cut_board(
         right = max(right, bb.x + bb.w)
         y += bb.h
         strip_width_total += measure_to_sixteenths(strip["width"])
+        if _kerf_line_px > 0:
+            canvas.rect(
+                left, y, px(board_len, scale), _kerf_line_px,
+                fill=_LOSS_COLOR, outline=_OUTLINE,
+            )
+            right = max(right, left + px(board_len, scale))
+            y += _kerf_line_px
 
-    # Loss band (width axis): one (sawKerf + minPlaneLoss) per strip.
-    loss_s = len(strips) * (saw_kerf + plane_loss)
-    if loss_s > 0:
-        loss_px = px(loss_s, scale)
-        canvas.rect(left, y, px(board_len, scale), loss_px, fill=_LOSS_COLOR, outline=_OUTLINE)
-        right = max(right, left + px(board_len, scale))
-        y += loss_px
-
+    loss_s = len(strips) * _kerf_line_s
     # Margin band (width axis height = leftover slab width; length axis runs
-    # along the board). Negative margin => alert band, no children drawn.
+    # along the board). Negative margin: the strips + kerf lines run
+    # past the board's edge, so the portion past that edge is
+    # overlaid with yellow crosshatch, matching the checklist
+    # end-grain diagram — no separate band at the bottom, and no
+    # children drawn.
     margin_s = source_width - strip_width_total - loss_s
     if margin_s < 0:
-        margin_px = px(-margin_s, scale)
-        canvas.rect(
-            left, y, px(board_len, scale), margin_px, fill=_ALERT_COLOR, outline=_OUTLINE
-        )
-        right = max(right, left + px(board_len, scale))
-        y += margin_px
+        _edge_y = _board_top + px(source_width, scale)
+        if _edge_y < y:
+            canvas.hatch_rect(
+                left, _edge_y, px(board_len, scale), y - _edge_y,
+                _NEGATIVE_MARGIN_FILL, _NEGATIVE_MARGIN_HATCH,
+                outline=_OUTLINE, spacing=7, width=2,
+            )
+            right = max(right, left + px(board_len, scale))
     elif margin_s > 0:
         margin_px = px(margin_s, scale)
         children = _margin_children(cut_spec, cut_spec_board["id"]) if cut_spec else []
@@ -340,10 +365,38 @@ def draw_cut_board(
                 canvas.rect(x, y, kerf_px, margin_px, fill=_KERF_COLOR, outline=None)
                 x += kerf_px
                 remaining -= miter_kerf
-        # Unclaimed tail of the slab (true leftover) drawn plain.
+        # Unclaimed tail of the slab: the part of the margin that is
+        # NOT being used to cross cut a child board. Crosshatched
+        # light gray, with a centered gray "off cut" label box on
+        # top — but only when the tail is at least 2" long and the
+        # label box actually fits inside it; otherwise it stays
+        # blank crosshatch.
         if remaining > 0:
             tail_px = px(remaining, scale)
-            canvas.rect(x, y, tail_px, margin_px, fill=_MARGIN_COLOR, outline=_OUTLINE)
+            canvas.hatch_rect(
+                x, y, tail_px, margin_px,
+                _OFFCUT_FILL, _OFFCUT_HATCH,
+                outline=_OUTLINE, spacing=7, width=1,
+            )
+            # Label box: estimated text width for "off cut" at
+            # _OFFCUT_LABEL_PX, plus padding, centered in the tail.
+            _text_w = 46.0
+            _box_w = _text_w + 12.0
+            _box_h = _OFFCUT_LABEL_PX + 8.0
+            if (remaining >= _OFFCUT_MIN_LENGTH
+                    and tail_px >= _box_w + 4.0
+                    and margin_px >= _box_h + 2.0):
+                _box_x = x + (tail_px - _box_w) / 2.0
+                _box_y = y + (margin_px - _box_h) / 2.0
+                canvas.rect(
+                    _box_x, _box_y, _box_w, _box_h,
+                    fill=_OFFCUT_LABEL_BOX, outline=None,
+                )
+                canvas.text(
+                    _box_x + (_box_w - _text_w) / 2.0,
+                    _box_y + (_box_h - _OFFCUT_LABEL_PX) / 2.0,
+                    "off cut", _OFFCUT_LABEL_PX, _OFFCUT_LABEL_TEXT,
+                )
             x += tail_px
         right = max(right, left + px(board_len, scale), x)
         y += margin_px

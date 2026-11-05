@@ -30,6 +30,19 @@ class Canvas(Protocol):
         outline: Optional[str] = None,
     ) -> None: ...
 
+    def hatch_rect(
+        self,
+        x: float,
+        y: float,
+        w: float,
+        h: float,
+        base_fill: str,
+        hatch_color: str,
+        outline: Optional[str] = None,
+        spacing: float = 7,
+        width: float = 1,
+    ) -> None: ...
+
     def text(self, x: float, y: float, s: str, size: float, color: str) -> None: ...
 
 
@@ -57,12 +70,31 @@ class TextCall:
 
 
 @dataclass
+class HatchCall:
+    x: float
+    y: float
+    w: float
+    h: float
+    base_fill: str
+    hatch_color: str
+    outline: Optional[str]
+
+
+@dataclass
 class RecordingCanvas:
     rects: List[RectCall] = field(default_factory=list)
     texts: List[TextCall] = field(default_factory=list)
+    hatches: List[HatchCall] = field(default_factory=list)
 
     def rect(self, x, y, w, h, fill, outline=None):
         self.rects.append(RectCall(x, y, w, h, fill, outline))
+
+    def hatch_rect(self, x, y, w, h, base_fill, hatch_color, outline=None,
+                   spacing=7, width=1):
+        # Recorded as a rect with the base fill, plus a hatch entry,
+        # so geometry tests can assert both the band and its hatch.
+        self.rects.append(RectCall(x, y, w, h, base_fill, outline))
+        self.hatches.append(HatchCall(x, y, w, h, base_fill, hatch_color, outline))
 
     def text(self, x, y, s, size, color):
         self.texts.append(TextCall(x, y, s, size, color))

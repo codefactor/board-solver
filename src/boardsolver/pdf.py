@@ -51,10 +51,12 @@ def _xml_escape(text):
 def md_inline_to_xml(text):
     """Convert a small Markdown subset to ReportLab paragraph markup.
 
-    No content transformation: the MD is the visual representation, so
-    levels and types already arrive as words (ERROR/WARNING/NOTE,
-    "Ghost Boards", etc.) from document.py. This function only handles
-    bold/italic/code markup.
+    No content transformation, except one: every warning glyph gets a
+    yellow background, bold, wherever it appears — headings, body
+    paragraphs, and table cells alike. The MD is otherwise the visual
+    representation, so levels and types already arrive as words
+    (ERROR/WARNING/NOTE, "Ghost Boards", etc.) from document.py.
+    This function only handles bold/italic/code markup otherwise.
     """
     text = _xml_escape(text)
     # Bold first, then italic, then inline code.
@@ -63,6 +65,10 @@ def md_inline_to_xml(text):
     # Remaining single-* spans (whole-line italics are handled by the caller
     # stripping the outer pair first, so this only catches inline italics).
     text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<i>\1</i>", text)
+    text = re.sub(
+        r"⚠\ufe0f?",
+        '<font backColor="#FFFF00"><b>⚠</b></font>',
+        text)
     return text
 
 
@@ -114,7 +120,7 @@ def parse_md(path):
         i += 1
 
 
-def build_pdf(md_path, out_path, finished_width_in: float = 3.5):
+def build_pdf(md_path, out_path, finished_width_in: float = 2.1):
     """Render a plan MD folder to PDF.
 
     ``finished_width_in`` is the desired display width, in inches, of
@@ -355,8 +361,8 @@ def main(argv=None):
     ap.add_argument("--md", help="path to plan README.md")
     ap.add_argument("--project", help="project dir containing plan/README.md")
     ap.add_argument("--out", required=True, help="output PDF path")
-    ap.add_argument("--finished-width-inches", type=float, default=3.5,
-                    help="display width in inches of the Finished board pattern (default 3.5)")
+    ap.add_argument("--finished-width-inches", type=float, default=2.1,
+                    help="display width in inches of the Finished board pattern (default 2.1)")
     args = ap.parse_args(argv)
     if args.md:
         md_path = args.md

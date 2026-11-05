@@ -1,0 +1,202 @@
+# Cut-spec for design plaid-v1, inventory actual.
+# Kind: solver, date: 2026-11-03.
+design: plaid-v1
+inventory: edge-all
+kind: solver
+date: '2026-11-03'
+boards:
+- id: BM1A
+  source: BM1
+  length: [38, 14]
+  strips:
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+- id: BM1B
+  source: BM1
+  length: [38, 14]
+  strips:
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+- id: BM1B1
+  sourceRemainder: BM1B
+  length: [17, 12]
+  strips:
+  - width: [0, 12]
+    cuts:
+    - [17, 12]
+  - width: [0, 4]
+    cuts:
+    - [17, 12]
+  - width: [0, 4]
+    cuts:
+    - [17, 12]
+- id: BM1B2
+  sourceRemainder: BM1B
+  length: [19, 6]
+  strips:
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+  - width: [0, 4]
+    cuts:
+    - [19, 6]
+- id: BC1A
+  source: BC1
+  length: [38, 14]
+  strips:
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+- id: BC2A
+  source: BC2
+  length: [38, 14]
+  strips:
+  - width: [1, 8]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+- id: GH-C
+  buySpecies: Cherry
+  length: [38, 14]
+  strips:
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+- id: BW1A
+  source: BW1
+  length: [38, 14]
+  strips:
+  - width: [3, 0]
+    cuts:
+    - [17, 12]
+    - [17, 12]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+- id: BW2A
+  source: BW2
+  length: [38, 14]
+  strips:
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]
+  - width: [0, 12]
+    cuts:
+    - [19, 6]
+    - [19, 6]

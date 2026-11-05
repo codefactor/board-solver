@@ -5,6 +5,12 @@ finishing, in the same order as the sample plan-checklist. The plan document
 is the phone-read review document; this checklist is the one to print.
 It is a printout to work from at the saw, in the order Scott described:
 
+0. Buy Wood, as Phase 1, only when the cut-spec has ghost boards
+   (material to buy, not in inventory): a warning line, then one row
+   per board to buy. When present, all later phases shift by one;
+   when absent, the phase is omitted and numbering is unchanged.
+   Later phases treat a bought board exactly like an inventory board,
+   in the desired shape.
 1. Initial crosscuts: raw boards -> blanks.
 2. Rips: one section per board, end-grain diagram above its rip
    table: species-colored strips at rip size, reddish kerfs between
@@ -31,8 +37,8 @@ It is a printout to work from at the saw, in the order Scott described:
    thickness requires a gang: strips taped together so the gang's
    total thickness reaches the width. If the strip gang is too small,
    crosscut to components first, then gang the components, counted
-   as components, not strips; if that gang is still too small, an
-   ERROR warning sits above that gang. A crosscut-first gang's
+   as components, not strips; if that gang is still too small, a
+   WARNING sits above that gang. A crosscut-first gang's
    crosscuts are in Phase 3 and are not repeated in Phase 4.
 4. Crosscut components: strips -> component pieces, after planing,
    except crosscut-first gangs, already crosscut in Phase 3. No
@@ -102,8 +108,38 @@ def _fmt_dec(n: int) -> str:
 
 
 def _offcut_fmt(n: int) -> str:
-    """Offcut cell: a 0″ offcut gets a ⚠️, no margin for cutting error."""
-    return f"{_fmt(n)} ⚠️" if n == 0 else _fmt(n)
+    """Offcut cell: a 0″ offcut gets a ⚠️, no margin for cutting error.
+
+    A negative offcut (pieces demand more than the strip/board has)
+    gets a ⚠️ too: it is an overflow, not just a tight fit.
+    """
+    return f"{_fmt(n)} ⚠️" if n <= 0 else _fmt(n)
+
+
+def _margin_fmt(n: int, kerf: int) -> str:
+    """Margin cell: a negative margin whose absolute value is less
+    than one kerf is presented as 0″ margin, with a ⚠️. The true
+    value is kept for warning amounts and for later running-margin
+    rows; only the display is clamped. A negative margin of at
+    least one kerf stays negative.
+    """
+    if -kerf < n < 0:
+        return "0″ ⚠️"
+    return f"{_fmt(n)} ⚠️" if n <= 0 else _fmt(n)
+
+
+def _running_margin_cell(running: int, kerf: int, is_last: bool) -> str:
+    """Running Margin column cell.
+
+    The 0″ clamp applies only on the last rip: a small negative
+    margin there is a last-rip shave. A negative running margin on
+    an earlier rip is an error, shown as the true negative number,
+    because the later rips would be cut from material that isn't
+    there — even if the negative value itself is small.
+    """
+    if is_last:
+        return _margin_fmt(running, kerf)
+    return f"{_fmt(running)} ⚠️" if running < 0 else _fmt(running)
 
 
 def _pair(n: int):
@@ -240,6 +276,26 @@ def _render_endgrain_png(project, cut_spec, board, rip, saw_kerf, plane_loss) ->
         img.paste(_crosshatch_tile(W - kerf_w, bar_h, (208, 208, 208)), (kerf_w, bar_y0))
         draw.rectangle([kerf_w, bar_y0, W, bar_y1], outline=dark, width=1)
     draw.rectangle([0, bar_y0, W, bar_y1], outline=dark, width=1)
+    if rip.margin < 0:
+        # Over-rip: the strips run past the board's edge. Without a
+        # marker the diagram scales to the strips and looks complete,
+        # so the portion past the board's edge is overlaid with a
+        # yellow crosshatch, matching the yellow warning highlight,
+        # in the grain row and in the progress bar: that portion is
+        # material the board does not have.
+        _edge_x = int(round(rip.source_width * W / total)) if total else W
+        if _edge_x < W:
+            def _yellow_crosshatch_tile(width_px: int, height_px: int):
+                tile = _Image.new("RGB", (max(1, width_px), max(1, height_px)), (255, 255, 0))
+                tile_draw = _Draw.Draw(tile)
+                for d in range(-height_px, tile.width + height_px, 12):
+                    tile_draw.line([(d, height_px), (d + height_px, 0)],
+                                   fill=(51, 51, 51), width=2)
+                return tile
+            img.paste(_yellow_crosshatch_tile(W - _edge_x, grain_h), (_edge_x, y0))
+            draw.rectangle([_edge_x, y0, W, y1], outline=dark, width=1)
+            img.paste(_yellow_crosshatch_tile(W - _edge_x, bar_h), (_edge_x, bar_y0))
+            draw.rectangle([_edge_x, bar_y0, W, bar_y1], outline=dark, width=1)
     buf = _io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
@@ -252,6 +308,20 @@ def _rgb_hex(css_hex: str):
 
 def _rip_size(final_width: int, plane_loss: int) -> int:
     return final_width + plane_loss
+
+
+def _rip_margins(source_width: int, strips, plane_loss: int, saw_kerf: int) -> List[int]:
+    """Running margin after each rip, row by row.
+
+    Each rip consumes its rip size (final width + plane loss) plus one
+    saw kerf. The last value is the board's total margin.
+    """
+    out = []
+    remaining = source_width
+    for strip in strips:
+        remaining -= _rip_size(measure_to_sixteenths(strip["width"]), plane_loss) + saw_kerf
+        out.append(remaining)
+    return out
 
 
 def _strip_pieces(strip: Dict[str, Any]) -> List[int]:
@@ -286,6 +356,44 @@ def _tail(strip_len: int, pieces: List[int], kerf: int) -> int:
 # CheckBox is defined inside build_pdf_from_md, where reportlab is
 # imported lazily (see pdf.py pattern), so Md generation stays free
 # of the reportlab dependency.
+
+
+def _buy_board_rows(project, data) -> List[Dict[str, Any]]:
+    """Ghost boards to buy, in cut-spec order, for the Buy Wood phase.
+
+    A ghost board is a cut-spec board with buy_required set (origin
+    buy:<species>): material not in inventory, so the shop must buy
+    it before starting. Width is the board width the rip phase starts
+    from; thickness is the S3S thickness of that species in inventory,
+    or the first inventory board's thickness when the species is not
+    in inventory at all. Later phases treat the bought board exactly
+    like an inventory board, in the desired shape.
+    """
+    rows = []
+    for b in data["boards"]:
+        r = data["rips"][b["id"]]
+        if not r.buy_required:
+            continue
+        thickness = None
+        for pb in project.get("boards", []):
+            if pb.get("species") == r.species and pb.get("thickness") is not None:
+                thickness = measure_to_sixteenths(pb["thickness"])
+                break
+        if thickness is None and project.get("boards"):
+            first_th = project["boards"][0].get("thickness")
+            if first_th is not None:
+                thickness = measure_to_sixteenths(first_th)
+        yields = "; ".join(
+            f"{_fmt(measure_to_sixteenths(strip['width']))} → "
+            f"{_grouped_pieces(_strip_pieces(strip))}"
+            for strip in b["strips"])
+        rows.append({
+            "id": b["id"], "species": r.species,
+            "length": measure_to_sixteenths(b["length"]),
+            "width": r.source_width, "thickness": thickness,
+            "yields": yields,
+        })
+    return rows
 
 
 def _board_order(project, cut_spec, rips) -> List[Dict[str, Any]]:
@@ -384,8 +492,12 @@ def _phase1_bars(data):
         if cc.state in ("spare", "whole"):
             continue
         remaining = cc.length
-        for bl in cc.blanks:
+        for idx, bl in enumerate(cc.blanks):
             remaining_after = remaining - bl.length - data["miter_kerf"]
+            # Shave board, last row: no separate offcut, so the bar
+            # is full green with no red over-cut segment.
+            if cc.shave and idx == len(cc.blanks) - 1:
+                remaining_after = 0
             used = (cc.length - remaining_after) / cc.length if cc.length else 0
             offcut = remaining_after / cc.length if cc.length else 0
             bars.append({"species": cc.species, "used": used, "offcut": offcut})
@@ -428,8 +540,36 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
         _f.write(_fin_png)
     lines.append(f"![Finished board](images/{_fin_name})")
     lines.append("")
-    # Phase 1 — straight to the table, no preamble.
-    lines.append("## Phase 1 — Initial crosscuts")
+    # Buy Wood is Phase 1 when present; later phases shift by one.
+    # When no ghost boards exist, this phase is omitted entirely and
+    # the numbering below is unchanged.
+    _buy_rows = _buy_board_rows(project, data)
+    _has_buy = bool(_buy_rows)
+    _p_cross = 2 if _has_buy else 1
+    _p_rip = 3 if _has_buy else 2
+    _p_plane = 4 if _has_buy else 3
+    _p_crosscomp = 5 if _has_buy else 4
+    if _has_buy:
+        lines.append("## Phase 1 — Buy Wood")
+        lines.append("")
+        lines.append("**⚠️ Before getting started you should buy wood.**")
+        lines.append("")
+        lines.append("| [ ] | Board | Species | Length | Width | Thickness | Yields |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        for _br in _buy_rows:
+            _th = _fmt(_br["thickness"]) if _br["thickness"] is not None else "—"
+            lines.append(f"| [ ] | {_br['id']} | {_br['species']} | {_fmt(_br['length'])} | {_fmt(_br['width'])} | {_th} | {_br['yields']} |")
+        lines.append("")
+    # Initial crosscuts — compact crosscut diagram, then the table.
+    _cross_overflow = any(cc.leftover < 0 or cc.shave for cc in data["crosscuts"])
+    lines.append(f"## Phase {_p_cross} — Initial crosscuts" + (" ⚠️" if _cross_overflow else ""))
+    lines.append("")
+    from .render import render_crosscut_compact
+    _cc_png = render_crosscut_compact(project, cut_spec, tool_limits)
+    _cc_name = f"crosscut-compact-{hashlib.md5(_cc_png).hexdigest()[:12]}.png"
+    with open(os.path.join(out_dir, "images", _cc_name), "wb") as _f:
+        _f.write(_cc_png)
+    lines.append(f"![Crosscut Diagram](images/{_cc_name})")
     lines.append("")
     lines.append("| [ ] | Raw board | Species | Blank | Length | Off Cut |")
     lines.append("| --- | --- | --- | --- | --- | --- |")
@@ -452,34 +592,58 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
             # only counted if a leftover piece remains (exact fit
             # is 0″, not −⅛″, matching the plan's leftover rule).
             intermediate = cc.length - used - idx * data["miter_kerf"]
-            offcut = (intermediate - data["miter_kerf"]
-                      if intermediate > 0 else intermediate)
+            # Shave board, last row: the raw margin is less than one
+            # kerf, so there is no separate offcut piece — show 0″,
+            # not a negative number.
+            if cc.shave and idx == len(cc.blanks) - 1:
+                offcut = 0
+            else:
+                offcut = (intermediate - data["miter_kerf"]
+                          if intermediate > 0 else intermediate)
             raw_cell = (f"{cc.source_id} ({_fmt(cc.length)})" if idx == 0
                         else f"{cc.source_id} ↩")
             lines.append(f"| [ ] | {raw_cell} | {cc.species} | {bl.blank_id} | {_fmt(bl.length)} | {_offcut_fmt(offcut)} |")
     lines.append("")
     wholes = [cc for cc in data["crosscuts"] if cc.state == "whole"]
     if wholes:
-        lines.append("Boards to be stripped in their entirety, no Phase 1 crosscut: " + ", ".join(
+        lines.append(f"Boards to be stripped in their entirety, no Phase {_p_cross} crosscut: " + ", ".join(
             f"{cc.source_id} ({cc.species}, {_fmt(cc.length)})" for cc in wholes) + ".")
     spares = [cc for cc in data["crosscuts"] if cc.state == "spare"]
     if spares:
         lines.append("Spare — do not cut: " + ", ".join(
             f"{cc.source_id} ({cc.species}, {_fmt(cc.length)})" for cc in spares) + ".")
+    # Crosscut overflow, in this phase, not in a top banner: a board
+    # whose blanks demand more length than the raw board has.
+    for cc in data["crosscuts"]:
+        if cc.leftover < 0:
+            lines.append(f"**⚠️ ERROR — Crosscut overflow: Board {cc.source_id} is over-cut by {_fmt(-cc.leftover)}: its blanks demand more length than the raw board has.**")
+    # Crosscut shave, in this phase: the crosscut results in a
+    # non-positive offcut whose absolute value is less than one kerf,
+    # so the trim cut shaves the end of the board and leaves no
+    # separate offcut. Shown as 0″ in the table.
+    for cc in data["crosscuts"]:
+        if cc.shave:
+            lines.append(f"**⚠️ WARNING — Board {cc.source_id}'s cut is close to the end of the board, so the saw blade will be shaving off the end with no off cut.**")
     lines.append("")
 
-    # Phase 2 — straight to the first board section, no preamble.
-    lines.append("## Phase 2 — Rips")
+    # Rips — straight to the first board section, no preamble.
+    lines.append(f"## Phase {_p_rip} — Rips")
     lines.append("")
     for p2, b in enumerate(data["boards"], start=1):
         r = data["rips"][b["id"]]
-        lines.append(f"### Phase 2.{p2} — {b['id']} — {r.species}")
+        lines.append(f"### Phase {_p_rip}.{p2} — {b['id']} — {r.species}" + (" ⚠️" if r.margin < 0 else ""))
         lines.append("")
         if b["id"] in endgrain_files:
             lines.append(f"![End grain — {b['id']}](images/{endgrain_files[b['id']]})")
             lines.append("")
-        lines.append("| [ ] | Rip | Rip size | Final width | Length | Pieces planned |")
-        lines.append("| --- | --- | --- | --- | --- | --- |")
+        lines.append("| [ ] | Rip | Rip size | Final width | Length | Pieces planned | Margin |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        # Running margin, row by row (see _rip_margins). The last
+        # row's margin is the board's total margin; a row where it
+        # first goes negative (and every row after) gets a ⚠️ in
+        # this right-side column.
+        _margins = _rip_margins(r.source_width, b["strips"],
+                                data["plane_loss"], data["saw_kerf"])
         for i, strip in enumerate(b["strips"]):
             w = measure_to_sixteenths(strip["width"])
             pieces = _strip_pieces(strip)
@@ -491,10 +655,25 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
             # Pieces planned are grouped by length, e.g. 15⅞″x3.
             planned = _grouped_pieces(pieces)
             width_cell = _fmt_dec(w) + ("*" if w in data["crosscut_first_widths"] else "")
-            lines.append(f"| [ ] | {i + 1} | {_fmt_dec(_rip_size(w, data['plane_loss']))} | {width_cell} | {_fmt(measure_to_sixteenths(b['length']))} | {planned} |")
+            _running = _margins[i]
+            _margin_cell = _running_margin_cell(
+                _running, data["saw_kerf"], i == len(b["strips"]) - 1)
+            lines.append(f"| [ ] | {i + 1} | {_fmt_dec(_rip_size(w, data['plane_loss']))} | {width_cell} | {_fmt(measure_to_sixteenths(b['length']))} | {planned} | {_margin_cell} |")
         lines.append("")
         lines.append(f"Board width {_fmt(r.source_width)} = used {_fmt(r.used)} + "
-                     f"loss {_fmt(r.loss)} + margin {_fmt(r.margin)}.")
+                     f"loss {_fmt(r.loss)} + margin {_margin_fmt(r.margin, data['saw_kerf'])}.")
+        # Over-rip and small margin, in this board's rip section, not
+        # in a top banner. Ghost boards are bought to size, so a tight
+        # margin on one is expected, not a small-margin warning.
+        # A small negative total margin is a last-rip shave warning,
+        # not an over-rip error; a larger negative total is an error.
+        from .derive import rip_margin_class as _rip_class
+        if _rip_class(r.margin, data["saw_kerf"]) == "shave":
+            lines.append(f"**⚠️ WARNING — Board {b['id']}'s last rip is close to the edge of the board, so the saw blade will be shaving off the edge with no margin.**")
+        elif r.margin < 0:
+            lines.append(f"**⚠️ ERROR — Over-rip: Cut list for board {b['id']} over-rips by {_fmt(-r.margin)}: the strips are wider than the board.**")
+        elif not r.buy_required and 0 <= r.margin < 4:
+            lines.append(f"**⚠️ WARNING — Small margin: Board {b['id']} leaves only {_fmt(r.margin)} margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow.**")
         lines.append("")
         kids = data["children"].get(b["id"], [])
         if kids:
@@ -508,10 +687,11 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
             lines.append("Rip the child boards next, in the order above, before the next parent board.")
             lines.append("")
 
-    # Phase 3 — straight to the first gang section, no preamble.
+    # Plane by width — straight to the first gang section, no preamble.
     # A gang is every strip of one finished width. Crosscut-first gangs
-    # are crosscut here, before planing, and are not repeated in Phase 4.
-    lines.append("## Phase 3 — Plane by width")
+    # are crosscut here, before planing, and are not repeated in the
+    # crosscut-components phase.
+    lines.append(f"## Phase {_p_plane} — Plane by width")
     lines.append("")
     for p3, (w, strips) in enumerate(data["by_width"].items(), start=1):
         gang = data["gangs_by_width"].get(w)
@@ -526,13 +706,13 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
         total_units = sum(counts.values())
         unit = "component" if crosscut_first else "strip"
         unit_pl = unit + "s"
-        heading = f"### Phase 3.{p3} — Gang — Plane to {_fmt(w)} — planer setting {_fmt(w)} ({total_units} {unit_pl})"
+        heading = f"### Phase {_p_plane}.{p3} — Gang — Plane to {_fmt(w)} — planer setting {_fmt(w)} ({total_units} {unit_pl})"
         if gang and gang.requires_gang:
             heading += " — requires a gang"
         lines.append(heading)
         lines.append("")
         if gang and gang.insufficient:
-            lines.append(f"**ERROR — Gang insufficient: {_fmt(w)} width needs {gang.required_count} pieces at {_fmt(gang.thickness)} to reach {_fmt(w)}, but only {gang.strip_count} strip(s) total {_fmt(gang.strip_total_thickness)} and {gang.component_count} component(s) total {_fmt(gang.component_total_thickness)}. Do not plane singly.**")
+            lines.append(f"**WARNING — There aren't enough {_fmt(w)} strips to gang together to safely pass through the planer without tipping over. You might need sacrificial wood to tape onto it in order to prevent movement.**")
             lines.append("")
         elif gang and gang.requires_gang and gang.crosscut_first:
             lines.append(f"Requires a gang — strip gang total {_fmt(gang.strip_total_thickness)} < {_fmt(w)}; crosscut first, then gang components (total {_fmt(gang.component_total_thickness)} ≥ {_fmt(w)}).")
@@ -560,10 +740,11 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
             lines.append(f"| [ ] | {species} | {count} {unit_pl} |")
         lines.append("")
 
-    # Phase 4 — grouping first, then board tables.
+    # Crosscut components — grouping first, then board tables.
     # Crosscut-first gangs are not repeated here: they were crosscut
-    # in Phase 3, before planing. A short note names them, not the cuts.
-    lines.append("## Phase 4 — Crosscut components")
+    # in the plane-by-width phase, before planing. A short note names
+    # them, not the cuts.
+    lines.append(f"## Phase {_p_crosscomp} — Crosscut components")
     lines.append("")
     from collections import Counter as _Counter
     length_counts: "OrderedDict" = OrderedDict()
@@ -577,7 +758,7 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
             for p in _strip_pieces(strip):
                 length_counts[p] = length_counts.get(p, 0) + 1
                 length_widths.setdefault(p, _Counter())[(r.species, w)] += 1
-    lines.append("### Phase 4.1 — Crosscut grouping — by length")
+    lines.append(f"### Phase {_p_crosscomp}.1 — Crosscut grouping — by length")
     lines.append("")
     lines.append("| Length | Species | Final width | Pieces |")
     lines.append("| --- | --- | --- | --- |")
@@ -593,7 +774,7 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
     phase3_pieces = 0
     for p4, b in enumerate(data["boards"], start=2):
         r = data["rips"][b["id"]]
-        lines.append(f"### Phase 4.{p4} — {b['id']} — {r.species}")
+        lines.append(f"### Phase {_p_crosscomp}.{p4} — {b['id']} — {r.species}")
         lines.append("")
         shown = []
         already = []
@@ -621,14 +802,14 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
                 lines.append(f"| {boxes} | {i + 1} | {r.species} | {_fmt_dec(w)} | {plist} | {_offcut_fmt(off_cut)} |")
             lines.append("")
         for strip_no, w in already:
-            lines.append(f"Strip {strip_no} ({_fmt(w)}) already crosscut in Phase 3 gang, not repeated here.")
+            lines.append(f"Strip {strip_no} ({_fmt(w)}) already crosscut in Phase {_p_plane} gang, not repeated here.")
         if already:
             lines.append("")
     overall_pieces = total_pieces + phase3_pieces
     total_line = (f"Total: {sum(len(b['strips']) for b in data['boards'])} strips, "
                   f"{overall_pieces} component pieces.")
     if phase3_pieces:
-        total_line += f" ({phase3_pieces} pieces crosscut in Phase 3 gang, not repeated in Phase 4.)"
+        total_line += f" ({phase3_pieces} pieces crosscut in Phase {_p_plane} gang, not repeated in Phase {_p_crosscomp}.)"
     lines.append(total_line)
     lines.append("")
 
@@ -637,7 +818,7 @@ def build_md(project, cut_spec, tool_limits, out_dir: str,
     # column glue-ups, final glue-up, finishing. No prose in these
     # phases: headings, subtitles, tables, and diagrams only.
     from collections import Counter as _Counter2
-    _next = 5
+    _next = _p_crosscomp + 1
     _summaries = {s.id: s for s in derive.panel_summaries(project, tool_limits)}
     _spec_counts = _Counter2(s.panel_id for s in derive.panel_specs(project, cut_spec, tool_limits))
     # Panel glue-ups.
@@ -839,15 +1020,19 @@ def build_pdf_from_md(md_path: str, out_path: str, phase1_bars=None) -> str:
             self.canv.rect(0, 0, self.size, self.size, stroke=1, fill=0)
 
     class ProgressBar(Flowable):
-        """Thin two-segment bar: green left, reddish offcut right.
+        """Thin two-segment bar: green left, gray offcut right.
 
-        Left is always green, for contrast against the reddish offcut,
+        Left is always green, for contrast against the offcut,
         regardless of species. Species identity moved to the small
         colored box left of the species name in Species columns.
+        A positive offcut is normal leftover, so it is gray, not red.
+        For an overflow the caller passes the board-fit fraction as
+        used_frac and red as offcut_color, so the red segment is the
+        over-cut portion.
         """
 
         def __init__(self, width: float, used_frac: float,
-                     left_color: str = "#28a745", offcut_color: str = "#c0392b"):
+                     left_color: str = "#28a745", offcut_color: str = "#d0d0d0"):
             Flowable.__init__(self)
             self.bar_width = max(0.0, width)
             self.bar_height = 3
@@ -1177,22 +1362,27 @@ def build_pdf_from_md(md_path: str, out_path: str, phase1_bars=None) -> str:
                             ]))
                             out_row.append(swatch_table)
                         else:
-                            xml = md_inline_to_xml(c)
-                            if "⚠" in xml:
-                                # Warning glyph in a yellow box, bold.
-                                xml = re.sub(
-                                    r"⚠\ufe0f?",
-                                    '<font backColor="#FFFF00"><b>⚠</b></font>',
-                                    xml)
-                            out_row.append(Paragraph(xml, style))
+                            # Warning glyphs already get their yellow
+                            # background in md_inline_to_xml, for every
+                            # paragraph type, not just table cells.
+                            out_row.append(Paragraph(md_inline_to_xml(c), style))
                 if is_phase1 and ri > 0 and phase1_bars is not None:
                     bar = phase1_bars[ri - 1] if ri - 1 < len(phase1_bars) else None
                     if bar is not None:
                         # Bar stays under the Length column (index 4),
                         # not under the new Off Cut column (index 5).
+                        # Positive offcut is gray leftover. Negative
+                        # offcut (overflow) is a red segment at the
+                        # right: green is the board-fit fraction
+                        # (1 / used), red is the over-cut fraction
+                        # (-offcut / used), scaled to the full bar.
                         bar_w = max(0.0, widths[4] - 6)
-                        out_row[4] = [out_row[4], Spacer(1, 2),
-                                      ProgressBar(bar_w, bar["used"])]
+                        if bar["offcut"] < 0 and bar["used"]:
+                            _bar = ProgressBar(bar_w, 1.0 / bar["used"],
+                                               offcut_color="#c0392b")
+                        else:
+                            _bar = ProgressBar(bar_w, bar["used"])
+                        out_row[4] = [out_row[4], Spacer(1, 2), _bar]
                 data.append(out_row)
             t = Table(data, colWidths=widths, repeatRows=1)
             t.setStyle(TableStyle([

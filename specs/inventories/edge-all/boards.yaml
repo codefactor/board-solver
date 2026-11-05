@@ -1,0 +1,33 @@
+name: edge-all
+description: 'Showcase inventory: cherry shortened to 37 in (solver blanks demand 38 7/8 in) and BM1 narrowed to 6 in (BM1A rips demand 7 in plus loss). Solver cut-spec unchanged, so the checklist surfaces Buy Wood, crosscut overflow, over-rip, gang, small margin and zero offcut together. Not a build plan.'
+boards:
+- id: BC1
+  species: Cherry
+  length: [37, 0]
+  width: [7, 3]
+  thickness: [0, 13]
+- id: BC2
+  species: Cherry
+  length: [37, 0]
+  width: [6, 8]
+  thickness: [0, 13]
+- id: BW1
+  species: Walnut
+  length: [54, 5]
+  width: [6, 4]
+  thickness: [0, 13]
+- id: BW2
+  species: Walnut
+  length: [54, 5]
+  width: [6, 1]
+  thickness: [0, 13]
+- id: BM1
+  species: Brown Maple
+  length: [98, 1]
+  width: [6, 0]
+  thickness: [0, 13]
+- id: BM2
+  species: Brown Maple
+  length: [47, 15]
+  width: [8, 4]
+  thickness: [0, 13]

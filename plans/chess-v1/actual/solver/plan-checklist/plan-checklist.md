@@ -4,6 +4,8 @@
 
 ## Phase 1 — Initial crosscuts
 
+![Crosscut Diagram](images/crosscut-compact-e49f52d5ecfb.png)
+
 | [ ] | Raw board | Species | Blank | Length | Off Cut |
 | --- | --- | --- | --- | --- | --- |
 | [ ] | BM1 (98¹⁄₁₆″) | Brown Maple | BM1A | 32⅜″ | 65⁹⁄₁₆″ |
@@ -18,10 +20,10 @@ Spare — do not cut: BC2 (Cherry, 48¹⁄₁₆″), BW2 (Walnut, 54⁵⁄₁�
 
 ![End grain — BM1A](images/endgrain-BM1A-088e0a01d2dd.png)
 
-| [ ] | Rip | Rip size | Final width | Length | Pieces planned |
-| --- | --- | --- | --- | --- | --- |
-| [ ] | 1 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 32⅜″ | 16⅛″x2 |
-| [ ] | 2 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 32⅜″ | 16⅛″x2 |
+| [ ] | Rip | Rip size | Final width | Length | Pieces planned | Margin |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | 1 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 32⅜″ | 16⅛″x2 | 6″ |
+| [ ] | 2 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 32⅜″ | 16⅛″x2 | 3⁹⁄₁₆″ |
 
 Board width 8⁷⁄₁₆″ = used 4½″ + loss ⅜″ + margin 3⁹⁄₁₆″.
 
@@ -29,9 +31,9 @@ Board width 8⁷⁄₁₆″ = used 4½″ + loss ⅜″ + margin 3⁹⁄₁₆�
 
 ![End grain — BC1A](images/endgrain-BC1A-74f8787b7d33.png)
 
-| [ ] | Rip | Rip size | Final width | Length | Pieces planned |
-| --- | --- | --- | --- | --- | --- |
-| [ ] | 1 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 38⅞″ | 12⅞″x3 |
+| [ ] | Rip | Rip size | Final width | Length | Pieces planned | Margin |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | 1 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 38⅞″ | 12⅞″x3 | 4¾″ |
 
 Board width 7³⁄₁₆″ = used 2¼″ + loss ³⁄₁₆″ + margin 4¾″.
 
@@ -48,10 +50,10 @@ Rip the child boards next, in the order above, before the next parent board.
 
 ![End grain — BC1A1](images/endgrain-BC1A1-00d519df2334.png)
 
-| [ ] | Rip | Rip size | Final width | Length | Pieces planned |
-| --- | --- | --- | --- | --- | --- |
-| [ ] | 1 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 12⅞″ | 12⅞″ |
-| [ ] | 2 | 1³⁄₁₆″ (1.19″) | 1⅛″ (1.12″) | 12⅞″ | 12⅞″ |
+| [ ] | Rip | Rip size | Final width | Length | Pieces planned | Margin |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | 1 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 12⅞″ | 12⅞″ | 2⁵⁄₁₆″ |
+| [ ] | 2 | 1³⁄₁₆″ (1.19″) | 1⅛″ (1.12″) | 12⅞″ | 12⅞″ | 1″ |
 
 Board width 4¾″ = used 3⅜″ + loss ⅜″ + margin 1″.
 
@@ -59,10 +61,10 @@ Board width 4¾″ = used 3⅜″ + loss ⅜″ + margin 1″.
 
 ![End grain — BC1A2](images/endgrain-BC1A2-d90b65b2c061.png)
 
-| [ ] | Rip | Rip size | Final width | Length | Pieces planned |
-| --- | --- | --- | --- | --- | --- |
-| [ ] | 1 | 1³⁄₁₆″ (1.19″) | 1⅛″ (1.12″) | 16⅛″ | 16⅛″ |
-| [ ] | 2 | 1³⁄₁₆″ (1.19″) | 1⅛″ (1.12″) | 16⅛″ | 16⅛″ |
+| [ ] | Rip | Rip size | Final width | Length | Pieces planned | Margin |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | 1 | 1³⁄₁₆″ (1.19″) | 1⅛″ (1.12″) | 16⅛″ | 16⅛″ | 3⁷⁄₁₆″ |
+| [ ] | 2 | 1³⁄₁₆″ (1.19″) | 1⅛″ (1.12″) | 16⅛″ | 16⅛″ | 2⅛″ |
 
 Board width 4¾″ = used 2¼″ + loss ⅜″ + margin 2⅛″.
 
@@ -70,10 +72,10 @@ Board width 4¾″ = used 2¼″ + loss ⅜″ + margin 2⅛″.
 
 ![End grain — BW1A](images/endgrain-BW1A-45c58f8d0e7a.png)
 
-| [ ] | Rip | Rip size | Final width | Length | Pieces planned |
-| --- | --- | --- | --- | --- | --- |
-| [ ] | 1 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 32⅜″ | 16⅛″x2 |
-| [ ] | 2 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 32⅜″ | 16⅛″x2 |
+| [ ] | Rip | Rip size | Final width | Length | Pieces planned | Margin |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | 1 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 32⅜″ | 16⅛″x2 | 3¹³⁄₁₆″ |
+| [ ] | 2 | 2⁵⁄₁₆″ (2.31″) | 2¼″ (2.25″) | 32⅜″ | 16⅛″x2 | 1⅜″ |
 
 Board width 6¼″ = used 4½″ + loss ⅜″ + margin 1⅜″.
 

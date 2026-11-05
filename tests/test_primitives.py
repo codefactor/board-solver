@@ -165,8 +165,9 @@ def test_draw_cut_board_buy_board_no_false_alert(project, tool_limits, cut_spec)
     rc = RecordingCanvas()
     ghx = next(b for b in cut_spec["boards"] if b["id"] == "GHX")
     draw_cut_board(rc, ghx, project, tool_limits, (0, 0), SCALE, DEFAULT_COLORS, cut_spec)
-    from boardsolver.draw import _ALERT_COLOR
-    assert not any(r.fill == _ALERT_COLOR for r in rc.rects)
+    from boardsolver.draw import _NEGATIVE_MARGIN_FILL
+    assert not any(r.fill == _NEGATIVE_MARGIN_FILL for r in rc.rects)
+    assert not any(h.base_fill == _NEGATIVE_MARGIN_FILL for h in rc.hatches)
 
 
 def test_source_remainder_slab_width_is_parent_leftover():
@@ -257,8 +258,58 @@ def test_draw_cut_board_ordered_margin_children():
     assert ghosts[1].w == px(measure_to_sixteenths([15, 0]), SCALE)
 
 
+def test_draw_cut_board_offcut_tail_crosshatch_and_label():
+    # A wide source with one thin strip and no children: the whole
+    # margin band is an unclaimed tail, crosshatched light gray and
+    # labeled "off cut" when it fits.
+    project = {
+        "components": [], "panels": [],
+        "boards": [{"id": "BIG", "species": "Walnut", "length": [48, 0],
+                    "width": [10, 0], "thickness": [0, 13]}],
+    }
+    tool_limits = {"limits": {"sawKerf": [0, 2], "miterKerf": [0, 2], "minPlaneLoss": [0, 1]}}
+    board = {"id": "BIGA", "source": "BIG", "length": [48, 0],
+             "strips": [{"width": [2, 0], "cuts": [[48, 0]]}]}
+    rc = RecordingCanvas()
+    draw_cut_board(rc, board, project, tool_limits, (0, 0), SCALE, DEFAULT_COLORS)
+    from boardsolver.draw import _OFFCUT_FILL, _OFFCUT_HATCH, _OFFCUT_LABEL_BOX
+    tails = [h for h in rc.hatches if h.base_fill == _OFFCUT_FILL]
+    assert len(tails) == 1
+    assert tails[0].hatch_color == _OFFCUT_HATCH
+    assert any(t.s == "off cut" for t in rc.texts)
+    assert any(r.fill == _OFFCUT_LABEL_BOX for r in rc.rects)
+
+
+def test_draw_cut_board_offcut_tail_too_short_for_label():
+    # Parent board 20" long, child takes 18": the remaining tail is
+    # 1 7/8", under the 2" threshold, so it is crosshatched but
+    # carries no "off cut" label.
+    project = {
+        "components": [], "panels": [],
+        "boards": [{"id": "BIG", "species": "Walnut", "length": [20, 0],
+                    "width": [10, 0], "thickness": [0, 13]}],
+    }
+    tool_limits = {"limits": {"sawKerf": [0, 2], "miterKerf": [0, 2], "minPlaneLoss": [0, 1]}}
+    cut_spec = {
+        "boards": [
+            {"id": "BIGA", "source": "BIG", "length": [20, 0],
+             "strips": [{"width": [2, 0], "cuts": [[20, 0]]}]},
+            {"id": "BIGB", "sourceRemainder": "BIGA", "length": [18, 0],
+             "strips": [{"width": [7, 0], "cuts": [[18, 0]]}]},
+        ],
+    }
+    rc = RecordingCanvas()
+    draw_cut_board(rc, cut_spec["boards"][0], project, tool_limits,
+                   (0, 0), SCALE, DEFAULT_COLORS, cut_spec)
+    from boardsolver.draw import _OFFCUT_FILL
+    assert any(h.base_fill == _OFFCUT_FILL for h in rc.hatches)
+    assert not any(t.s == "off cut" for t in rc.texts)
+
+
 def test_draw_cut_board_negative_margin_alert():
-    # Strips wider than the source => negative margin => alert band.
+    # Strips wider than the source => negative margin => the portion
+    # past the board's edge is yellow crosshatched, and each strip
+    # is followed by a reddish kerf loss line in place.
     project = {
         "components": [], "panels": [],
         "boards": [{"id": "SMALL", "species": "Cherry", "length": [30, 0],
@@ -270,8 +321,23 @@ def test_draw_cut_board_negative_margin_alert():
                         {"width": [2, 8], "cuts": [[30, 0]]}]}
     rc = RecordingCanvas()
     draw_cut_board(rc, board, project, tool_limits, (0, 0), SCALE)
-    from boardsolver.draw import _ALERT_COLOR
-    assert any(r.fill == _ALERT_COLOR for r in rc.rects)
+    from boardsolver.draw import (
+        _LOSS_COLOR,
+        _NEGATIVE_MARGIN_FILL,
+        _NEGATIVE_MARGIN_HATCH,
+    )
+    assert any(r.fill == _NEGATIVE_MARGIN_FILL for r in rc.rects)
+    neg = [h for h in rc.hatches if h.base_fill == _NEGATIVE_MARGIN_FILL]
+    assert len(neg) == 1
+    assert neg[0].hatch_color == _NEGATIVE_MARGIN_HATCH
+    # One reddish kerf loss line after each strip, in place.
+    loss_lines = [r for r in rc.rects if r.fill == _LOSS_COLOR]
+    assert len(loss_lines) == 2
+    # Kerf line height is (sawKerf + planeLoss) = 3/16" at SCALE px/in.
+    assert loss_lines[0].h == px(measure_to_sixteenths([0, 3]), SCALE)
+    # Second strip starts after the first strip + its kerf line.
+    strip_h = px(measure_to_sixteenths([2, 8]), SCALE)
+    assert loss_lines[1].y > loss_lines[0].y + strip_h
 
 
 # --------------------------------------------------------------------------- #

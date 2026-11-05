@@ -2,16 +2,16 @@
 
 *Two end-grain plaid cutting boards built from cherry, walnut, and brown maple.*
 
-This is a generated plan: the finished design and the cut list that realizes it on the boards in hand. Where the cut list cannot be met from inventory it calls for **bought boards** — buy those and re-run before cutting. The sections follow the build order, from the first crosscut to the final slice-grid assembly.
+Cut list for the finished design, in build order.
 
 ## 1. Warnings
 
 | # | Lvl | Type | Message |
 | --- | --- | --- | --- |
-| 1 | ERROR | Planer Gang Too Small | Strip width 3″ is wider than board thickness ¹³⁄₁₆″, and its gang is too small even after crosscutting to component lengths first: 1 strip(s) total ¹³⁄₁₆″, 2 component(s) total 1⅝″, both below 3″ (needs 4 pieces at ¹³⁄₁₆″). Do not plane singly. |
-| 2 | WARNING | Ghost Boards | 1 board(s) must be bought (not in inventory): GH-C. |
-| 3 | WARNING | Small Margin | Board BC2A leaves only ⅛″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
-| 4 | WARNING | Zero Offcut | 41 strip(s) crosscut to an exact fit with 0″ offcut — no margin for cutting error in the crosscut phase: BM1A ×6, BM1B ×3, BM1B1 ×3, BM1B2 ×10, BC1A ×5, BC2A ×6, BW1A ×3, BW2A ×5. A cut even slightly long, or kerf drift, will make the last piece short. Consider longer blanks or fewer pieces per strip. |
+| 1 | WARNING | Ghost Boards | 1 board(s) must be bought (not in inventory): GH-C. |
+| 2 | WARNING | Small Margin | Board BC2A leaves only ⅛″ margin (< ¼″) — too tight; prone to under-supplying strips if the board runs narrow. |
+| 3 | WARNING | Zero Offcut | 41 strip(s) crosscut to an exact fit with 0″ offcut — no margin for cutting error in the crosscut phase: BM1A ×6, BM1B ×3, BM1B1 ×3, BM1B2 ×10, BC1A ×5, BC2A ×6, BW1A ×3, BW2A ×5. A cut even slightly long, or kerf drift, will make the last piece short. Consider longer blanks or fewer pieces per strip. |
+| 4 | WARNING | Planer Gang Too Small | There aren't enough 3″ strips to gang together to safely pass through the planer without tipping over. You might need sacrificial wood to tape onto it in order to prevent movement. |
 
 ## 2. Finished board pattern
 
@@ -21,7 +21,7 @@ This is a generated plan: the finished design and the cut list that realizes it 
 
 ## 3. Volume Sanity Check
 
-A per-species feasibility check in board feet (1 BF = 144 cubic inches). **Required** is the surfaced volume of every installed slice across all 2 board(s) plus the volume that must be removed to produce them — flattening (sliceDepth − finishedThickness), planing all four edges (minPlaneLoss), and one miter kerf per slice. **Available** is the inventory stock volume. **Volume Offset** = available − required, with available as a percentage of required in parentheses (100% means they are equal); a negative value means the project cannot be built from stock in hand.
+Review the per-species volumes against inventory.
 
 | Species | Available | Required | Volume Offset |
 | --- | --- | --- | --- |
@@ -31,7 +31,7 @@ A per-species feasibility check in board feet (1 BF = 144 cubic inches). **Requi
 
 ## 4. Crosscut Blanks
 
-The first operation: crosscut each raw inventory board along its length into the labeled board blanks that get ripped later (the Initial board rips section, which follows immediately, ahead of Panels overview). Boards that start from another board's leftover margin are not raw-stock crosscuts — they appear as the labeled offcuts in the Board Rip Diagram and as a crosscut row (↳) after their parent board's row in the rip cut table.
+This plan involves cutting blanks from the inventory — review the inventory and the planned cuts.
 
 | Raw board | Species | Raw length | Blanks (id = length) | Leftover |
 | --- | --- | --- | --- | --- |
@@ -44,20 +44,11 @@ The first operation: crosscut each raw inventory board along its length into the
 
 ### Crosscut Diagram
 
-Each bar is one raw board drawn to scale by length; segments are the blanks (labeled with id and length inside), reddish stripes are crosscut kerfs (sawdust), and the pale tail is leftover length. A red tail means the blanks overflow the raw board. An untouched spare is shown washed-out and uncut; a board used whole goes straight to the rip diagram. The bars below are the individual primitives, left-aligned (not floated side by side); the combined diagram is also saved in images/ as crosscut-blanks-*.png.
-
-![Crosscut — BM1](images/crosscut-BM1-fae20b26834a.png)
-![Crosscut — BC1](images/crosscut-BC1-f40e37b551d1.png)
-![Crosscut — BC2](images/crosscut-BC2-ec3e42432a16.png)
-![Crosscut — BW1](images/crosscut-BW1-4346964d2e5b.png)
-![Crosscut — BW2](images/crosscut-BW2-885ae1d6893b.png)
-![Crosscut — BM2](images/crosscut-BM2-d33eb323c7e5.png)
+![Crosscut Diagram — raw boards cut into length blanks](images/crosscut-compact-366d8f20a138.png)
 
 ## 5. Initial board rips (the cut list)
 
-Each row is one physical board at the saw: rip the strips down its width, then crosscut each strip to the piece lengths. The **Board** column shows `id @ width` — the board's width when ripping begins. **Used** is the summed strip width, **Loss** is rip kerf + planer cleanup per strip, **Margin** is the leftover width (negative = the strips do not fit; large = the board is oversized for what it yields).
-
-A board whose leftover margin is itself the source of other boards gets a crosscut row (↳) immediately after its own row: it lists, in cut-spec document order, the child boards crosscut off that margin slab, the miter kerf between them, and the slab tail left after the last crosscut. For a crosscut row the Used / Loss / Margin figures are length-axis, not width-axis: Used is the total child length, Loss is the miter kerf consumed, Margin is the slab tail.
+Review the rip list.
 
 | Board | Origin | Species | Length | Rips (width × count) | Used | Loss | Margin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -74,17 +65,17 @@ A board whose leftover margin is itself the source of other boards gets a crossc
 
 ### Board Rip Diagram
 
-Each labeled block below is one physical board. Horizontal bands are the strips ripped down the board's width; within a band, the colored cells are the crosscut pieces (with thin kerf gaps between them) and the lightened tail is the offcut. The pale band under the strips is the leftover margin; a gray title marks a board that must be bought. The blocks below are the individual primitives, flowed to fill the page width instead of one tall combined diagram; the combined diagram is also saved as strip-map.png at the plan root and as images/strip-map-*.png, for a single-image copy of the cut diagram.
+Review the board rip diagrams against the rip list.
 
-![Board rip — BM1A](images/strip-BM1A-e811c37be056.png)
-![Board rip — BM1B](images/strip-BM1B-6641ea4921bf.png)
-![Board rip — BM1B1](images/strip-BM1B1-6db5a111e134.png)
-![Board rip — BM1B2](images/strip-BM1B2-caceb93a1abc.png)
-![Board rip — BC1A](images/strip-BC1A-ab90a3999398.png)
-![Board rip — BC2A](images/strip-BC2A-a072c7655457.png)
+![Board rip — BM1A](images/strip-BM1A-8a43a8972a4e.png)
+![Board rip — BM1B](images/strip-BM1B-e55739b52cc5.png)
+![Board rip — BM1B1](images/strip-BM1B1-0fe1019ae49c.png)
+![Board rip — BM1B2](images/strip-BM1B2-3fdba4f3883d.png)
+![Board rip — BC1A](images/strip-BC1A-9fa100ef2328.png)
+![Board rip — BC2A](images/strip-BC2A-ec65667efe5e.png)
 ![Board rip — GH-C](images/strip-GH-C-db718bda4a48.png)
-![Board rip — BW1A](images/strip-BW1A-6ec4367b048c.png)
-![Board rip — BW2A](images/strip-BW2A-45e55ade7850.png)
+![Board rip — BW1A](images/strip-BW1A-d98807507234.png)
+![Board rip — BW2A](images/strip-BW2A-862a5f8dcc43.png)
 
 ## 6. Panels overview
 
@@ -98,17 +89,13 @@ Each labeled block below is one physical board. Horizontal bands are the strips 
 
 ### Panel End Grain Diagram
 
-Each panel's end-grain cross-section (the glue-up of component stripes). The panels below are the individual primitives, centered in the PDF; the combined diagram is also saved in images/ as panels-*.png.
+Review the panel end-grain diagrams.
 
-![Panel — SL](images/panel-SL-6f33e30d4623.png)
-![Panel — SR](images/panel-SR-d2be9de4dde9.png)
-![Panel — ML](images/panel-ML-5687a9fae733.png)
-![Panel — MR](images/panel-MR-e0d933a70d2b.png)
-![Panel — H](images/panel-H-9b9d306c572a.png)
+![Panel end-grain cross-sections](images/panels-compact-4e1b534f5dad.png)
 
 ### Panel Face Diagram
 
-Each panel drawn to scale with its length running left-to-right, wider than tall, centered in the PDF at 75% of its rendered size, with the panel body moved down away from its title. Components are horizontal stripes aligned on the squared edge; profile regions stack left-to-right, so the silhouette steps shorter where trailing components drop out. Dashed lines are the slice crosscuts; the solid red band is total kerf loss, and the cross-hatched ends are the snipe tails (possible loss, depending on the planer). A blue diamond below a solid line marks a crosscut that is also a profile change. The faces below are the individual primitives, on a white background that bleeds into the page; the combined diagram is also saved in images/ as panel-faces-*.png. The legend follows the flow, centered, instead of sitting at the bottom of one tall image.
+Review the panel face diagrams.
 
 ![Panel face — SL](images/panel-face-SL-7d17ea11fbbf.png)
 ![Panel face — SR](images/panel-face-SR-72754ada6e00.png)
@@ -120,7 +107,7 @@ Each panel drawn to scale with its length running left-to-right, wider than tall
 
 ### Slice Fulfillment
 
-**Demand** is every slice the grid places across all 2 finished board(s). **Supplied** is the slices the panels above produce — snipe lost, ripped panels multiplied by their strip count. **Supply Offset** = supplied − demand: negative is a shortfall, positive is extra (ideally non-negative everywhere).
+Review slice demand, supply, and offset.
 
 | Slice | Demand | Supplied | Supply Offset |
 | --- | --- | --- | --- |
@@ -131,11 +118,9 @@ Each panel drawn to scale with its length running left-to-right, wider than tall
 | H-L | 4 × 2 = 8 | 5 × 2 = 10 | +2 |
 | H-R | 4 × 2 = 8 | 5 × 2 = 10 | +2 |
 
-_The slice counts supplied are calculated assuming the panels and their quantities are delivered perfectly according to the specs in this section. A panel type may have more than one instance; the ideal panels are always quantity 1._
-
 ## 7. Components
 
-**Demand** is what the finished pattern needs (counted from the slice grid; length is the panel the component belongs to). **Fulfilled** is how many the cut list supplies, matched longest-demand-first using exact-length pieces first, then longer pieces cut down (a piece shorter than the demand cannot be used). **Shortfall** is the unmet count. **Total Overcut** is the wasted length trimmed off — the sum of (piece length − demand length) across every longer piece that had to be cut down to fill this row (0 when exact-length pieces covered it).
+Review component demand, fulfillment, and shortfall.
 
 | Component | Species | Width | Length | Demand | Fulfilled | Shortfall |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -151,7 +136,7 @@ _The slice counts supplied are calculated assuming the panels and their quantiti
 
 ## 8. Panels (profiles and sequence)
 
-The physical panels this plan builds (from the project's panel specs), grouped by identical shape. Qty is how many of each to glue up.
+Review the panels and their quantities.
 
 | Panel | Qty | Length | Profiles (slices) | Component sequence |
 | --- | --- | --- | --- | --- |
@@ -160,9 +145,3 @@ The physical panels this plan builds (from the project's panel specs), grouped b
 | ML | 2 | 19⅜″ | single: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 · Md |
 | MR | 2 | 19⅜″ | single: 11 | Me · W2 · C1 · W2 · Md · W2 · C1 · W2 |
 | H | 1 | 17¾″ | L: 5, R: 5 | Me · W1 · Md · W1 · Md |
-
-## 9. Slice Grid
-
-The final step: arrange the slices into the finished face. The same grid keyed by slice id — each slice is framed in its legend color so you can see how to arrange the grid cell by cell. A corner triangle marks a slice placed horizontally flipped.
-
-![Slice grid keyed by slice id](images/slice-map-993c11590913.png)
